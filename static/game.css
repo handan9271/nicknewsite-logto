@@ -1,0 +1,685 @@
+/* ==========================================================================
+   IELTS COURT — Ace Attorney / 逆転裁判 Pixel-Art Courtroom CSS
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+  --wood-dark:    #5C3A1E;
+  --wood-light:   #8B6914;
+  --deep-blue:    #1a2a4a;
+  --red-objection:#c0392b;
+  --gold:         #d4a017;
+  --warm-white:   #f5f0e0;
+  --bg-dark:      #0e1524;
+  --bg-panel:     #1c1c2e;
+  --green:        #27ae60;
+  --yellow:       #f1c40f;
+  --red:          #e74c3c;
+  --paper:        #f0e6d0;
+  --seal-red:     #8b0000;
+  --font-pixel:   'Press Start 2P', 'Courier New', monospace;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg-dark); color: var(--warm-white);
+  font-family: var(--font-pixel); font-size: 14px; line-height: 1.6;
+}
+
+.hidden { display: none !important; }
+.blink { animation: blink 1s step-end infinite; }
+
+/* ==========================================================================
+   SCREEN FLASH
+   ========================================================================== */
+.screen-flash { position: fixed; inset: 0; z-index: 9999; pointer-events: none; }
+.screen-flash.active::before {
+  content: ''; position: fixed; inset: 0;
+  background: white; animation: flash-anim 0.15s ease-out forwards;
+}
+@keyframes flash-anim { 0% { opacity: 0.9; } 100% { opacity: 0; } }
+
+/* ==========================================================================
+   1. TITLE SCREEN
+   ========================================================================== */
+.screen {
+  position: fixed; inset: 0; overflow: auto;
+}
+
+#title-screen {
+  z-index: 1000;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #0a0f1a 0%, var(--deep-blue) 40%, var(--wood-dark) 100%);
+}
+
+.title-content { text-align: center; max-width: 600px; padding: 20px; }
+
+.game-title {
+  font-size: 48px; color: var(--gold);
+  text-shadow: 4px 4px 0 var(--wood-dark), -2px -2px 0 #000;
+  letter-spacing: 6px; margin-bottom: 12px;
+  animation: logo-pulse 2s ease-in-out infinite;
+}
+@keyframes logo-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+
+.subtitle {
+  font-size: 14px; color: var(--warm-white); letter-spacing: 4px;
+  margin-bottom: 30px; text-shadow: 2px 2px 0 #000;
+}
+
+.flavor-text {
+  font-size: 10px; color: #a09888; line-height: 2;
+  margin-bottom: 30px; padding: 0 20px;
+}
+
+.mode-selector { display: flex; gap: 12px; justify-content: center; margin-bottom: 30px; }
+
+.mode-btn {
+  font-family: var(--font-pixel); font-size: 10px;
+  padding: 10px 18px; background: var(--deep-blue); color: var(--warm-white);
+  border: 3px solid var(--gold); cursor: pointer;
+  box-shadow: 3px 3px 0 #000; transition: all 0.1s;
+}
+.mode-btn:hover { background: var(--wood-dark); }
+.mode-btn.selected { background: var(--gold); color: var(--bg-dark); }
+
+.press-start {
+  font-family: var(--font-pixel); font-size: 16px;
+  color: var(--warm-white); background: none; border: 4px solid var(--warm-white);
+  padding: 12px 24px; cursor: pointer;
+}
+.press-start:hover { color: var(--gold); border-color: var(--gold); }
+
+/* ==========================================================================
+   2. HUD BAR
+   ========================================================================== */
+.hud {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; background: rgba(10,15,26,0.85);
+  border-bottom: 3px solid var(--gold);
+}
+
+.part-badge {
+  font-family: var(--font-pixel); font-size: 10px;
+  padding: 4px 12px; letter-spacing: 2px;
+  border: 3px solid; box-shadow: 2px 2px 0 #000;
+}
+.part-badge.part-1 { background: var(--deep-blue); border-color: #3a7bd5; color: #6db3f2; }
+.part-badge.part-2 { background: #2a1a3a; border-color: #8e44ad; color: #c39bd3; }
+.part-badge.part-3 { background: #3a1a1a; border-color: var(--red-objection); color: var(--red); }
+
+.question-counter { font-size: 10px; color: var(--gold); letter-spacing: 1px; }
+
+.timer-bar-container {
+  flex: 1; height: 10px; background: #1c1c2e;
+  border: 2px solid #333; overflow: hidden;
+}
+.timer-bar {
+  height: 100%; width: 100%;
+  background: var(--green);
+  transition: width 1s linear;
+}
+.timer-bar.urgent { animation: pulse-red 0.5s step-end infinite; }
+
+/* ==========================================================================
+   3. COURTROOM
+   ========================================================================== */
+.courtroom {
+  position: fixed; inset: 0; padding-top: 44px;
+  display: flex; flex-direction: column; align-items: center;
+  background: linear-gradient(180deg,
+    var(--deep-blue) 0%, #263a5c 30%, var(--wood-dark) 55%, #3d2410 100%);
+}
+
+.judge-bench {
+  width: 100%; min-height: 70px;
+  background: linear-gradient(180deg, var(--wood-dark) 0%, var(--wood-light) 100%);
+  border-bottom: 4px solid #3a2210;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  box-shadow: 0 4px 0 #2a1808, 0 6px 16px rgba(0,0,0,0.6);
+}
+.judge-bench::before {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg,
+    transparent, transparent 120px,
+    rgba(0,0,0,0.12) 120px, rgba(0,0,0,0.12) 124px);
+  pointer-events: none;
+}
+
+/* Nick character */
+.nick-character {
+  display: flex; flex-direction: column; align-items: center;
+  margin-top: -20px; z-index: 10;
+}
+
+.nick-sprite {
+  width: 160px; height: 160px;
+  border: 3px solid var(--gold); background: var(--deep-blue);
+  position: relative; overflow: hidden;
+  box-shadow: 3px 3px 0 #000;
+  transition: background 0.3s;
+}
+
+.nick-face {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: none;
+  image-rendering: pixelated;
+}
+
+/* Show active expression */
+.nick-neutral .nick-face-neutral,
+.nick-smile .nick-face-smile,
+.nick-frown .nick-face-frown,
+.nick-shocked .nick-face-shocked,
+.nick-gavel .nick-face-gavel { display: block; }
+
+.expression-label {
+  font-size: 8px; color: var(--warm-white);
+  position: absolute; bottom: 4px; left: 0; right: 0;
+  text-align: center; letter-spacing: 1px;
+  z-index: 1;
+}
+
+/* Nick expression backgrounds */
+.nick-neutral { background: var(--deep-blue); }
+.nick-smile { background: #1e4a2a; }
+.nick-frown { background: #4a1e1e; }
+.nick-shocked { background: #4a3a1e; }
+.nick-gavel { background: #3a1e4a; }
+
+.name-plate {
+  background: var(--deep-blue); border: 2px solid var(--gold);
+  padding: 4px 14px; font-size: 9px; color: var(--gold);
+  letter-spacing: 2px; margin-top: 6px;
+  box-shadow: 2px 2px 0 #000;
+}
+
+.witness-stand {
+  display: none; /* hidden to save space */
+}
+.stand-label { display: none; }
+
+/* ==========================================================================
+   4. GAVEL OVERLAY
+   ========================================================================== */
+.gavel-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.gavel-icon {
+  font-size: 80px; animation: gavel-strike 0.3s ease-out;
+  filter: drop-shadow(4px 4px 0 #000);
+}
+
+/* ==========================================================================
+   5. OBJECTION BANNER
+   ========================================================================== */
+.objection-banner {
+  position: fixed; inset: 0; z-index: 900;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center,
+    rgba(192,57,43,0.5) 0%, rgba(192,57,43,0.15) 40%, transparent 70%);
+}
+.objection-text {
+  font-size: 56px; color: var(--red-objection); letter-spacing: 8px;
+  text-shadow: 4px 4px 0 #000, -2px -2px 0 #000, 0 0 30px rgba(192,57,43,0.8);
+  animation: objection-burst 0.4s cubic-bezier(0.17, 0.67, 0.29, 1.3) forwards;
+  transform: scale(0);
+}
+.objection-reason {
+  font-size: 12px; color: var(--warm-white); margin-top: 16px;
+  text-shadow: 2px 2px 0 #000; max-width: 500px; text-align: center;
+}
+
+/* ==========================================================================
+   6. EVIDENCE CARD
+   ========================================================================== */
+.evidence-card {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%); z-index: 500;
+  width: 520px; max-width: 90vw; min-height: 300px;
+  background: repeating-linear-gradient(0deg,
+    var(--paper) 0px, var(--paper) 28px, #ddd5c0 28px, #ddd5c0 29px);
+  border: 4px solid var(--wood-dark);
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.4);
+  padding: 28px 24px; color: #2c1a0a; font-size: 11px; line-height: 2;
+  animation: slide-in-right 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.evidence-header {
+  font-size: 18px; color: var(--seal-red); letter-spacing: 6px;
+  text-align: center; border: 4px solid var(--seal-red);
+  padding: 4px 16px; display: inline-block;
+  margin: 0 auto 16px auto; transform: rotate(-3deg);
+}
+
+.evidence-body { margin-bottom: 16px; }
+.evidence-topic { font-size: 12px; line-height: 2; margin-bottom: 12px; font-weight: bold; }
+.evidence-points { padding-left: 20px; list-style: '> '; }
+.evidence-points li { margin-bottom: 6px; }
+.evidence-prep { font-size: 10px; color: var(--seal-red); margin-top: 12px; letter-spacing: 1px; }
+
+.evidence-close-btn {
+  font-family: var(--font-pixel); font-size: 10px;
+  padding: 8px 20px; background: var(--wood-dark); color: var(--warm-white);
+  border: 3px solid var(--gold); cursor: pointer;
+  box-shadow: 2px 2px 0 #000; display: block; margin: 12px auto 0;
+}
+.evidence-close-btn:hover { background: var(--gold); color: var(--bg-dark); }
+
+/* ==========================================================================
+   7. DIALOGUE BOX (inside bottom stack)
+   ========================================================================== */
+.dialogue-box {
+  width: 100%;
+  background: rgba(10,15,26,0.94);
+  border: 3px solid var(--gold);
+  min-height: 120px; padding: 14px 24px 20px;
+  display: flex; flex-direction: column;
+}
+
+.speaker-name {
+  display: inline-block; padding: 4px 14px; margin-bottom: 8px;
+  font-size: 10px; letter-spacing: 2px; align-self: flex-start;
+  box-shadow: 2px 2px 0 #000;
+}
+.speaker-judge { background: var(--gold); color: var(--bg-dark); border: 2px solid var(--wood-light); }
+.speaker-witness { background: var(--green); color: var(--bg-dark); border: 2px solid #1e8a50; }
+
+.dialogue-text {
+  font-size: 12px; line-height: 1.9; color: var(--warm-white);
+  flex: 1; overflow: hidden;
+}
+
+.continue-indicator {
+  position: absolute; bottom: 14px; right: 24px;
+  font-size: 14px; color: var(--gold); cursor: pointer;
+}
+
+/* ==========================================================================
+   8. BOTTOM STACK — question + dialogue/input stacked vertically
+   ========================================================================== */
+.bottom-stack {
+  position: fixed; bottom: 24%; left: 50%; transform: translateX(-50%);
+  z-index: 100; width: 700px; max-width: 92vw;
+  display: flex; flex-direction: column; gap: 0;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+}
+
+.current-question {
+  width: 100%;
+  background: rgba(212,160,23,0.15);
+  border: 3px solid var(--gold); border-bottom: none;
+  padding: 12px 20px; font-size: 11px; line-height: 2;
+  color: var(--gold); text-align: center;
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   8b. INPUT AREA (inside bottom stack)
+   ========================================================================== */
+.input-area {
+  width: 100%;
+  background: rgba(10,15,26,0.96);
+  border: 3px solid var(--gold);
+  padding: 16px 24px 20px;
+}
+
+.input-area .timer-bar-container {
+  margin-bottom: 12px;
+}
+
+.input-area textarea {
+  width: 100%; min-height: 120px; resize: vertical;
+  font-family: var(--font-pixel); font-size: 11px;
+  padding: 12px 16px; background: var(--bg-panel); color: var(--warm-white);
+  border: 3px solid var(--gold); outline: none; caret-color: var(--gold);
+  line-height: 1.9;
+}
+.input-area textarea:focus { border-color: var(--warm-white); }
+.input-area textarea::placeholder { color: #555; font-size: 9px; }
+
+.input-btn-row {
+  display: flex; gap: 10px; margin-top: 10px; align-items: center;
+  justify-content: flex-end;
+}
+
+.mic-btn {
+  font-family: var(--font-pixel); font-size: 10px;
+  padding: 10px 16px; background: var(--deep-blue); color: var(--warm-white);
+  border: 3px solid var(--gold); cursor: pointer;
+  box-shadow: 2px 2px 0 #000;
+}
+.mic-btn:hover { background: var(--wood-dark); }
+.mic-btn.recording {
+  background: var(--red-objection); border-color: var(--red);
+  animation: pulse-red 0.8s ease-in-out infinite;
+}
+
+.submit-btn {
+  font-family: var(--font-pixel); font-size: 12px;
+  padding: 10px 28px; background: var(--gold); color: var(--bg-dark);
+  border: 3px solid var(--wood-light); cursor: pointer;
+  box-shadow: 3px 3px 0 #000; letter-spacing: 1px;
+}
+.submit-btn:hover { background: #e6b520; }
+.submit-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+
+.input-hint {
+  font-size: 8px; color: #666; margin-top: 8px; letter-spacing: 1px;
+}
+
+/* ==========================================================================
+   9. VERDICT SCREEN
+   ========================================================================== */
+#verdict-screen {
+  z-index: 800;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 24px;
+  background: rgba(10,15,26,0.97); padding: 40px;
+}
+
+.verdict-header {
+  font-size: 20px; color: var(--gold);
+  text-shadow: 3px 3px 0 #000; letter-spacing: 6px;
+  border-bottom: 4px solid var(--gold); padding-bottom: 12px;
+  text-align: center;
+}
+
+.score-cards {
+  display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+}
+
+.score-card {
+  width: 130px; height: 160px;
+  background: var(--deep-blue); border: 4px solid var(--gold);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+  box-shadow: 4px 4px 0 #000;
+  opacity: 0.5; transition: opacity 0.3s;
+}
+.score-card.revealed { opacity: 1; }
+
+.score-label { font-size: 8px; color: var(--warm-white); letter-spacing: 1px; text-align: center; }
+.score-value { font-size: 32px; color: var(--gold); text-shadow: 2px 2px 0 #000; }
+
+.overall-band { text-align: center; margin-top: 8px; }
+.overall-label { font-size: 12px; color: var(--warm-white); letter-spacing: 4px; display: block; margin-bottom: 8px; }
+.overall-value {
+  font-size: 60px; color: var(--gold);
+  text-shadow: 4px 4px 0 var(--wood-dark), -2px -2px 0 #000;
+}
+
+.verdict-text {
+  font-size: 11px; color: var(--red-objection); max-width: 600px;
+  text-align: center; line-height: 2; text-shadow: 1px 1px 0 #000;
+}
+.verdict-comment {
+  font-size: 9px; color: #a09888; max-width: 600px;
+  text-align: center; line-height: 2;
+}
+
+#btn-new-trial { margin-top: 16px; }
+
+/* ==========================================================================
+   10. MULTIPLAYER: TITLE MODE SELECTOR
+   ========================================================================== */
+.game-mode-selector {
+  display: flex; gap: 16px; justify-content: center; margin-top: 10px;
+}
+.game-mode-selector .press-start {
+  font-size: 12px; padding: 10px 20px;
+}
+
+/* ==========================================================================
+   11. LOBBY SCREEN
+   ========================================================================== */
+#lobby-screen {
+  z-index: 1000;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #0a0f1a 0%, var(--deep-blue) 40%, var(--wood-dark) 100%);
+}
+
+.lobby-content {
+  text-align: center; max-width: 500px; padding: 20px; width: 90%;
+}
+
+.lobby-title {
+  font-size: 24px; color: var(--gold);
+  text-shadow: 3px 3px 0 #000; letter-spacing: 4px;
+  margin-bottom: 30px;
+}
+
+.lobby-panel {
+  background: rgba(10,15,26,0.85);
+  border: 3px solid var(--gold); padding: 24px;
+  margin-bottom: 20px;
+}
+
+.lobby-create { margin-bottom: 16px; }
+
+.lobby-btn {
+  width: 100%; padding: 12px 20px !important; font-size: 11px !important;
+}
+
+.lobby-divider {
+  font-size: 10px; color: #666; margin: 12px 0; letter-spacing: 4px;
+}
+
+.lobby-join { display: flex; gap: 10px; }
+
+.lobby-input {
+  flex: 1; font-family: var(--font-pixel); font-size: 16px;
+  padding: 10px 14px; background: var(--bg-panel); color: var(--gold);
+  border: 3px solid var(--gold); outline: none; text-align: center;
+  letter-spacing: 6px; text-transform: uppercase;
+}
+.lobby-input::placeholder { color: #555; font-size: 10px; letter-spacing: 2px; }
+
+.room-code-display {
+  font-size: 20px; color: var(--gold); letter-spacing: 6px;
+  margin-bottom: 20px; text-shadow: 2px 2px 0 #000;
+}
+.room-code-display span { color: var(--warm-white); }
+
+.lobby-players-label {
+  font-size: 10px; color: #888; letter-spacing: 2px;
+  margin-bottom: 10px; text-align: left;
+}
+
+.lobby-player-list {
+  list-style: none; text-align: left; margin-bottom: 20px;
+}
+.lobby-player-list li {
+  font-size: 11px; padding: 8px 12px;
+  border-bottom: 1px solid rgba(212,160,23,0.2);
+  color: var(--warm-white);
+}
+.lobby-player-list li:first-child { color: var(--gold); }
+.lobby-player-list li::before { content: '> '; color: var(--gold); }
+
+.lobby-wait-msg {
+  font-size: 9px; color: #666; margin-top: 12px; letter-spacing: 1px;
+}
+
+.lobby-back-btn {
+  margin-top: 10px; background: transparent !important;
+  border-color: #555 !important; color: #888 !important;
+}
+
+/* ==========================================================================
+   12. WAITING OVERLAY
+   ========================================================================== */
+.waiting-overlay {
+  position: fixed; inset: 0; z-index: 600;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10,15,26,0.88);
+}
+
+.waiting-content { text-align: center; }
+
+.waiting-text {
+  font-size: 12px; color: var(--warm-white);
+  letter-spacing: 2px; margin-bottom: 12px;
+}
+
+.waiting-dots span {
+  font-size: 24px; color: var(--gold);
+  animation: blink 1s step-end infinite;
+}
+.waiting-dots span:nth-child(2) { animation-delay: 0.33s; }
+.waiting-dots span:nth-child(3) { animation-delay: 0.66s; }
+
+/* ==========================================================================
+   13. PLAYER COUNT BADGE
+   ========================================================================== */
+.player-count-badge {
+  font-family: var(--font-pixel); font-size: 9px;
+  padding: 4px 10px; background: var(--green);
+  color: var(--bg-dark); border: 2px solid #1e8a50;
+  box-shadow: 2px 2px 0 #000; letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   14. LEADERBOARD (verdict screen)
+   ========================================================================== */
+.leaderboard {
+  width: 100%; max-width: 600px; margin-top: 16px;
+}
+
+.leaderboard-title {
+  font-size: 14px; color: var(--gold); letter-spacing: 4px;
+  text-align: center; margin-bottom: 16px;
+  border-bottom: 2px solid var(--gold); padding-bottom: 8px;
+}
+
+.leaderboard-entries {
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.lb-entry {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px;
+  background: rgba(26,42,74,0.8);
+  border: 2px solid rgba(212,160,23,0.3);
+}
+.lb-entry.rank-1 {
+  border-color: #ffd700; background: rgba(212,160,23,0.15);
+}
+.lb-entry.rank-2 { border-color: #c0c0c0; }
+.lb-entry.rank-3 { border-color: #cd7f32; }
+
+.lb-rank {
+  font-size: 18px; min-width: 30px; text-align: center;
+  text-shadow: 2px 2px 0 #000;
+}
+.lb-entry.rank-1 .lb-rank { color: #ffd700; }
+.lb-entry.rank-2 .lb-rank { color: #c0c0c0; }
+.lb-entry.rank-3 .lb-rank { color: #cd7f32; }
+
+.lb-name {
+  flex: 1; font-size: 11px; color: var(--warm-white);
+  letter-spacing: 1px;
+}
+
+.lb-score {
+  font-size: 20px; color: var(--gold);
+  text-shadow: 2px 2px 0 #000;
+}
+
+.lb-verdict-label {
+  font-size: 8px; padding: 3px 8px;
+  letter-spacing: 2px; box-shadow: 1px 1px 0 #000;
+}
+.lb-verdict-label.not-guilty {
+  background: var(--green); color: var(--bg-dark);
+  border: 2px solid #1e8a50;
+}
+.lb-verdict-label.guilty {
+  background: var(--red-objection); color: var(--warm-white);
+  border: 2px solid #911c1c;
+}
+
+/* ==========================================================================
+   15. KEYFRAME ANIMATIONS
+   ========================================================================== */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10% { transform: translateX(-8px); }
+  20% { transform: translateX(7px); }
+  30% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  50% { transform: translateX(-4px); }
+  60% { transform: translateX(3px); }
+}
+.shake { animation: shake 0.4s ease-in-out; }
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+@keyframes slide-in-right {
+  0% { transform: translate(100vw, -50%); }
+  100% { transform: translate(-50%, -50%); }
+}
+
+@keyframes objection-burst {
+  0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+  60% { transform: scale(1.15) rotate(2deg); opacity: 1; }
+  80% { transform: scale(0.95) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes gavel-strike {
+  0% { transform: rotate(0deg); }
+  30% { transform: rotate(-60deg); }
+  50% { transform: rotate(10deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes pulse-red { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+@keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes fade-out { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ==========================================================================
+   11. RESPONSIVE
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .game-title { font-size: 32px; }
+  .nick-sprite { width: 150px; height: 150px; }
+  .evidence-card { width: 90vw; }
+  .score-card { width: 110px; height: 140px; }
+  .score-value { font-size: 26px; }
+  .overall-value { font-size: 48px; }
+  .objection-text { font-size: 40px; }
+}
+
+@media (max-width: 600px) {
+  .game-title { font-size: 22px; letter-spacing: 3px; }
+  .subtitle { font-size: 10px; }
+  .nick-sprite { width: 120px; height: 120px; }
+  .dialogue-box { padding: 10px 14px; min-height: 110px; }
+  .dialogue-text { font-size: 10px; }
+  .score-card { width: 75px; height: 100px; }
+  .score-label { font-size: 6px; }
+  .score-value { font-size: 20px; }
+  .overall-value { font-size: 36px; }
+  .objection-text { font-size: 28px; letter-spacing: 4px; }
+  .verdict-header { font-size: 14px; letter-spacing: 3px; }
+  .lobby-title { font-size: 16px; }
+  .game-mode-selector { flex-direction: column; align-items: center; }
+  .game-mode-selector .press-start { width: 80%; }
+  .lb-entry { padding: 8px 10px; }
+  .lb-score { font-size: 16px; }
+}

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>使用说明 — 尼克AI口语教练</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1a1714; --ink-mid: #42403c; --ink-dim: #8a837a;
+  --paper: #faf8f4; --warm: #f0ece0;
+  --teal: #0A5A45; --teal-dk: #063d2e; --teal-lt: #e4f3ee;
+  --gold: #C9963A; --gold-pale: #f5dfa0;
+  --rule: rgba(60,55,45,.12);
+  --shadow: 0 2px 20px rgba(0,0,0,.08);
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:var(--warm); color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased; }
+.container { max-width:740px; margin:0 auto; padding:48px 28px 80px; }
+.back-btn { display:inline-flex; align-items:center; gap:6px; background:none; border:1.5px solid #d0c8be; color:var(--ink-mid); padding:7px 15px; border-radius:8px; font-size:13px; cursor:pointer; transition:all .15s; text-decoration:none; margin-bottom:32px; font-family:'DM Sans',sans-serif; }
+.back-btn:hover { border-color:var(--teal); color:var(--teal); }
+h1 { font-family:'EB Garamond',serif; font-size:30px; color:var(--teal-dk); margin-bottom:6px; }
+h1 span { color:var(--gold); }
+.tagline { font-size:14px; color:var(--ink-dim); margin-bottom:36px; }
+.section { background:var(--paper); border-radius:12px; box-shadow:var(--shadow); padding:28px 32px; margin-bottom:20px; }
+.section h2 { font-family:'EB Garamond',serif; font-size:20px; color:var(--teal-dk); margin-bottom:14px; display:flex; align-items:center; gap:10px; }
+.section h2 .num { background:var(--teal); color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; flex-shrink:0; }
+.section p, .section li { font-size:14px; line-height:1.8; color:var(--ink-mid); }
+.section ul { padding-left:20px; margin-top:8px; }
+.section li { margin-bottom:6px; }
+.section li strong { color:var(--ink); }
+.tip { background:var(--teal-lt); border:1px solid var(--teal); border-radius:8px; padding:12px 16px; margin-top:14px; font-size:13px; color:var(--teal-dk); line-height:1.7; }
+.tip strong { color:var(--teal); }
+.divider { height:1px; background:var(--rule); margin:10px 0 20px; }
+.feature-tag { display:inline-block; font-size:10px; font-weight:600; letter-spacing:.8px; text-transform:uppercase; padding:3px 10px; border-radius:10px; margin-bottom:12px; }
+.tag-practice { background:var(--teal-lt); color:var(--teal); border:1px solid var(--teal); }
+.tag-game { background:#fff2e8; color:#b86e00; border:1px solid #e8a84c; }
+.tag-multi { background:#f0e8ff; color:#6b3fa0; border:1px solid #b8a0e0; }
+.steps { counter-reset:step; list-style:none; padding-left:0; }
+.steps li { counter-increment:step; position:relative; padding-left:32px; margin-bottom:12px; }
+.steps li::before { content:counter(step); position:absolute; left:0; top:1px; background:var(--gold); color:#fff; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="/" class="back-btn">← 返回首页</a>
+
+  <h1>尼克AI口语教练 · <span>使用说明</span></h1>
+  <p class="tagline">两种练习模式，帮你从不同角度提升雅思口语</p>
+
+  <!-- ===== 登录 ===== -->
+  <div class="section">
+    <h2><span class="num">0</span>登录</h2>
+    <p>打开网站后，使用你收到的账号和密码登录。登录后左侧边栏会显示你的用户名。</p>
+  </div>
+
+  <!-- ===== 模式一：口语诊断 ===== -->
+  <div class="section">
+    <span class="feature-tag tag-practice">模式一</span>
+    <h2>口语诊断练习</h2>
+    <p>适合日常练习，把你的回答丢进去，Nick AI 会像真正的考官一样逐句诊断，并给出 Band 9 升级版本。</p>
+    <ul class="steps">
+      <li>在左侧边栏点击 <strong>「口语诊断练习」</strong></li>
+      <li><strong>输入题目</strong> — 在「雅思题目」框内输入你想练的题目（例如：Describe a tradition in your country）。系统会自动识别 Part 1/2/3，你也可以手动选择</li>
+      <li><strong>选择输入模式</strong> — 点击「英文答案」或「中文思路」：
+        <ul>
+          <li><strong>英文模式：</strong>直接写英文回答 → AI 诊断语法/词汇问题，并升级到 Band 9</li>
+          <li><strong>中文模式：</strong>用中文写你的想法 → AI 先转换成地道英文，再进行诊断升级</li>
+        </ul>
+      </li>
+      <li><strong>输入回答</strong> — 在文本框写下你的答案（不知道写什么？点击上方的快速示例按钮，如「🍜 P1 Food」，会自动填入示例题目和回答）</li>
+      <li>点击 <strong>「✨ Nick AI 诊断 + 升级」</strong> 按钮，等待几秒</li>
+      <li><strong>查看报告</strong> — 报告会展示：
+        <ul>
+          <li>四项评分（FC / LR / GRA / Pron）</li>
+          <li>你的原文 vs Band 9 升级版，逐句对比</li>
+          <li>每处修改的原因说明</li>
+          <li>一个「今日金句」— 可以直接背下来用在口语里</li>
+        </ul>
+      </li>
+    </ul>
+    <div class="tip"><strong>小贴士：</strong>报告会自动保存，随时可以在「历史记录」页面回顾之前的练习。</div>
+  </div>
+
+  <!-- ===== 模式二：模考（单人） ===== -->
+  <div class="section">
+    <span class="feature-tag tag-game">模式二</span>
+    <h2>雅思口语模考（IELTS Court）</h2>
+    <p>模拟真实雅思口语考试的完整流程（Part 1 → Part 2 → Part 3），用逆转裁判的法庭风格呈现，考官 Nick 会实时对你的回答给出反馈。</p>
+
+    <div class="divider"></div>
+    <p style="font-weight:600;margin-bottom:10px;">单人模式（Solo Trial）</p>
+    <ul class="steps">
+      <li>在左侧边栏点击 <strong>「雅思口语模考」</strong>，进入 IELTS Court 页面</li>
+      <li>选择输入方式：<strong>🎤 VOICE MODE</strong>（语音输入）或 <strong>⌨️ TYPE MODE</strong>（打字输入）</li>
+      <li>点击 <strong>「SOLO TRIAL」</strong></li>
+      <li>Nick 法官会依次提出问题，每题有倒计时。<strong>点击对话框</strong>可以跳过动画继续</li>
+      <li><strong>Part 1：</strong>4 道日常话题问题，每题 45 秒</li>
+      <li><strong>Part 2：</strong>给你一张话题卡（Evidence Card），60 秒准备，然后 2 分钟作答</li>
+      <li><strong>Part 3：</strong>3 道深度讨论题，每题 60 秒</li>
+      <li>全部作答后，Nick 会给出最终 <strong>判决（Verdict）</strong>，包含四项评分和总评</li>
+    </ul>
+
+    <div class="divider"></div>
+    <p style="font-weight:600;margin-bottom:10px;">多人模式（Multiplayer）</p>
+    <ul class="steps">
+      <li>点击 <strong>「MULTIPLAYER」</strong> 进入大厅</li>
+      <li><strong>创建房间：</strong>点击 CREATE ROOM，获得一个 4 位房间代码，分享给朋友</li>
+      <li><strong>加入房间：</strong>输入朋友发来的房间代码，点击 JOIN</li>
+      <li>所有人进入房间后，房主点击 <strong>「START TRIAL」</strong> 开始</li>
+      <li>所有玩家回答相同的题目，各自独立作答</li>
+      <li>每道题结束后，Nick 会对每位玩家的回答给出即时反馈</li>
+      <li>最终会有 <strong>排行榜（Leaderboard）</strong>，看看谁得分最高</li>
+    </ul>
+    <div class="tip"><strong>小贴士：</strong>多人模式中对话会自动推进，不需要手动点击，确保所有人节奏一致。</div>
+  </div>
+
+  <!-- ===== 常见问题 ===== -->
+  <div class="section">
+    <h2>常见问题</h2>
+    <ul>
+      <li><strong>语音模式识别不准？</strong> — 请确保浏览器已授权麦克风权限，建议使用 Chrome 浏览器，在安静环境下使用</li>
+      <li><strong>生成报告很慢？</strong> — AI 分析需要几秒钟，请耐心等待。如果超过 30 秒没有反应，刷新页面重试</li>
+      <li><strong>多人模式连不上？</strong> — 确认房间代码正确（4位数字/字母），确保所有人都已登录</li>
+      <li><strong>忘记密码？</strong> — 请联系尼克老师获取新密码</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>
