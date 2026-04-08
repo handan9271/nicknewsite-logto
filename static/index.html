@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>尼克AI口语教练 · 考官视角升级</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:      #1a1714; --ink-mid: #42403c; --ink-dim: #8a837a;
+  --paper:    #faf8f4; --warm:    #f0ece0;
+  --teal:     #0A5A45; --teal-dk: #063d2e; --teal-lt: #e4f3ee;
+  --gold:     #C9963A; --gold-pale: #f5dfa0;
+  --red:      #b83228; --red-bg: #fff2f0; --red-mark: #ffd2cb;
+  --grn:      #1a6b35; --grn-bg: #f0faf3; --grn-mark: #b0e9c0;
+  --blue:     #1A3A6B;
+  --purple:   #4B3FA0; --purp-lt: #f3f1fd;
+  --rule:     rgba(60,55,45,.12);
+  --shadow:   0 2px 20px rgba(0,0,0,.08);
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:var(--warm); color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased; }
+
+#app { display:flex; min-height:100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width:250px; background:var(--teal-dk);
+  position:fixed; top:0; left:0; height:100vh;
+  display:flex; flex-direction:column; z-index:100;
+}
+.sb-brand { padding:26px 22px 18px; border-bottom:1px solid rgba(255,255,255,.08); }
+.sb-logo  { font-family:'EB Garamond',serif; font-size:16px; color:#fff; line-height:1.4; }
+.sb-logo span { color:var(--gold-pale); }
+.sb-tag   { font-size:9.5px; color:rgba(255,255,255,.35); margin-top:4px; letter-spacing:.5px; }
+.sb-nav   { padding:14px 10px; flex:1; }
+.nb {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 13px; border-radius:8px;
+  color:rgba(255,255,255,.55); font-size:13px;
+  cursor:pointer; transition:background .15s,color .15s;
+  margin-bottom:2px; border:none; background:none; width:100%; text-align:left;
+}
+.nb:hover { background:rgba(255,255,255,.08); color:#fff; }
+.nb.on    { background:var(--teal); color:#fff; }
+.nb .ico  { font-size:15px; }
+.sb-user {
+  padding:14px 22px 22px; border-top:1px solid rgba(255,255,255,.08);
+  font-size:11.5px; color:rgba(255,255,255,.4);
+}
+.sb-av   { width:34px; height:34px; border-radius:50%; background:var(--teal); display:flex; align-items:center; justify-content:center; font-size:14px; margin-bottom:8px; }
+.sb-un   { color:#fff; font-weight:500; font-size:13px; margin-bottom:2px; }
+.sb-out  { margin-top:10px; background:none; border:1px solid rgba(255,255,255,.14); color:rgba(255,255,255,.4); padding:5px 11px; border-radius:6px; font-size:11.5px; cursor:pointer; transition:all .15s; }
+.sb-out:hover { border-color:rgba(255,255,255,.4); color:#fff; }
+
+/* ── MAIN ── */
+.main { margin-left:250px; flex:1; display:flex; flex-direction:column; }
+.view { display:none; flex:1; flex-direction:column; }
+.view.on { display:flex; }
+
+/* ── LOGIN ── */
+#v-login { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--warm); }
+.login-box { background:var(--paper); border-radius:16px; box-shadow:var(--shadow); padding:48px 44px; width:420px; }
+.ll { font-family:'EB Garamond',serif; font-size:24px; color:var(--teal-dk); margin-bottom:5px; }
+.ll span { color:var(--gold); }
+.ld { font-size:13px; color:var(--ink-dim); margin-bottom:32px; line-height:1.6; }
+.fl { font-size:11.5px; font-weight:600; color:var(--ink-dim); letter-spacing:.5px; margin-bottom:7px; }
+.fi { width:100%; padding:11px 14px; border:1.5px solid #e0d8ce; border-radius:8px; font-size:15px; font-family:'DM Sans',sans-serif; background:#fff; color:var(--ink); outline:none; transition:border .15s; margin-bottom:14px; }
+.fi:focus { border-color:var(--teal); }
+.demo-hint { font-size:11.5px; color:var(--ink-dim); background:var(--teal-lt); border:1px solid var(--teal); border-radius:6px; padding:10px 14px; margin-bottom:16px; line-height:1.6; }
+.demo-hint strong { color:var(--teal); }
+.btn-login { width:100%; padding:13px; background:var(--teal); color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; transition:background .15s; }
+.btn-login:hover { background:var(--teal-dk); }
+
+/* ── PRACTICE ── */
+#v-practice { padding:36px 44px; background:var(--warm); }
+.ph { font-family:'EB Garamond',serif; font-size:25px; color:var(--teal-dk); margin-bottom:4px; }
+.ps { font-size:13px; color:var(--ink-dim); margin-bottom:26px; }
+.card { background:var(--paper); border-radius:12px; box-shadow:var(--shadow); padding:30px 34px; max-width:820px; }
+.fl2 { font-size:11px; font-weight:600; letter-spacing:.8px; text-transform:uppercase; color:var(--ink-dim); margin-bottom:7px; }
+.fl2 em { color:var(--red); font-style:normal; }
+.fi2 { width:100%; padding:11px 15px; border:1.5px solid #e0d8ce; border-radius:8px; font-size:14px; font-family:'DM Sans',sans-serif; background:#fff; color:var(--ink); outline:none; transition:border .15s; }
+.fi2:focus { border-color:var(--teal); }
+textarea.fi2 { min-height:130px; resize:vertical; line-height:1.7; }
+.fr { margin-bottom:20px; }
+
+/* Part detector */
+.part-detect-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+.part-detect-label { font-size:12px; color:var(--ink-dim); }
+.part-badges { display:flex; gap:6px; }
+.part-badge {
+  padding:4px 12px; border-radius:20px; font-size:11.5px;
+  border:1px solid #d8d0c8; color:var(--ink-dim);
+  background:none; cursor:pointer; transition:all .15s;
+  font-family:'DM Sans',sans-serif;
+}
+.part-badge:hover { border-color:var(--teal); color:var(--teal); }
+.part-badge.on { background:var(--teal-lt); border-color:var(--teal); color:var(--teal); font-weight:600; }
+.detect-hint {
+  display:none; font-size:11.5px; color:var(--teal);
+  background:var(--teal-lt); border:1px solid var(--teal);
+  border-radius:6px; padding:7px 12px; margin-bottom:12px;
+}
+.detect-hint.on { display:block; }
+
+/* Input mode toggle */
+.mode-toggle { display:flex; gap:8px; margin-bottom:14px; }
+.mode-btn {
+  flex:1; padding:8px 14px; border-radius:8px;
+  border:1.5px solid #e0d8ce; background:#fff;
+  color:var(--ink-mid); font-size:12.5px; cursor:pointer;
+  transition:all .15s; font-family:'DM Sans',sans-serif;
+}
+.mode-btn:hover { border-color:var(--teal); color:var(--teal); }
+.mode-btn.on { background:var(--teal-lt); border-color:var(--teal); color:var(--teal); font-weight:600; }
+
+.btn-gen {
+  padding:12px 30px; background:var(--teal); color:#fff;
+  border:none; border-radius:8px; font-size:14.5px; font-weight:600;
+  cursor:pointer; transition:background .15s; display:flex; align-items:center; gap:8px;
+}
+.btn-gen:hover { background:var(--teal-dk); }
+.btn-gen:disabled { opacity:.5; cursor:not-allowed; }
+.spin { width:17px; height:17px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:sp .7s linear infinite; display:none; }
+.btn-gen.loading .spin { display:block; }
+@keyframes sp { to { transform:rotate(360deg); } }
+@keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+
+.quick-fills { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+.qf-btn { padding:5px 12px; background:var(--teal-lt); color:var(--teal); border:1px solid var(--teal); border-radius:20px; font-size:11.5px; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.qf-btn:hover { background:var(--teal); color:#fff; }
+
+/* ── REPORT ── */
+#v-report { background:var(--warm); }
+.r-actions { display:flex; align-items:center; gap:12px; padding:13px 44px; background:var(--warm); border-bottom:1px solid var(--rule); }
+.btn-bk { display:flex; align-items:center; gap:6px; background:none; border:1.5px solid #d0c8be; color:var(--ink-mid); padding:7px 15px; border-radius:8px; font-size:13px; cursor:pointer; transition:all .15s; }
+.btn-bk:hover { border-color:var(--teal); color:var(--teal); }
+.btn-nw { padding:7px 18px; background:var(--teal); color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s; }
+.btn-nw:hover { background:var(--teal-dk); }
+.saved-note { margin-left:auto; font-size:11.5px; color:var(--ink-dim); }
+#rep-wrap { padding:32px 44px; }
+
+.r-box { background:var(--paper); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
+.r-head { background:var(--teal-dk); padding:28px 44px 24px; border-bottom:5px solid var(--gold); display:flex; justify-content:space-between; align-items:flex-end; }
+.rht { font-family:'EB Garamond',serif; font-size:24px; color:#fff; line-height:1.2; }
+.rhs { font-size:11px; color:rgba(255,255,255,.4); margin-top:4px; }
+.rhm { text-align:right; font-size:10.5px; color:rgba(255,255,255,.4); line-height:1.9; }
+.rhm strong { color:var(--gold-pale); font-weight:500; }
+.r-body { padding:32px 44px 44px; }
+
+/* Diagnosis block */
+.diag-block {
+  background:var(--teal-lt); border:1px solid var(--teal);
+  border-radius:10px; padding:16px 20px; margin-bottom:24px;
+}
+.diag-title { font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--teal); margin-bottom:8px; }
+.diag-scores { display:flex; gap:16px; margin-bottom:10px; flex-wrap:wrap; }
+.diag-score { text-align:center; }
+.ds-label { font-size:9px; font-family:'DM Mono',monospace; color:var(--ink-dim); letter-spacing:.5px; }
+.ds-num { font-size:22px; font-weight:700; color:var(--teal-dk); font-family:'EB Garamond',serif; line-height:1.2; }
+.diag-verdict { font-size:13px; color:var(--teal-dk); line-height:1.7; }
+.diag-verdict strong { color:var(--teal); }
+.part-framework-tag {
+  display:inline-block; margin-bottom:10px;
+  font-size:10.5px; padding:3px 10px; border-radius:10px;
+  background:rgba(10,90,69,.12); color:var(--teal);
+  border:1px solid var(--teal-lt);
+}
+
+/* Takeaway */
+.takeaway-box {
+  background:linear-gradient(135deg, #fdf8ee, #faf5e4);
+  border:1.5px solid var(--gold);
+  border-radius:10px; padding:16px 20px; margin-top:20px;
+  display:flex; gap:14px; align-items:flex-start;
+}
+.tk-ico { font-size:20px; flex-shrink:0; margin-top:1px; }
+.tk-label { font-size:9.5px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--gold); margin-bottom:5px; }
+.tk-text { font-size:13.5px; color:var(--ink); line-height:1.7; }
+.tk-text strong { color:var(--teal-dk); }
+
+.sess-row { display:flex; align-items:center; gap:14px; padding-bottom:18px; margin-bottom:20px; border-bottom:1px solid var(--rule); }
+.s-ico { width:38px; height:38px; background:var(--teal); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'EB Garamond',serif; font-size:17px; color:#fff; flex-shrink:0; }
+.s-q { font-family:'EB Garamond',serif; font-size:19px; color:var(--teal-dk); flex:1; }
+.s-sc { display:flex; align-items:center; gap:7px; }
+.sc { font-family:'DM Mono',monospace; font-size:10.5px; padding:3px 11px; border-radius:20px; }
+.sc-o { background:var(--red-bg); color:var(--red); border:1px solid var(--red-mark); }
+.sc-n { background:var(--grn-bg); color:var(--grn); border:1px solid var(--grn-mark); font-weight:600; }
+.sc-a { color:var(--ink-dim); }
+
+.legend { display:flex; gap:20px; margin-bottom:16px; font-size:11px; color:var(--ink-dim); flex-wrap:wrap; }
+.leg { display:flex; align-items:center; gap:6px; }
+.ls { width:11px; height:11px; border-radius:3px; }
+.ls-r { background:var(--red-mark); border:1px solid var(--red); }
+.ls-g { background:var(--grn-mark); border:1px solid var(--grn); }
+.leg-l { width:26px; height:2px; background:var(--blue); border-radius:1px; }
+
+.diff-arena { display:grid; grid-template-columns:1fr 64px 1fr; margin-bottom:28px; }
+.c-hd { padding:9px 16px; font-size:9.5px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; border-radius:6px 6px 0 0; }
+.c-hd-r { background:var(--red); color:#fff; }
+.c-hd-g { background:var(--grn); color:#fff; }
+.c-bd { padding:18px 20px 22px; font-family:'EB Garamond',serif; font-size:15px; line-height:1.92; color:var(--ink-mid); }
+.c-bd-r { background:var(--red-bg); border:1px solid #eac8c3; border-top:none; border-radius:0 0 0 6px; }
+.c-bd-g { background:var(--grn-bg); border:1px solid #b8d9c2; border-top:none; border-radius:0 0 6px 0; }
+.c-mid { position:relative; }
+.ql { display:block; font-family:'DM Sans',sans-serif; font-size:10px; font-weight:600; letter-spacing:.8px; text-transform:uppercase; color:var(--ink-dim); margin:18px 0 5px; }
+.ql:first-child { margin-top:0; }
+
+mark.del, mark.ins { border-radius:3px; padding:1px 4px; cursor:crosshair; font-style:normal; transition:filter .15s, box-shadow .15s; }
+mark.del { background:var(--red-mark); color:var(--red); }
+mark.ins { background:var(--grn-mark); color:var(--grn); }
+mark.del.lit { filter:brightness(.87); box-shadow:0 0 0 2px var(--red); }
+mark.ins.lit { filter:brightness(.87); box-shadow:0 0 0 2px var(--grn); }
+
+#svg-ol { position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:999; }
+
+.upg-hd { background:var(--purple); color:#fff; font-size:10px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; padding:9px 16px; border-radius:6px 6px 0 0; }
+.upg-t { width:100%; border-collapse:collapse; font-size:12.5px; }
+.upg-t tr { border-bottom:1px solid #e4e0f0; }
+.upg-t tr:last-child { border-bottom:none; }
+.upg-t tr:nth-child(even) { background:var(--purp-lt); }
+.upg-t tr:nth-child(odd)  { background:#fff; }
+.upg-t td { padding:9px 13px; vertical-align:top; line-height:1.6; }
+.td-n  { width:28px; background:var(--purple); color:#fff; font-family:'DM Mono',monospace; font-size:10.5px; text-align:center; vertical-align:middle !important; }
+.td-w  { width:180px; font-weight:600; color:var(--purple); font-size:11.5px; }
+.td-o  { color:var(--red); font-style:italic; }
+.td-a  { width:20px; color:var(--ink-dim); text-align:center; }
+.td-nw { color:var(--grn); font-style:italic; }
+.overall-box { background:var(--teal-lt); border:1px solid var(--teal); border-radius:8px; padding:14px 18px; margin-top:22px; font-size:13.5px; color:var(--teal-dk); line-height:1.7; }
+.overall-lbl { font-size:10px; font-weight:600; letter-spacing:.8px; text-transform:uppercase; color:var(--teal); margin-bottom:5px; }
+
+/* ── HISTORY ── */
+#v-history { padding:36px 44px; background:var(--warm); }
+.hg { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; margin-top:22px; }
+.hc { background:var(--paper); border-radius:10px; box-shadow:var(--shadow); padding:18px 20px; cursor:pointer; transition:transform .15s,box-shadow .15s; border:1.5px solid transparent; }
+.hc:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,.12); border-color:var(--teal-lt); }
+.hc-d { font-size:10.5px; color:var(--ink-dim); margin-bottom:7px; }
+.hc-q { font-family:'EB Garamond',serif; font-size:15.5px; color:var(--teal-dk); margin-bottom:5px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.hc-m { display:flex; gap:7px; align-items:center; }
+.hc-t { font-size:9.5px; font-weight:600; background:var(--teal-lt); color:var(--teal); padding:2px 7px; border-radius:10px; }
+.hc-s { font-size:10.5px; font-family:'DM Mono',monospace; color:var(--ink-dim); }
+
+/* ── TOAST ── */
+.toast { position:fixed; bottom:24px; right:24px; background:var(--ink); color:#fff; padding:11px 18px; border-radius:8px; font-size:13px; z-index:9999; box-shadow:0 4px 20px rgba(0,0,0,.18); transform:translateY(70px); opacity:0; transition:all .28s; }
+.toast.show { transform:translateY(0); opacity:1; }
+.toast.ok  { background:var(--grn); }
+.toast.err { background:var(--red); }
+</style>
+</head>
+<body>
+
+<svg id="svg-ol" xmlns="http://www.w3.org/2000/svg"></svg>
+<div class="toast ok" id="toast"></div>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="v-login" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--warm);">
+  <div class="login-box">
+    <div class="ll">雅思考官尼克和他的<span>朋友们</span></div>
+    <div class="ld">AI 口语教练 · 考官视角诊断 · 逐句升级到 Band 9</div>
+    <div class="demo-hint">
+      <strong>🔐 内测版本</strong><br>
+      请使用你收到的账号和密码登录
+    </div>
+    <div class="fl">账号</div>
+    <input class="fi" id="li-u" placeholder="账号">
+    <div class="fl">密码</div>
+    <input class="fi" id="li-p" type="password" placeholder="密码">
+    <button class="btn-login" onclick="login()">登录</button>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="v-app" style="display:none;">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">雅思考官尼克和他的<span>朋友们</span></div>
+      <div class="sb-tag">AI 口语教练 · 尼克国际教育</div>
+    </div>
+    <div class="sb-nav">
+      <button class="nb on" id="nb-p" onclick="nav('practice')"><span class="ico">✏️</span> 口语诊断练习</button>
+      <button class="nb" id="nb-h" onclick="nav('history')"><span class="ico">📋</span> 历史记录</button>
+    </div>
+    <div class="sb-user">
+      <div class="sb-av">👤</div>
+      <div class="sb-un" id="sb-name">同学</div>
+      <div>目标分数：Band 7.5</div>
+      <button class="sb-out" onclick="logout()">退出登录</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- ── PRACTICE ── -->
+    <div id="v-practice" class="view on" style="padding:36px 44px;background:var(--warm);flex:1;">
+      <div class="ph">口语诊断练习</div>
+      <div class="ps">输入题目和你的回答，Nick AI 用考官视角诊断问题，逐句升级到 Band 9</div>
+
+      <div class="card">
+
+        <!-- Quick fill -->
+        <div class="fr">
+          <div class="fl2">快速填入示例题目</div>
+          <div class="quick-fills">
+            <button class="qf-btn" onclick="fillSample('food')">🍜 P1 Food</button>
+            <button class="qf-btn" onclick="fillSample('hobby')">🎨 P1 Hobbies</button>
+            <button class="qf-btn" onclick="fillSample('job')">💼 P2 Dream Job</button>
+            <button class="qf-btn" onclick="fillSample('book')">📖 P2 Book/Essay</button>
+            <button class="qf-btn" onclick="fillSample('advice')">💬 P2 Giving Advice</button>
+          </div>
+        </div>
+
+        <!-- Question + Part detect -->
+        <div class="fr">
+          <div class="fl2">雅思题目 <em>*</em></div>
+          <input class="fi2" id="inp-q" placeholder="例如：Describe a tradition in your country." oninput="detectPart()">
+          <div class="detect-hint" id="detect-hint"></div>
+          <div class="part-detect-row" style="margin-top:10px;">
+            <span class="part-detect-label">确认 Part：</span>
+            <div class="part-badges">
+              <button class="part-badge" id="pb1" onclick="setPart('P1')">Part 1</button>
+              <button class="part-badge" id="pb2" onclick="setPart('P2')">Part 2</button>
+              <button class="part-badge" id="pb3" onclick="setPart('P3')">Part 3</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input mode -->
+        <div class="fr">
+          <div class="fl2">输入模式</div>
+          <div class="mode-toggle">
+            <button class="mode-btn on" id="mode-en" onclick="setInputMode('en')">🇬🇧 英文答案（诊断 + 升级到 Band 9）</button>
+            <button class="mode-btn" id="mode-cn" onclick="setInputMode('cn')">🇨🇳 中文思路（转换为地道英文）</button>
+          </div>
+        </div>
+
+        <!-- Answer -->
+        <div class="fr">
+          <div class="fl2" id="answer-label">你的英文回答（中文或英文均可）<em>*</em></div>
+          <textarea class="fi2" id="inp-a" placeholder="用中文写下你的想法，或直接写英文答案……&#10;&#10;例如：我最喜欢吃面条，因为方便而且营养均衡……"></textarea>
+        </div>
+
+        <button class="btn-gen" id="btn-gen" onclick="generate()">
+          <div class="spin"></div>
+          <span id="gen-txt">✨ Nick AI 诊断 + 升级</span>
+        </button>
+
+        <!-- Progress -->
+        <div id="progress-area" style="display:none;margin-top:20px;">
+          <div id="prog-rows" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── REPORT ── -->
+    <div id="v-report" class="view" style="background:var(--warm);">
+      <div class="r-actions">
+        <button class="btn-bk" onclick="nav('practice')">← 返回练习</button>
+        <button class="btn-nw" onclick="newPractice()">+ 新练习</button>
+        <span class="saved-note">✓ 报告已自动保存</span>
+      </div>
+      <div id="rep-wrap" style="padding:32px 44px;"></div>
+    </div>
+
+    <!-- ── HISTORY ── -->
+    <div id="v-history" class="view" style="padding:36px 44px;background:var(--warm);flex:1;">
+      <div class="ph">历史记录</div>
+      <div class="ps">点击任意卡片重新查看报告</div>
+      <div class="hg" id="hg"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── SAMPLES ─────────────────────────────────────────────────────
+const SAMPLES = {
+  food: {
+    q: "What is your favorite food?",
+    a: `Question 1. What is your favorite food? Well, personally, I really enjoy eating noodles, mainly because they are easy to prepare. You just need to simply boil them and add some sauces, meats, eggs, or vegetables, which provides relatively balanced nutrition. Secondly, I can constantly vary the cooking methods and the flavors, making it feel like I'm always trying some new delicious food.
+
+Question 2. What kind of food did you like when you were young? Well, I would say desserts were definitely my favorite food when I was a child. Eating something sweet always made me feel happy. Even a single piece of candy felt like a world-class delicacy. After all, the economic conditions were not as good back then, and snack options were limited, so having something sweet, like desserts, even once, was a real luxury for me as a child.`,
+    a_cn: `问题1：你最喜欢吃什么？
+我最喜欢吃面条。因为做起来很方便，只要把面条煮一下，加点酱料、肉、鸡蛋或者蔬菜就好了，而且营养也比较均衡。另外我喜欢换不同的做法和口味，每次都感觉在尝试新的东西。
+
+问题2：你小时候最喜欢吃什么？
+我小时候最喜欢吃甜食。吃到甜的东西就会很开心。那个时候家里条件一般，零食也不多，所以能吃到一颗糖都觉得是很奢侈的事情。`
+  },
+  hobby: {
+    q: "Do you have any hobbies?",
+    a: "Absolutely. I'm really into yoga and I've been practicing for over 10 years now. It's not just a form of exercise for me. It's more like a way to reconnect with myself. Yoga helps me clear my mind and release tension. When I was younger, I was really passionate about calligraphy. I still remember spending hours during school holidays practicing brush strokes and writing characters.",
+    a_cn: "我的爱好是瑜伽，已经练了十多年了。对我来说瑜伽不只是锻炼身体，更像是一种让自己放松下来的方式，可以帮我清空脑子、释放压力。小时候我也很喜欢书法，每到放假就会花好几个小时练习笔画和写字。"
+  },
+  job: {
+    q: "Describe your dream job.",
+    a: "Well, my perfect job would definitely be a teacher ever since I was a child. I've been drawn to this profession. I still remember being in primary school and admiring my teachers, how they commanded respect and how everyone in the class had to listen to them. That early impression stayed with me and grew into a genuine passion over time. For me, being a teacher is ideal for two main reasons. Firstly, it offers great stability and a decent salary. Secondly, teaching is a higher-respected profession.",
+    a_cn: "我的梦想工作是当老师。从小我就对这个职业很向往。我记得上小学的时候特别佩服老师，觉得他们很有威望，全班同学都听他们的话。这个印象一直留在我心里，慢慢变成了真正的热情。对我来说当老师有两个好处：第一，工作稳定、收入不错；第二，这是一个很受人尊重的职业。"
+  },
+  book: {
+    q: "Describe something you read recently that left a deep impression on you.",
+    a: "Recently, I read something really powerful. It's an essay by Helen Keller called Three Days to See. Honestly, it left such a deep impression on me. The essay is basically Helen Keller imagining what she would do if she were given sight for just three days. Her words are so simple, but so sincere. And they just make you want to appreciate your own sight so much more.",
+    a_cn: "我最近读了一篇让我印象很深的文章，是海伦·凯勒写的《假如给我三天光明》。这篇文章讲的是她想象如果能重获视力三天她会做什么。她的文字很朴实，但非常真诚，读完之后让我觉得自己应该更加珍惜拥有视力这件事。"
+  },
+  advice: {
+    q: "Describe a time when you gave advice to someone.",
+    a: "Well, I'd like to talk about a time when I gave advice to my friend, Lily, about how to maintain healthy eating habits. It happened last summer. Lily had been feeling quite anxious about her health. She had gained some weight, and her blood pressure and blood sugar levels were starting to rise. She really wanted me to give her some advice, due to I was interested in healthy eating. After three weeks, she started seeing real changes. Not only did she lose five kilograms, but her blood pressure and blood sugar also returned to healthy levels.",
+    a_cn: "我想说一次给朋友 Lily 建议的经历。那是去年夏天，她对自己的健康状况很焦虑，体重增加了，血压和血糖也开始偏高。因为我平时比较关注健康饮食，她就来问我的意见。我给她提了一些具体的饮食建议。三周后她真的看到了变化，不仅减了五公斤，血压和血糖也恢复正常了。"
+  }
+};
+
+// ─── MOCK REPORTS ────────────────────────────────────────────────
+const MOCK_REPORTS = {
+  // 中文模式 mock — 面条题
+  food_cn: {
+    part: "P1",
+    part_framework: "P1 前半段 · 对话类 · Fillers + Connectors",
+    mode: "cn",
+    overall_comment: "Band 6 版本意思表达清楚，但全部用最基础的词汇和句式，缺乏节奏感和画面感。Band 9 版本最大的提升在于：用 Lexical Chunks 替代普通词汇（all-time favourite / nutritionally balanced），以及加入 Discourse Markers 让回答更自然流畅。",
+    takeaway: {
+      expression: '"What draws me to them is..."',
+      explanation: '这是一个非常地道的高分句式结构，表示"吸引我的是……"。比简单的"I like it because"高出一个档次，且完全自然。可以套用到任何话题：What draws me to this job is... / What draws me to this city is...'
+    },
+    questions: [
+      {
+        label:"Q1", question_text:"What is your favorite food?",
+        band6:"My favorite food is noodles. I like noodles because they are easy to make. You just boil them and add some sauce, meat, eggs, or vegetables. They are also good for your health. I also like that I can make them in different ways, so I never get bored.",
+        upgraded:"Noodles are without doubt my all-time favourite. What draws me to them is their remarkable versatility — a quick boil plus whatever is in the fridge, whether that's sliced meat, a soft-boiled egg, or a handful of greens, and you already have a nutritionally balanced meal. Beyond convenience, I genuinely enjoy experimenting with different broths and seasonings, so every bowl feels like a slightly different culinary experience.",
+        pairs:[
+          {id:"a", orig_text:"My favorite food is noodles. I like noodles because they are easy to make.", upg_text:"Noodles are without doubt my all-time favourite.", reason:"开门见山，去掉重复，用 all-time favourite 替代 my favorite。LR 加分"},
+          {id:"b", orig_text:"good for your health", upg_text:"nutritionally balanced meal", reason:"nutritionally balanced 是精准的 Lexical Chunk，比 good for health 高级得多。LR 加分"},
+          {id:"c", orig_text:"make them in different ways", upg_text:"experimenting with different broths and seasonings", reason:"具体化——不说【不同方式】而是说【不同汤底和调料】，画面感更强。LR + FC 加分"}
+        ]
+      },
+      {
+        label:"Q2", question_text:"What kind of food did you like when you were young?",
+        band6:"When I was young, I liked desserts the most. Sweet food made me very happy. At that time, my family did not have a lot of money, so we could not eat sweet things very often. Even one piece of candy was very special for me.",
+        upgraded:"Without hesitation, desserts. Growing up, the economic conditions in my household were fairly modest and sweet snacks were a rarity, so even a single piece of candy carried the weight of something truly special — almost a world-class treat in my young eyes. That scarcity made every sugary moment feel like a small celebration, and that emotional memory has stayed with me ever since.",
+        pairs:[
+          {id:"d", orig_text:"Sweet food made me very happy.", upg_text:"even a single piece of candy carried the weight of something truly special", reason:"'carry the weight of something truly special' 是极具画面感的 Lexical Chunk，远比 made me happy 有深度。LR 加分"},
+          {id:"e", orig_text:"Even one piece of candy was very special for me.", upg_text:"That scarcity made every sugary moment feel like a small celebration", reason:"把【特别】升华成【小小的庆典】，叙事有层次。GRA + LR 双加分"}
+        ]
+      }
+    ]
+  },
+  // 英文模式 mock — 面条题
+  food: {
+    estimated_original_band: 7.0,
+    part: "P1",
+    part_framework: "P1 前半段 · 对话类 · Fillers + Connectors",
+    scores: { FC: 6, LR: 6, GRA: 6 },
+    verdict: "翻译腔明显——答案逻辑清晰但缺乏自然的英文节奏，开头的 Well/personally 是典型的中式填充，且关键词汇停留在基础水平（enjoy eating, easy to prepare, really happy）。",
+    overall_comment: "Joyce 的答案逻辑清晰，有真实的个人经历支撑。主要提升方向是去掉口语填充词、修复并列结构不平行的问题，以及将情感表达从直白描述升华为更有画面感的叙述。",
+    takeaway: {
+      expression: '"carry the weight of something truly special"',
+      explanation: '这是一个非常有画面感的 Lexical Chunk，表达某件事情的特殊分量。比"it was very important to me"或"it was very special"高出一个档次，且完全自然地道。记住这个结构：carry the weight of + 名词/something。'
+    },
+    questions: [
+      {
+        label:"Q1", question_text:"What is your favorite food?",
+        original:"Well, personally, I really enjoy eating noodles, mainly because they are easy to prepare. You just need to simply boil them and add some sauces, meats, eggs, or vegetables, which provides relatively balanced nutrition. Secondly, I can constantly vary the cooking methods and the flavors, making it feel like I'm always trying some new delicious food.",
+        upgraded:"Noodles are without doubt my all-time favourite. What draws me to them is their remarkable versatility — a quick boil plus whatever is in the fridge, whether that's sliced meat, a soft-boiled egg, or a handful of greens, and you already have a nutritionally balanced meal. Beyond convenience, I genuinely enjoy experimenting with different broths and seasonings, so every bowl feels like a slightly different culinary experience.",
+        pairs:[
+          {id:"a", orig_text:"personally, I really enjoy eating noodles", upg_text:"Noodles are without doubt my all-time favourite", reason:"去掉填充词 Well/personally，直接开门见山。开门见山 = FC 加分"},
+          {id:"b", orig_text:"trying some new delicious food", upg_text:"a slightly different culinary experience", reason:"词汇升级：culinary experience 替代口语化表达。Less common word = LR 加分"},
+          {id:"c", orig_text:"You just need to simply boil them", upg_text:"a quick boil plus whatever is in the fridge", reason:"修复 simply + need to 冗余，句式更自然地道。GRA 加分"}
+        ]
+      },
+      {
+        label:"Q2", question_text:"What kind of food did you like when you were young?",
+        original:"Well, I would say desserts were definitely my favorite food when I was a child. Eating something sweet always made me feel happy. Even a single piece of candy felt like a world-class delicacy. After all, the economic conditions were not as good back then, and snack options were limited, so having something sweet, like desserts, even once, was a real luxury for me as a child.",
+        upgraded:"Without hesitation, desserts. Growing up, the economic conditions in my household were fairly modest and sweet snacks were a rarity, so even a single piece of candy carried the weight of something truly special — almost a world-class treat in my young eyes. That scarcity made every sugary moment feel like a small celebration, and that emotional memory has stayed with me ever since.",
+        pairs:[
+          {id:"d", orig_text:"Eating something sweet always made me feel happy", upg_text:"even a single piece of candy carried the weight of something truly special", reason:"更有画面感，情感表达更细腻。这是 Lexical Chunk 的典型升级"},
+          {id:"e", orig_text:"was a real luxury for me as a child", upg_text:"That scarcity made every sugary moment feel like a small celebration", reason:"将经济背景转化为情感记忆，叙事更有层次。GRA + LR 双加分"}
+        ]
+      }
+    ]
+  }
+};
+
+const MOCK_HISTORY = [
+  {id:1, created_at:"2026-03-20 14:32", question:"What is your favorite food?",         topic_type:"P1", original_score:7.0},
+  {id:2, created_at:"2026-03-19 10:15", question:"Describe your dream job.",             topic_type:"P2", original_score:7.5},
+  {id:3, created_at:"2026-03-18 16:48", question:"Do you have any hobbies?",            topic_type:"P1", original_score:7.0},
+  {id:4, created_at:"2026-03-17 09:20", question:"Describe a time when you gave advice.",topic_type:"P2", original_score:7.0},
+  {id:5, created_at:"2026-03-15 20:11", question:"Describe something that left a deep impression on you.", topic_type:"P2", original_score:7.5},
+];
+
+// ─── STATE ───────────────────────────────────────────────────────
+let currentPart  = null;
+let inputMode    = 'en';
+
+// API calls go through /api/upgrade (key lives on server)
+
+// ─── AUTH ─────────────────────────────────────────────────────────
+async function login() {
+  const u = document.getElementById('li-u').value.trim();
+  const p = document.getElementById('li-p').value;
+  if(!u || !p){ toast('请输入账号和密码', 'err'); return; }
+  const btn = document.querySelector('.btn-login');
+  btn.disabled = true; btn.textContent = '登录中…';
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p }),
+      credentials: 'include'
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || '登录失败');
+    document.getElementById('v-login').style.display = 'none';
+    document.getElementById('v-app').style.display   = 'block';
+    document.getElementById('sb-name').textContent   = data.display_name || u;
+    toast('欢迎回来 👋', 'ok');
+  } catch(e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '登录';
+  }
+}
+async function logout() {
+  await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+  document.getElementById('v-login').style.display = 'flex';
+  document.getElementById('v-app').style.display   = 'none';
+}
+
+// ─── NAV ──────────────────────────────────────────────────────────
+function nav(name) {
+  ['practice','report','history'].forEach(v => {
+    const el = document.getElementById('v-'+v);
+    if(el){ el.classList.remove('on'); el.style.display='none'; }
+  });
+  const t = document.getElementById('v-'+name);
+  if(t){ t.classList.add('on'); t.style.display='flex'; }
+  document.getElementById('nb-p')?.classList.toggle('on', name==='practice'||name==='report');
+  document.getElementById('nb-h')?.classList.toggle('on', name==='history');
+  if(name==='history') renderHistory();
+}
+
+// ─── QUICK FILL ───────────────────────────────────────────────────
+function fillSample(key) {
+  const s = SAMPLES[key]; if(!s) return;
+  document.getElementById('inp-q').value = s.q;
+  const answer = (inputMode === 'cn' && s.a_cn) ? s.a_cn : s.a;
+  document.getElementById('inp-a').value = answer;
+  detectPart();
+  toast('已填入示例题目', '');
+}
+
+// ─── PART DETECTION ───────────────────────────────────────────────
+function detectPart() {
+  const q = document.getElementById('inp-q').value.trim().toLowerCase();
+  if(!q) return;
+  let part=null, hint='';
+
+  if(q.startsWith('describe')){
+    part='P2';
+    hint='🔍 检测到 <strong>Part 2</strong> · 使用 <strong>IPDOF 框架</strong>（Introduction · Past · Description · Opinion · Future）· 目标 2 分钟独白';
+  } else if(/why do|how has|what are the effects|in what ways|to what extent|has.*changed|should.*government|what impact/.test(q)){
+    part='P3';
+    hint='🔍 检测到 <strong>Part 3</strong> · 学术讨论 · 使用 <strong>TEEL 结构</strong> · 学术 register';
+  } else {
+    const opinionKw = ['think','believe','important','should','better','agree','prefer'];
+    const isOpinion = opinionKw.some(w=>q.includes(w));
+    part='P1';
+    if(isOpinion){
+      hint='🔍 检测到 <strong>Part 1 后半段</strong> · 观点类 · 轻度 <strong>TEEL</strong> + Discourse Markers';
+    } else {
+      hint='🔍 检测到 <strong>Part 1 前半段</strong> · 对话类 · 自然聊天风格 + <strong>Fillers / Connectors</strong>';
+    }
+  }
+
+  if(part){
+    const el = document.getElementById('detect-hint');
+    el.innerHTML = hint; el.classList.add('on');
+    setPart(part, true);
+  }
+}
+
+function setPart(p, auto=false){
+  currentPart = p;
+  ['pb1','pb2','pb3'].forEach(id=>document.getElementById(id)?.classList.remove('on'));
+  const map={P1:'pb1',P2:'pb2',P3:'pb3'};
+  if(map[p]) document.getElementById(map[p]).classList.add('on');
+}
+
+// ─── INPUT MODE ───────────────────────────────────────────────────
+function setInputMode(m){
+  inputMode = m;
+  document.getElementById('mode-en').classList.toggle('on', m==='en');
+  document.getElementById('mode-cn').classList.toggle('on', m==='cn');
+  const lbl = document.getElementById('answer-label');
+  const ta  = document.getElementById('inp-a');
+  if(m==='cn'){
+    lbl.innerHTML = '用中文描述你的想法 <em>*</em>';
+    ta.placeholder = '用中文写下你的想法，AI 会自动转化为地道英文……\n\n例如：我最喜欢吃面条，因为方便而且营养均衡……';
+  } else {
+    lbl.innerHTML = '你的英文回答 <em>*</em>';
+    ta.placeholder = '输入你的英文答案……';
+  }
+}
+
+// ─── SYSTEM PROMPT ────────────────────────────────────────────────
+function buildSystemPrompt(part, isCN){
+  const partGuide = part==='P2'
+    ? `这是 Part 2 题目，使用 IPDOF 框架（Introduction·Past·Description·Opinion·Future）展开，确保两个版本的答案都能撑满 2 分钟。`
+    : part==='P3'
+    ? `这是 Part 3 题目，使用 TEEL 结构，学术 register，识别题目考查的语言功能（evaluate/compare/speculate/explain）并针对性处理。`
+    : `这是 Part 1 题目，Band 9 版本要保持自然对话风格，加入自然的 Fillers（honestly / to be fair / I mean）和 Discourse Markers（actually / in fact / having said that）。`;
+
+  // 英文模式：诊断并升级学生已有的英文答案
+  if(!isCN){
+    const enSchema = '\n{\n  "part": "P1/P2/P3",\n  "part_framework": "使用的框架说明",\n  "scores": {"FC": 整数, "LR": 整数, "GRA": 整数},\n  "verdict": "一句话诊断，不超过50字",\n  "questions": [\n    {\n      "label": "Q1",\n      "question_text": "原题目",\n      "original": "学生原始答案（原文照抄）",\n      "upgraded": "Band 9升级版答案",\n      "pairs": [\n        {\n          "id": "a",\n          "orig_text": "原文片段（必须是original精确子字符串）",\n          "upg_text": "升级后表达（必须是upgraded精确子字符串）",\n          "reason": "中文解释+标注FC/LR/GRA维度"\n        }\n      ]\n    }\n  ],\n  "overall_comment": "整体评价（中文2-3句）",\n  "estimated_original_band": 数字,\n  "takeaway": {\n    "expression": "本次最值得记住的表达",\n    "explanation": "为什么好，怎么用，举1个例子"\n  }\n}';
+    return '你是前雅思考官 Nick 的 AI 助手，负责诊断并升级学生的英文口语答案。\n\n'
+      + partGuide
+      + '\n\n严格输出以下 JSON 格式，不要输出任何其他内容（包括 markdown 代码块）：'
+      + enSchema
+      + '\n\n规则：\n- 多道题每道题单独一个 questions 数组元素\n- 每题 pairs 包含 3-5 个最重要升级点\n- orig_text 必须是 original 的精确子字符串\n- upg_text 必须是 upgraded 的精确子字符串\n- 优先升级 Lexical Chunks，不是逐词替换\n- 修复所有语法错误（时态/冠词/due to 误用等）';
+  }
+
+  // 中文模式：根据中文思路生成 Band 6 和 Band 9 两个版本
+  const cnSchema = '\n{\n  "part": "P1/P2/P3",\n  "part_framework": "使用的框架说明",\n  "mode": "cn",\n  "questions": [\n    {\n      "label": "Q1",\n      "question_text": "题目",\n      "band6": "Band 6基础版英文答案（语法正确但用词简单）",\n      "upgraded": "Band 9 Nick风格升级版",\n      "pairs": [\n        {\n          "id": "a",\n          "orig_text": "band6中的片段（必须是band6精确子字符串）",\n          "upg_text": "band9中对应片段（必须是upgraded精确子字符串）",\n          "reason": "中文解释+标注FC/LR/GRA维度"\n        }\n      ]\n    }\n  ],\n  "overall_comment": "整体学习建议（中文2-3句）",\n  "takeaway": {\n    "expression": "本次最值得记住的Lexical Chunk",\n    "explanation": "为什么好，怎么用，举1个例子"\n  }\n}';
+  return '你是前雅思考官 Nick 的 AI 助手。学生提供了中文思路，你需要生成两个英文版本供对比学习。\n\n'
+    + partGuide
+    + '\n\n【Band 6 版本要求】\n- 语法正确，意思完整，保留学生所有真实想法\n- 只用高中水平基础词汇和简单句式（如 I think, very good, a lot of, help me, make me feel）\n- 不用任何 Lexical Chunks、高级形容词或复杂从句\n- 这是大多数考生能自然说出的水平\n\n【Band 9 版本要求】\n- Nick 风格：自然、有节奏、有画面感\n- 优先使用 Lexical Chunks（固定词组块）替代普通词汇\n- 加入 Discourse Markers 和自然的语气词\n- 句式有变化，不平铺直叙\n\n严格输出以下 JSON 格式，不要输出任何其他内容（包括 markdown 代码块）：'
+    + cnSchema
+    + '\n\n规则：\n- band6 必须保留学生的真实想法，只是用简单英文表达\n- orig_text 必须是 band6 的精确子字符串\n- upg_text 必须是 upgraded 的精确子字符串\n- 每题 pairs 包含 3-5 个最重要的升级点\n- 多道题每道题单独一个 questions 数组元素';
+}
+
+// ─── PROGRESS UI ──────────────────────────────────────────────────
+// Each task gets its own row: label | bar | pct
+// rowId is used to update that specific row later
+
+function showProgress(){
+  document.getElementById('progress-area').style.display = 'block';
+  document.getElementById('prog-rows').innerHTML = '';
+}
+function hideProgress(){
+  document.getElementById('progress-area').style.display = 'none';
+}
+
+function createProgRow(id, label){
+  const row = document.createElement('div');
+  row.id = 'prow-' + id;
+  row.style.cssText = 'display:grid;grid-template-columns:110px 1fr 40px;align-items:center;gap:10px;animation:fadeIn .25s ease;';
+
+  const lbl = document.createElement('span');
+  lbl.id = 'prow-lbl-' + id;
+  lbl.style.cssText = 'font-size:12px;font-weight:600;color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+  lbl.textContent = label;
+
+  const track = document.createElement('div');
+  track.style.cssText = 'background:#e8e3da;border-radius:99px;height:6px;overflow:hidden;';
+  const fill = document.createElement('div');
+  fill.id = 'prow-bar-' + id;
+  fill.style.cssText = 'height:100%;width:0%;border-radius:99px;transition:width .35s ease;background:linear-gradient(to right,var(--teal),#1a9a6c);';
+  track.appendChild(fill);
+
+  const pct = document.createElement('span');
+  pct.id = 'prow-pct-' + id;
+  pct.style.cssText = 'font-size:11px;font-family:"DM Mono",monospace;color:var(--ink-dim);text-align:right;';
+  pct.textContent = '0%';
+
+  row.appendChild(lbl); row.appendChild(track); row.appendChild(pct);
+  document.getElementById('prog-rows').appendChild(row);
+}
+
+function updateProgRow(id, pct, label, done){
+  const bar = document.getElementById('prow-bar-' + id);
+  const pctEl = document.getElementById('prow-pct-' + id);
+  const lblEl = document.getElementById('prow-lbl-' + id);
+  if(!bar) return;
+
+  bar.style.width = Math.min(pct, 100) + '%';
+  pctEl.textContent = done ? '✓' : Math.round(pct) + '%';
+
+  if(done){
+    bar.style.background = 'var(--teal)';
+    bar.style.width = '100%';
+    pctEl.style.color = 'var(--teal)';
+    pctEl.style.fontWeight = '600';
+    if(lblEl) { lblEl.style.color = 'var(--teal)'; }
+  }
+  if(label && lblEl) lblEl.textContent = label;
+}
+
+// Legacy stubs — keep so nothing else breaks
+function setProgress(){}
+function addStepTag(){}
+function markStepDone(){}
+
+// ─── STREAMING HELPER ─────────────────────────────────────────────
+// Streams one DeepSeek request and returns the full accumulated text
+async function streamRequest(sysPrompt, userMsg, onToken){
+  const resp = await fetch('/api/upgrade',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    credentials:'include',
+    body:JSON.stringify({
+      messages:[{role:'system',content:sysPrompt},{role:'user',content:userMsg}],
+      max_tokens:1800, temperature:0.3, stream:true
+    })
+  });
+  if(!resp.ok){
+    if(resp.status===401){ toast('登录已过期，请重新登录','err'); logout(); throw new Error('未登录'); }
+    const e=await resp.json().catch(()=>({})); throw new Error(e.detail||'HTTP '+resp.status);
+  }
+  let buffer='';
+  const reader=resp.body.getReader(); const dec=new TextDecoder();
+  while(true){
+    const{done,value}=await reader.read(); if(done) break;
+    const chunk=dec.decode(value,{stream:true});
+    for(const line of chunk.split('\n')){
+      if(!line.startsWith('data: ')) continue;
+      const d=line.slice(6).trim(); if(d==='[DONE]') continue;
+      try{
+        const j=JSON.parse(d);
+        const c=j.choices?.[0]?.delta?.content||'';
+        if(c){ buffer+=c; if(onToken) onToken(c); }
+      }catch{}
+    }
+  }
+  return buffer;
+}
+
+function parseJSON(raw){
+  const clean=raw.replace(/^```json\s*|^```\s*|```\s*$/gm,'').trim();
+  return JSON.parse(clean);
+}
+
+// ─── SYSTEM PROMPTS FOR PARALLEL REQUESTS ─────────────────────────
+// Request 1: meta info only (fast) — diagnosis + framework + takeaway, NO answer content
+function buildMetaPrompt(part, isCN){
+  const partTag = part==='P2'?'Part 2 (IPDOF框架)':part==='P3'?'Part 3 (TEEL结构)':'Part 1 (对话风格)';
+  if(isCN){
+    return '你是前雅思考官 Nick 的 AI 助手。根据学生的中文思路和题目，仅输出以下 JSON，不要生成任何英文答案内容：\n\n'
+      +'{\n  "part": "'+part+'",\n  "part_framework": "'+partTag+' · 双版本对比生成中",\n  "mode": "cn",\n  "overall_comment": "整体学习建议（2-3句，说明如何从Band 6提升到Band 9）",\n  "takeaway": {\n    "expression": "本次最值得记住的Lexical Chunk",\n    "explanation": "为什么好，怎么用，举1个例子"\n  }\n}\n\n只输出JSON，不加任何其他内容。';
+  }
+  return '你是前雅思考官 Nick 的 AI 助手。根据学生答案和题目，仅输出以下 JSON（不生成升级答案内容）：\n\n'
+    +'{\n  "part": "'+part+'",\n  "part_framework": "'+partTag+'",\n  "scores": {"FC": 整数, "LR": 整数, "GRA": 整数},\n  "verdict": "一句话诊断，不超过50字",\n  "estimated_original_band": 数字,\n  "overall_comment": "整体评价（2-3句）",\n  "takeaway": {\n    "expression": "本次最值得记住的表达",\n    "explanation": "为什么好，怎么用，举1个例子"\n  }\n}\n\n只输出JSON，不加任何其他内容。';
+}
+
+// Request N: one question upgrade (parallel)
+function buildQuestionPrompt(part, isCN, qLabel, questionText, answerText){
+  if(isCN){
+    return '你是前雅思考官 Nick 的 AI 助手。根据学生中文思路，为这一道题生成 Band 6 和 Band 9 两个版本。\n\n'
+      +'题目：'+questionText+'\n\n学生中文思路：'+answerText+'\n\n'
+      +'【Band 6】语法正确意思完整，只用高中水平词汇和简单句式，不用 Lexical Chunks。\n'
+      +'【Band 9】Nick 风格，优先 Lexical Chunks，有 Discourse Markers，有节奏有画面感。\n\n'
+      +'严格输出以下 JSON，不加任何其他内容：\n'
+      +'{\n  "label": "'+qLabel+'",\n  "question_text": "'+questionText+'",\n  "band6": "Band 6基础版",\n  "upgraded": "Band 9升级版",\n  "pairs": [\n    {"id":"a","orig_text":"band6精确子字符串","upg_text":"upgraded精确子字符串","reason":"中文解释+标注FC/LR/GRA"}\n  ]\n}\n包含3-5个pairs，orig_text必须是band6精确子字符串，upg_text必须是upgraded精确子字符串。';
+  }
+  return '你是前雅思考官 Nick 的 AI 助手。升级这一道题的英文答案到 Band 9。\n\n'
+    +'题目：'+questionText+'\n\n学生答案：'+answerText+'\n\n'
+    +'优先用 Lexical Chunks 升级，保留所有真实经历和观点。Part: '+part+'。\n\n'
+    +'严格输出以下 JSON，不加任何其他内容：\n'
+    +'{\n  "label": "'+qLabel+'",\n  "question_text": "'+questionText+'",\n  "original": "原文照抄",\n  "upgraded": "Band 9升级版",\n  "pairs": [\n    {"id":"a","orig_text":"original精确子字符串","upg_text":"upgraded精确子字符串","reason":"中文解释+标注FC/LR/GRA"}\n  ]\n}\n包含3-5个pairs，orig_text必须是original精确子字符串，upg_text必须是upgraded精确子字符串。';
+}
+
+// ─── PARSE QUESTIONS FROM INPUT ───────────────────────────────────
+// Splits "Question 1. ... Question 2. ..." into [{label, questionText, answerText}]
+function parseInputQuestions(topQ, answerRaw){
+  // Try to detect multi-question format: "Question 1." or "Q1." prefix
+  const multiRe = /Question\s*\d+[.:]?\s*/gi;
+  const parts = answerRaw.split(multiRe).map(s=>s.trim()).filter(Boolean);
+  if(parts.length > 1){
+    return parts.map((text, i)=>({
+      label: 'Q'+(i+1),
+      questionText: topQ,   // reuse main question as header; per-question text is embedded
+      answerText: text
+    }));
+  }
+  // Single question
+  return [{ label:'Q1', questionText: topQ, answerText: answerRaw }];
+}
+
+// ─── GENERATE (PARALLEL) ──────────────────────────────────────────
+async function generate(){
+  const q = document.getElementById('inp-q').value.trim();
+  const a = document.getElementById('inp-a').value.trim();
+  if(!q||!a){ toast('请填写题目和答案','err'); return; }
+
+  const btn = document.getElementById('btn-gen');
+  btn.classList.add('loading'); btn.disabled=true;
+  document.getElementById('gen-txt').textContent='生成中…';
+  showProgress();
+
+  try {
+    const isCN   = inputMode==='cn';
+    const part   = currentPart || (q.toLowerCase().startsWith('describe') ? 'P2' : 'P1');
+    const qItems = parseInputQuestions(q, a);   // [{label, questionText, answerText}]
+    const nQ     = qItems.length;
+
+    // ── Create one progress row per task ──
+    createProgRow('meta', '考官诊断');
+    qItems.forEach(item => createProgRow(item.label, item.label + ' 升级'));
+    createProgRow('merge', '整合报告');
+
+    // ── REQUEST 1: meta (diagnosis + takeaway) ──
+    const metaUserMsg = isCN
+      ? '题目：'+q+'\n\n学生中文思路：\n'+a
+      : '题目：'+q+'\n\n学生答案：\n'+a;
+    let metaPct = 0;
+
+    const metaPromise = streamRequest(
+      buildMetaPrompt(part, isCN),
+      metaUserMsg,
+      ()=>{ metaPct = Math.min(metaPct + 2, 95); updateProgRow('meta', metaPct); }
+    ).then(raw=>{
+      updateProgRow('meta', 100, '考官诊断', true);
+      return parseJSON(raw);
+    });
+
+    // ── REQUESTS 2…N: one per question, all parallel ──
+    const qProgPcts = qItems.map(()=>0);
+
+    const qPromises = qItems.map((item, idx)=>{
+      const userMsg = isCN
+        ? '中文思路：'+item.answerText
+        : '题目：'+item.questionText+'\n\n学生答案：'+item.answerText;
+      return streamRequest(
+        buildQuestionPrompt(part, isCN, item.label, item.questionText, item.answerText),
+        userMsg,
+        ()=>{
+          qProgPcts[idx] = Math.min(qProgPcts[idx] + 2, 95);
+          updateProgRow(item.label, qProgPcts[idx]);
+        }
+      ).then(raw=>{
+        updateProgRow(item.label, 100, item.label + ' 升级', true);
+        return parseJSON(raw);
+      });
+    });
+
+    // ── WAIT FOR ALL IN PARALLEL ──
+    const [metaResult, ...qResults] = await Promise.all([metaPromise, ...qPromises]);
+
+    // ── MERGE ──
+    updateProgRow('merge', 60, '整合报告');
+    const rj = Object.assign({}, metaResult, { questions: qResults });
+    if(isCN) rj.mode = 'cn';
+
+    await new Promise(r=>setTimeout(r,250));
+    updateProgRow('merge', 100, '整合报告', true);
+    await new Promise(r=>setTimeout(r,200));
+
+    hideProgress();
+    renderReport(rj, q);
+    nav('report');
+    toast('报告已生成 ✓','ok');
+
+  } catch(e){
+    console.error(e); hideProgress();
+    const qVal = document.getElementById('inp-q').value;
+    if(qVal.toLowerCase().includes('food')){
+      const mockKey = (inputMode==='cn') ? 'food_cn' : 'food';
+      renderReport(MOCK_REPORTS[mockKey], qVal); nav('report'); toast('已加载示例报告','ok');
+    } else {
+      toast('生成失败：'+e.message,'err');
+    }
+  } finally {
+    btn.classList.remove('loading'); btn.disabled=false;
+    document.getElementById('gen-txt').textContent='✨ Nick AI 诊断 + 升级';
+  }
+}
+
+function newPractice(){ document.getElementById('inp-q').value=''; document.getElementById('inp-a').value=''; document.getElementById('detect-hint').classList.remove('on'); nav('practice'); }
+
+// ─── RENDER REPORT ────────────────────────────────────────────────
+const LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+function renderReport(rj, question){
+  const isCNMode = rj.mode === 'cn';
+  const qs=rj.questions||[]; const band=rj.estimated_original_band; let pc=0;
+  const sc=rj.scores||{};
+  const framework=rj.part_framework||'';
+  const verdict=rj.verdict||'';
+  const tk=rj.takeaway||{};
+
+  // 报告头部 — 中文模式标题不同
+  let html=`<div class="r-box">
+  <div class="r-head">
+    <div>
+      <div class="rht">${isCNMode ? 'Nick AI 双版本对比报告' : 'Nick AI 考官升级报告'}</div>
+      <div class="rhs">${isCNMode ? 'Band 6 基础版 vs Band 9 Nick 风格 · 悬停激活连线' : '考官视角诊断 · 逐句对比升级 · 悬停激活连线'}</div>
+    </div>
+    <div class="rhm"><strong>尼克AI考官</strong><br>尼克国际教育<br>前雅思考官团队</div>
+  </div>
+  <div class="r-body">
+
+    <div class="sess-row">
+      <div class="s-ico">✦</div>
+      <div class="s-q">${esc(question)}</div>
+      <div class="s-sc">
+        ${isCNMode
+          ? `<span class="sc sc-o">Band 6</span><span class="sc-a">→</span><span class="sc sc-n">Band 9</span>`
+          : `${band?`<span class="sc sc-o">原始 ${band}</span><span class="sc-a">→</span>`:''}
+             <span class="sc sc-n">Band 9</span>`}
+      </div>
+    </div>
+
+    <!-- 诊断块 -->
+    <div class="diag-block">
+      <div class="diag-title">${isCNMode ? '📊 双版本对比说明' : '🔍 Nick AI 考官诊断'}</div>
+      ${framework ? `<div class="part-framework-tag">📐 ${esc(framework)}</div>` : ''}
+      ${(!isCNMode && (sc.FC||sc.LR||sc.GRA)) ? `<div class="diag-scores">
+        ${sc.FC?`<div class="diag-score"><div class="ds-label">FC 流利度</div><div class="ds-num">${sc.FC}</div></div>`:''}
+        ${sc.LR?`<div class="diag-score"><div class="ds-label">LR 词汇</div><div class="ds-num">${sc.LR}</div></div>`:''}
+        ${sc.GRA?`<div class="diag-score"><div class="ds-label">GRA 语法</div><div class="ds-num">${sc.GRA}</div></div>`:''}
+      </div>` : ''}
+      ${isCNMode
+        ? `<div class="diag-verdict"><strong>左栏 Band 6：</strong>语法正确、意思完整，但用词简单，这是大多数考生能说出的水平。<br><strong>右栏 Band 9：</strong>Nick 风格，Lexical Chunks 替换普通词汇，有节奏有画面感。</div>`
+        : verdict ? `<div class="diag-verdict"><strong>核心问题：</strong>${esc(verdict)}</div>` : ''}
+    </div>
+
+    <div class="legend">
+      <div class="leg"><div class="ls ls-r"></div>${isCNMode ? 'Band 6 基础表达' : '原文需要修改的部分'}</div>
+      <div class="leg"><div class="ls ls-g"></div>${isCNMode ? 'Band 9 对应升级' : '对应升级表达'}</div>
+      <div class="leg"><div class="leg-l"></div>悬停激活深蓝连线</div>
+    </div>`;
+
+  qs.forEach((q,qi)=>{
+    const pairs=q.pairs||[];
+    // 中文模式用 band6 字段，英文模式用 original 字段
+    const leftText  = isCNMode ? (q.band6||'') : (q.original||'');
+    const rightText = q.upgraded||'';
+    let orig=esc(leftText); let upg=esc(rightText);
+
+    pairs.forEach((p,pi)=>{
+      if(p.orig_text && leftText.includes(p.orig_text))
+        orig=orig.replace(esc(p.orig_text),`<mark class="del" data-pair="q${qi}p${pi}">${esc(p.orig_text)}</mark>`);
+      if(p.upg_text && rightText.includes(p.upg_text))
+        upg=upg.replace(esc(p.upg_text),`<mark class="ins" data-pair="q${qi}p${pi}">${esc(p.upg_text)}</mark>`);
+    });
+
+    const leftLabel  = isCNMode ? `${esc(q.label)} Band 6 基础版` : `${esc(q.label)} 原始答案`;
+    const rightLabel = `${esc(q.label)} Band 9 升级版`;
+
+    html+=`
+    <div class="diff-arena">
+      <div class="c-hd c-hd-r">${isCNMode ? '📝' : '✗'} &nbsp;${leftLabel}</div>
+      <div></div>
+      <div class="c-hd c-hd-g">✓ &nbsp;${rightLabel}</div>
+      <div class="c-bd c-bd-r"><span class="ql">${esc(q.question_text)}</span>${orig}</div>
+      <div class="c-mid"></div>
+      <div class="c-bd c-bd-g"><span class="ql">${esc(q.question_text)}</span>${upg}</div>
+    </div>`;
+
+    if(pairs.length){
+      html+=`<div class="upg-hd" style="margin-bottom:0;">升级点详解 — ${esc(q.label)}</div>
+      <table class="upg-t" style="margin-bottom:22px;"><tbody>
+      ${pairs.map((p,pi)=>`<tr>
+        <td class="td-n">${LETTERS[pc+pi]||pi+1}</td>
+        <td class="td-w">${esc(p.reason)}</td>
+        <td class="td-o">${esc(p.orig_text)}</td>
+        <td class="td-a">→</td>
+        <td class="td-nw">${esc(p.upg_text)}</td>
+      </tr>`).join('')}
+      </tbody></table>`;
+      pc+=pairs.length;
+    }
+  });
+
+  if(rj.overall_comment){
+    html+=`<div class="overall-box"><div class="overall-lbl">${isCNMode ? '学习建议' : '整体评价'}</div>${esc(rj.overall_comment)}</div>`;
+  }
+
+  // Takeaway
+  if(tk.expression){
+    html+=`<div class="takeaway-box">
+      <div class="tk-ico">💡</div>
+      <div>
+        <div class="tk-label">TODAY'S TAKEAWAY · 本次最值得记住</div>
+        <div class="tk-text"><strong>${esc(tk.expression)}</strong><br>${esc(tk.explanation)}</div>
+      </div>
+    </div>`;
+  }
+
+  html+=`</div></div>`;
+  document.getElementById('rep-wrap').innerHTML=html;
+  // wireConnectors 需要知道左侧字段名
+  requestAnimationFrame(()=>wireConnectors(qs, isCNMode));
+}
+
+// ─── CONNECTORS ───────────────────────────────────────────────────
+function wireConnectors(qs, isCNMode){
+  const svg=document.getElementById('svg-ol'); svg.innerHTML=''; let animId=null;
+  qs.forEach((q,qi)=>{
+    (q.pairs||[]).forEach((_,pi)=>{
+      const key=`q${qi}p${pi}`;
+      const dEl=document.querySelector(`mark.del[data-pair="${key}"]`);
+      const iEl=document.querySelector(`mark.ins[data-pair="${key}"]`);
+      if(!dEl||!iEl) return;
+      function enter(){
+        document.querySelectorAll('mark.del,mark.ins').forEach(m=>{ if(m.dataset.pair!==key) m.style.opacity='0.25'; });
+        dEl.classList.add('lit'); iEl.classList.add('lit');
+        svg.querySelectorAll('path,circle').forEach(e=>e.remove());
+        if(animId) cancelAnimationFrame(animId);
+        const dR=dEl.getBoundingClientRect(),iR=iEl.getBoundingClientRect();
+        const x1=dR.right,y1=(dR.top+dR.bottom)/2,x2=iR.left,y2=(iR.top+iR.bottom)/2,mx=(x1+x2)/2;
+        const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+        path.setAttribute('d',`M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`);
+        path.setAttribute('stroke','#1A3A6B'); path.setAttribute('stroke-width','2.5');
+        path.setAttribute('fill','none'); path.setAttribute('stroke-linecap','round');
+        svg.appendChild(path);
+        let off=0;
+        function anim(){ off-=1.5; path.setAttribute('stroke-dasharray','8 4'); path.setAttribute('stroke-dashoffset',off); animId=requestAnimationFrame(anim); }
+        anim();
+        [{cx:x1,cy:y1,f:'#b83228'},{cx:x2,cy:y2,f:'#1a6b35'}].forEach(({cx,cy,f})=>{ const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r','4');c.setAttribute('fill',f);c.setAttribute('opacity','0.9'); svg.appendChild(c); });
+      }
+      function leave(){ document.querySelectorAll('mark.del,mark.ins').forEach(m=>m.style.opacity=''); dEl.classList.remove('lit'); iEl.classList.remove('lit'); if(animId) cancelAnimationFrame(animId); svg.querySelectorAll('path,circle').forEach(e=>e.remove()); }
+      [dEl,iEl].forEach(el=>{ el.addEventListener('mouseenter',enter); el.addEventListener('mouseleave',leave); });
+    });
+  });
+}
+
+// ─── HISTORY ──────────────────────────────────────────────────────
+function renderHistory(){
+  const g=document.getElementById('hg');
+  g.innerHTML=MOCK_HISTORY.map(r=>`
+    <div class="hc" onclick="loadMockReport(${r.id})">
+      <div class="hc-d">${r.created_at}</div>
+      <div class="hc-q">${esc(r.question)}</div>
+      <div class="hc-m">
+        <span class="hc-t">${r.topic_type}</span>
+        ${r.original_score?`<span class="hc-s">原始 ${r.original_score} → Band 9</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function loadMockReport(id){
+  const h=MOCK_HISTORY.find(r=>r.id===id); if(!h) return;
+  const rd=id===1?MOCK_REPORTS.food:{
+    estimated_original_band:h.original_score,
+    overall_comment:'（历史报告内容，接入数据库后将显示完整报告）',
+    questions:[{label:'Q1',question_text:h.question,original:'历史报告内容',upgraded:'接入数据库后显示',pairs:[]}]
+  };
+  renderReport(rd, h.question); nav('report');
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────
+function esc(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg,type=''){ const el=document.getElementById('toast'); el.textContent=msg; el.className=`toast ${type} show`; setTimeout(()=>el.classList.remove('show'),3000); }
+
+// ── Auto-check existing session on page load ──
+(async function initApp(){
+  try {
+    const res = await fetch('/api/me', { credentials:'include' });
+    if(res.ok){
+      const data = await res.json();
+      document.getElementById('sb-name').textContent = data.display_name || data.username;
+      document.getElementById('v-login').style.display = 'none';
+      document.getElementById('v-app').style.display   = 'block';
+      nav('practice');
+    }
+    // else: stay on login page
+  } catch(e){ /* stay on login */ }
+})();
+</script>
+</body>
+</html>
