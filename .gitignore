@@ -1,7 +1,17 @@
 .env
+.env.local
+.env.*.local
 __pycache__/
 *.py[cod]
 venv/
+.venv/
 env/
 .DS_Store
 *.log
+*.db
+data/
+*.egg-info/
+dist/
+build/
+.idea/
+.vscode/

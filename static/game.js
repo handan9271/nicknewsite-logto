@@ -799,14 +799,9 @@ Respond ONLY with this JSON (no markdown):
 
   // ─── MULTIPLAYER: WEBSOCKET ──────────────────────────────────────
 
-  function getToken() {
-    const m = document.cookie.match(/(?:^|;\s*)nick_token=([^;]*)/);
-    return m ? m[1] : '';
-  }
-
   function connectWS(roomCode) {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const url = `${proto}://${location.host}/ws/game/${roomCode}?token=${getToken()}`;
+    const url = `${proto}://${location.host}/ws/game/${roomCode}`;
     const ws = new WebSocket(url);
 
     ws.onopen = () => { S.wsReady = true; };

@@ -258,14 +258,10 @@ mark.ins.lit { filter:brightness(.87); box-shadow:0 0 0 2px var(--grn); }
     <div class="ll">雅思考官尼克和他的<span>朋友们</span></div>
     <div class="ld">AI 口语教练 · 考官视角诊断 · 逐句升级到 Band 9</div>
     <div class="demo-hint">
-      <strong>🔐 内测版本</strong><br>
-      请使用你收到的账号和密码登录
+      <strong>✨ 欢迎使用</strong><br>
+      点击下方按钮，使用 Google 或邮箱登录
     </div>
-    <div class="fl">账号</div>
-    <input class="fi" id="li-u" placeholder="账号">
-    <div class="fl">密码</div>
-    <input class="fi" id="li-p" type="password" placeholder="密码">
-    <button class="btn-login" onclick="login()">登录</button>
+    <button class="btn-login" onclick="window.location.href='/auth/sign-in'">登录 / 注册</button>
   </div>
 </div>
 
@@ -287,7 +283,8 @@ mark.ins.lit { filter:brightness(.87); box-shadow:0 0 0 2px var(--grn); }
     <div class="sb-user">
       <div class="sb-av">👤</div>
       <div class="sb-un" id="sb-name">同学</div>
-      <div>目标分数：Band 7.5</div>
+      <div id="sb-credits" style="color:rgba(255,255,255,.55);margin-top:2px;">剩余次数：--</div>
+      <div style="margin-top:2px;">目标分数：Band 7.5</div>
       <button class="sb-out" onclick="logout()">退出登录</button>
     </div>
   </div>
@@ -497,35 +494,23 @@ let inputMode    = 'en';
 // API calls go through /api/upgrade (key lives on server)
 
 // ─── AUTH ─────────────────────────────────────────────────────────
-async function login() {
-  const u = document.getElementById('li-u').value.trim();
-  const p = document.getElementById('li-p').value;
-  if(!u || !p){ toast('请输入账号和密码', 'err'); return; }
-  const btn = document.querySelector('.btn-login');
-  btn.disabled = true; btn.textContent = '登录中…';
-  try {
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: u, password: p }),
-      credentials: 'include'
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || '登录失败');
-    document.getElementById('v-login').style.display = 'none';
-    document.getElementById('v-app').style.display   = 'block';
-    document.getElementById('sb-name').textContent   = data.display_name || u;
-    toast('欢迎回来 👋', 'ok');
-  } catch(e) {
-    toast(e.message, 'err');
-  } finally {
-    btn.disabled = false; btn.textContent = '登录';
-  }
+function login() {
+  window.location.href = '/auth/sign-in';
 }
-async function logout() {
-  await fetch('/api/logout', { method: 'POST', credentials: 'include' });
-  document.getElementById('v-login').style.display = 'flex';
-  document.getElementById('v-app').style.display   = 'none';
+function logout() {
+  window.location.href = '/auth/sign-out';
+}
+function showApp(data) {
+  document.getElementById('v-login').style.display = 'none';
+  document.getElementById('v-app').style.display   = 'block';
+  document.getElementById('sb-name').textContent   = data.display_name || data.email || 'User';
+  if (data.credits !== undefined) {
+    document.getElementById('sb-credits').textContent = '剩余次数：' + data.credits;
+  }
+  toast('欢迎回来 👋', 'ok');
+}
+function updateCredits(credits) {
+  document.getElementById('sb-credits').textContent = '剩余次数：' + credits;
 }
 
 // ─── NAV ──────────────────────────────────────────────────────────
@@ -852,6 +837,28 @@ async function generate(){
     nav('report');
     toast('报告已生成 ✓','ok');
 
+    // Save conversation to database
+    try {
+      const a = document.getElementById('inp-a').value.trim();
+      const scoreStr = rj.estimated_original_band ? ('原始 ' + rj.estimated_original_band + ' → Band 9') : '';
+      const saveRes = await fetch('/api/save-conversation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: q,
+          user_input: a,
+          ai_reply: JSON.stringify(rj),
+          topic_type: currentPart || '',
+          score: scoreStr,
+        }),
+        credentials: 'include'
+      });
+      if(saveRes.ok){
+        const saveData = await saveRes.json();
+        if(saveData.credits !== undefined) updateCredits(saveData.credits);
+      }
+    } catch(saveErr){ console.warn('Failed to save conversation:', saveErr); }
+
   } catch(e){
     console.error(e); hideProgress();
     const qVal = document.getElementById('inp-q').value;
@@ -1018,27 +1025,52 @@ function wireConnectors(qs, isCNMode){
 }
 
 // ─── HISTORY ──────────────────────────────────────────────────────
-function renderHistory(){
+let _historyCache = [];
+
+async function renderHistory(){
   const g=document.getElementById('hg');
-  g.innerHTML=MOCK_HISTORY.map(r=>`
-    <div class="hc" onclick="loadMockReport(${r.id})">
-      <div class="hc-d">${r.created_at}</div>
-      <div class="hc-q">${esc(r.question)}</div>
-      <div class="hc-m">
-        <span class="hc-t">${r.topic_type}</span>
-        ${r.original_score?`<span class="hc-s">原始 ${r.original_score} → Band 9</span>`:''}
-      </div>
-    </div>`).join('');
+  g.innerHTML='<div style="text-align:center;color:var(--ink-dim);padding:40px;">加载中...</div>';
+  try {
+    const res = await fetch('/api/history', { credentials:'include' });
+    if(!res.ok) throw new Error('加载失败');
+    const data = await res.json();
+    _historyCache = data;
+    if(!data.length){
+      g.innerHTML='<div style="text-align:center;color:var(--ink-dim);padding:40px;">暂无历史记录，去练习一下吧！</div>';
+      return;
+    }
+    g.innerHTML=data.map((r,i)=>`
+      <div class="hc" onclick="loadHistoryReport(${i})">
+        <div class="hc-d">${esc(r.created_at)}</div>
+        <div class="hc-q">${esc(r.question)}</div>
+        <div class="hc-m">
+          ${r.topic_type?`<span class="hc-t">${esc(r.topic_type)}</span>`:''}
+          ${r.score?`<span class="hc-s">${esc(r.score)}</span>`:''}
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    g.innerHTML='<div style="text-align:center;color:var(--red);padding:40px;">加载历史记录失败</div>';
+  }
 }
 
-function loadMockReport(id){
-  const h=MOCK_HISTORY.find(r=>r.id===id); if(!h) return;
-  const rd=id===1?MOCK_REPORTS.food:{
-    estimated_original_band:h.original_score,
-    overall_comment:'（历史报告内容，接入数据库后将显示完整报告）',
-    questions:[{label:'Q1',question_text:h.question,original:'历史报告内容',upgraded:'接入数据库后显示',pairs:[]}]
-  };
-  renderReport(rd, h.question); nav('report');
+function loadHistoryReport(idx){
+  const h=_historyCache[idx]; if(!h) return;
+  // Try to parse the saved AI reply as a JSON report
+  try {
+    const rd = JSON.parse(h.ai_reply);
+    if(rd && (rd.questions || rd.overall_comment)){
+      renderReport(rd, h.question); nav('report'); return;
+    }
+  } catch(e){}
+  // Fallback: show raw AI reply as text
+  const wrap = document.getElementById('rep-wrap');
+  wrap.innerHTML = `
+    <div class="r-head">
+      <div><div class="r-q">${esc(h.question)}</div></div>
+    </div>
+    <div style="padding:24px 0;white-space:pre-wrap;font-size:14px;line-height:1.8;color:var(--ink);">${esc(h.ai_reply)}</div>
+  `;
+  nav('report');
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────
@@ -1051,9 +1083,7 @@ function toast(msg,type=''){ const el=document.getElementById('toast'); el.textC
     const res = await fetch('/api/me', { credentials:'include' });
     if(res.ok){
       const data = await res.json();
-      document.getElementById('sb-name').textContent = data.display_name || data.username;
-      document.getElementById('v-login').style.display = 'none';
-      document.getElementById('v-app').style.display   = 'block';
+      showApp(data);
       nav('practice');
     }
     // else: stay on login page

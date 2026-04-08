@@ -1,6 +1,14 @@
-# Nick Speaking Platform
+# Nick Speaking Platform (Logto Edition)
 
-雅思口语 AI 升级平台 — 尼克国际教育内测版
+雅思口语 AI 升级平台 — 尼克国际教育
+
+## 新增功能（vs nick-newsite）
+
+- **Logto OAuth 认证** — Google / 邮箱登录，替代账号密码
+- **数据库持久化** — SQLAlchemy（SQLite 开发 / MySQL 生产）
+- **积分系统** — 20 次/用户，每次 AI 调用扣 1
+- **历史记录** — 对话自动保存，随时回顾
+- **安全加固** — 安全头、速率限制、CORS 配置
 
 ## 本地运行
 
@@ -10,7 +18,7 @@ pip install -r requirements.txt
 
 # 2. 配置环境变量
 cp .env.example .env
-# 编辑 .env，填入 DEEPSEEK_API_KEY
+# 编辑 .env，填入 DEEPSEEK_API_KEY 和 LOGTO_* 配置
 
 # 3. 启动
 uvicorn main:app --reload --port 8000
@@ -19,45 +27,26 @@ uvicorn main:app --reload --port 8000
 open http://localhost:8000
 ```
 
-默认账号：`nick` / `123456`，`student1` / `password123`
+## Logto 配置
 
-## 添加用户
-
-```bash
-python3 gen_password.py
-```
-
-按提示输入账号密码，把生成的 JSON 加入 `users.json`。
+1. 在 [Logto Console](https://cloud.logto.io/) 创建 Traditional Web 应用
+2. 设置回调 URL: `http://localhost:8000/auth/callback`（开发）或 `https://your-domain.com/auth/callback`（生产）
+3. 设置登出 URL: `http://localhost:8000/`（开发）或 `https://your-domain.com/`（生产）
+4. 将 Endpoint、App ID、App Secret 填入 `.env`
 
 ## Zeabur 部署
 
-1. Push 到 GitHub（`.env` 已在 `.gitignore` 里，不会上传）
+1. Push 到 GitHub
 2. Zeabur → New Project → Import GitHub repo
-3. 设置以下**环境变量**：
+3. 设置环境变量：
 
 | 变量名 | 说明 |
 |--------|------|
 | `DEEPSEEK_API_KEY` | DeepSeek API Key |
-| `USERS_JSON` | 用户列表 JSON 字符串（见下方格式） |
-| `SECURE_COOKIE` | `true`（Zeabur 有 HTTPS） |
+| `LOGTO_ENDPOINT` | Logto Endpoint URL |
+| `LOGTO_APP_ID` | Logto App ID |
+| `LOGTO_APP_SECRET` | Logto App Secret |
+| `BASE_URL` | 你的域名（如 `https://xxx.zeabur.app`） |
 
-`USERS_JSON` 格式示例：
-```json
-[{"username":"nick","password_hash":"8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92","display_name":"Nick 老师"},{"username":"student1","password_hash":"0a041b9462caa4a31bac3567e0b6e6fd9100787db2ab433d96f6d178cabfce90","display_name":"同学甲"}]
-```
-
-4. 选 Region: **Hong Kong**
-5. 等待部署完成，绑定域名
-
-## 密码哈希
-
-`users.json` 里存的是 SHA-256 哈希，不是明文密码。
-
-```bash
-# 快速生成某个密码的哈希
-python3 gen_password.py mypassword
-```
-
-内置示例账号：
-- `nick` / `123456`
-- `student1` / `password123`
+4. 可选：添加 MySQL 服务，Zeabur 会自动设置 `DATABASE_URL`
+5. Region 推荐 **Hong Kong**
