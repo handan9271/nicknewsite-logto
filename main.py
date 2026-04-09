@@ -141,6 +141,7 @@ class User(Base):
     logto_user_id = Column(String(255), unique=True, nullable=False, index=True)
     email = Column(String(255), index=True)
     display_name = Column(String(255), default="")
+    role = Column(String(20), default="student")  # admin / teacher / student
     credits = Column(Integer, default=20)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -170,6 +171,14 @@ class GameSession(Base):
     rank = Column(Integer, default=0)
     player_count = Column(Integer, default=1)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+
+class TeacherStudent(Base):
+    __tablename__ = "teacher_students"
+    id = Column(Integer, primary_key=True, index=True)
+    teacher_id = Column(Integer, nullable=False, index=True)
+    student_id = Column(Integer, nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class UserSession(Base):
@@ -861,8 +870,256 @@ async def me(user: User = Depends(get_current_user)):
         "display_name": user.display_name or user.email or "User",
         "email": user.email,
         "credits": user.credits,
+        "role": user.role or "student",
         "created_at": str(user.created_at) if user.created_at else None,
     }
+
+
+# ─── ROLE-BASED ACCESS ─────────────────────────────────────────────────────
+
+async def require_admin(request: Request, db: Session = Depends(get_db)) -> User:
+    user = await get_current_user(request, db)
+    if user.role != 'admin':
+        raise HTTPException(status_code=403, detail="需要管理员权限")
+    return user
+
+async def require_teacher_or_admin(request: Request, db: Session = Depends(get_db)) -> User:
+    user = await get_current_user(request, db)
+    if user.role not in ('admin', 'teacher'):
+        raise HTTPException(status_code=403, detail="需要教师或管理员权限")
+    return user
+
+
+# ─── ADMIN API ──────────────────────────────────────────────────────────────
+
+@app.get("/api/admin/users")
+async def admin_list_users(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """List all users (admin only)."""
+    users = db.query(User).order_by(User.created_at.desc()).all()
+    return [{
+        "id": u.id,
+        "email": u.email or "",
+        "display_name": u.display_name or "",
+        "role": u.role or "student",
+        "credits": u.credits,
+        "created_at": str(u.created_at) if u.created_at else "",
+    } for u in users]
+
+
+class UpdateUserRequest(BaseModel):
+    role: str = ""
+    credits: int = -1  # -1 means don't change
+
+
+@app.post("/api/admin/users/{user_id}/update")
+async def admin_update_user(user_id: int, body: UpdateUserRequest, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Update user role or credits (admin only)."""
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    if body.role and body.role in ('admin', 'teacher', 'student'):
+        target.role = body.role
+    if body.credits >= 0:
+        target.credits = body.credits
+    db.commit()
+    return {"ok": True, "role": target.role, "credits": target.credits}
+
+
+@app.get("/api/admin/stats")
+async def admin_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Dashboard statistics (admin only)."""
+    total_users = db.query(User).count()
+    total_conversations = db.query(Conversation).count()
+    total_games = db.query(GameSession).count()
+    role_counts = {}
+    for role in ['admin', 'teacher', 'student']:
+        role_counts[role] = db.query(User).filter(User.role == role).count()
+    return {
+        "total_users": total_users,
+        "total_conversations": total_conversations,
+        "total_games": total_games,
+        "role_counts": role_counts,
+    }
+
+
+# ─── TEACHER API ────────────────────────────────────────────────────────────
+
+@app.get("/api/teacher/students")
+async def teacher_list_students(user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    """List teacher's students."""
+    links = db.query(TeacherStudent).filter(TeacherStudent.teacher_id == user.id).all()
+    student_ids = [l.student_id for l in links]
+    if not student_ids:
+        return []
+    students = db.query(User).filter(User.id.in_(student_ids)).all()
+    return [{
+        "id": s.id,
+        "email": s.email or "",
+        "display_name": s.display_name or "",
+        "credits": s.credits,
+        "created_at": str(s.created_at) if s.created_at else "",
+    } for s in students]
+
+
+class AddStudentRequest(BaseModel):
+    email: str
+
+
+@app.post("/api/teacher/add-student")
+async def teacher_add_student(body: AddStudentRequest, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    """Add a student by email (teacher only)."""
+    student = db.query(User).filter(User.email == body.email).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="未找到该邮箱对应的学生，请确认学生已注册")
+    if student.id == user.id:
+        raise HTTPException(status_code=400, detail="不能添加自己为学生")
+    existing = db.query(TeacherStudent).filter(
+        TeacherStudent.teacher_id == user.id, TeacherStudent.student_id == student.id
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="该学生已在你的列表中")
+    link = TeacherStudent(teacher_id=user.id, student_id=student.id)
+    db.add(link)
+    db.commit()
+    return {"ok": True, "student_id": student.id, "display_name": student.display_name, "email": student.email}
+
+
+@app.delete("/api/teacher/remove-student/{student_id}")
+async def teacher_remove_student(student_id: int, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    """Remove a student from teacher's list."""
+    db.query(TeacherStudent).filter(
+        TeacherStudent.teacher_id == user.id, TeacherStudent.student_id == student_id
+    ).delete()
+    db.commit()
+    return {"ok": True}
+
+
+@app.get("/api/teacher/student/{student_id}/practice-history")
+async def teacher_get_student_practice(student_id: int, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    """Get a student's practice history (teacher only)."""
+    # Verify teacher-student relationship
+    link = db.query(TeacherStudent).filter(
+        TeacherStudent.teacher_id == user.id, TeacherStudent.student_id == student_id
+    ).first()
+    if not link and user.role != 'admin':
+        raise HTTPException(status_code=403, detail="该学生不在你的列表中")
+
+    conversations = db.query(Conversation).filter(
+        Conversation.user_id == student_id
+    ).order_by(Conversation.timestamp.desc()).limit(100).all()
+
+    beijing_tz = timezone(timedelta(hours=8))
+    return [{
+        "id": c.id,
+        "created_at": c.timestamp.replace(tzinfo=timezone.utc).astimezone(beijing_tz).strftime("%Y-%m-%d %H:%M") if c.timestamp else "",
+        "question": c.question or "",
+        "user_input": c.user_input or "",
+        "ai_reply": c.ai_reply or "",
+        "topic_type": c.topic_type or "",
+        "score": c.score or "",
+    } for c in conversations]
+
+
+@app.get("/api/teacher/student/{student_id}/game-history")
+async def teacher_get_student_games(student_id: int, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    """Get a student's game mock test history (teacher only)."""
+    link = db.query(TeacherStudent).filter(
+        TeacherStudent.teacher_id == user.id, TeacherStudent.student_id == student_id
+    ).first()
+    if not link and user.role != 'admin':
+        raise HTTPException(status_code=403, detail="该学生不在你的列表中")
+
+    sessions = db.query(GameSession).filter(
+        GameSession.user_id == student_id
+    ).order_by(GameSession.timestamp.desc()).limit(50).all()
+
+    beijing_tz = timezone(timedelta(hours=8))
+    return [{
+        "id": s.id,
+        "created_at": s.timestamp.replace(tzinfo=timezone.utc).astimezone(beijing_tz).strftime("%Y-%m-%d %H:%M") if s.timestamp else "",
+        "mode": s.mode,
+        "overall_score": s.overall_score,
+        "rank": s.rank,
+        "player_count": s.player_count,
+        "answers": json.loads(s.answers_json) if s.answers_json else [],
+        "verdict": json.loads(s.verdict_json) if s.verdict_json else {},
+    } for s in sessions]
+
+
+@app.post("/api/teacher/student/{student_id}/generate-report")
+async def teacher_generate_report(student_id: int, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    """AI-generate a learning report for a student based on their history."""
+    link = db.query(TeacherStudent).filter(
+        TeacherStudent.teacher_id == user.id, TeacherStudent.student_id == student_id
+    ).first()
+    if not link and user.role != 'admin':
+        raise HTTPException(status_code=403, detail="该学生不在你的列表中")
+
+    student = db.query(User).filter(User.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="学生不存在")
+
+    # Gather practice history
+    convos = db.query(Conversation).filter(
+        Conversation.user_id == student_id
+    ).order_by(Conversation.timestamp.desc()).limit(20).all()
+
+    # Gather game history
+    games = db.query(GameSession).filter(
+        GameSession.user_id == student_id
+    ).order_by(GameSession.timestamp.desc()).limit(10).all()
+
+    # Build context
+    practice_summary = "\n".join([
+        f"- 题目: {c.question}, 分数: {c.score}, 类型: {c.topic_type}" for c in convos
+    ]) or "暂无练习记录"
+
+    game_summary = "\n".join([
+        f"- 模考总分: {g.overall_score}, 模式: {g.mode}, 排名: {g.rank}/{g.player_count}" for g in games
+    ]) or "暂无模考记录"
+
+    # Get detailed game answers for analysis
+    game_details = ""
+    for g in games[:3]:  # Last 3 games
+        answers = json.loads(g.answers_json) if g.answers_json else []
+        verdict = json.loads(g.verdict_json) if g.verdict_json else {}
+        game_details += f"\n模考 (总分{g.overall_score}):\n"
+        for a in answers:
+            game_details += f"  Q: {a.get('question','')}\n  A: {a.get('answer','')}\n  Scores: {a.get('scores','')}\n"
+        if verdict:
+            game_details += f"  Verdict: {verdict.get('comment','')}\n"
+
+    prompt = f"""你是一位资深雅思口语教师，请根据以下学生的练习和模考数据，生成一份详细的学习报告和改进计划。
+
+学生: {student.display_name or student.email}
+
+## 练习记录（最近20次）
+{practice_summary}
+
+## 模考记录（最近10次）
+{game_summary}
+
+## 模考详细答案（最近3次）
+{game_details}
+
+请生成：
+1. **总体评估**：学生目前的口语水平（预估band分数），强项和弱项
+2. **问题分析**：具体的语法、词汇、流利度问题，引用学生的实际答案举例
+3. **学习计划**：接下来 2 周的具体学习建议，包含每天的练习目标
+4. **推荐练习**：针对弱项推荐的具体话题和练习方式
+5. **鼓励寄语**：给学生的正面鼓励
+
+请用中文回复，格式清晰，使用 markdown。"""
+
+    try:
+        report = await call_deepseek([
+            {'role': 'system', 'content': '你是一位资深雅思口语教师，擅长根据学生数据制定个性化学习计划。'},
+            {'role': 'user', 'content': prompt},
+        ], max_tokens=3000, temperature=0.7)
+        return {"ok": True, "report": report}
+    except Exception as e:
+        logger.error(f"Failed to generate report: {e}")
+        raise HTTPException(status_code=500, detail="生成报告失败，请稍后重试")
 
 
 class UpgradeRequest(BaseModel):
@@ -1168,6 +1425,20 @@ async def game():
     html = static_dir / "game.html"
     if not html.exists():
         raise HTTPException(status_code=404, detail="Game page not found")
+    return FileResponse(str(html))
+
+@app.get("/admin")
+async def admin_page():
+    html = static_dir / "admin.html"
+    if not html.exists():
+        raise HTTPException(status_code=404, detail="Admin page not found")
+    return FileResponse(str(html))
+
+@app.get("/teacher")
+async def teacher_page():
+    html = static_dir / "teacher.html"
+    if not html.exists():
+        raise HTTPException(status_code=404, detail="Teacher page not found")
     return FileResponse(str(html))
 
 

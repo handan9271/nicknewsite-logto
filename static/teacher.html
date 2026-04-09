@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>教师面板 · Nick Speaking Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1a1714; --ink-mid: #42403c; --ink-dim: #8a837a;
+  --paper: #faf8f4; --warm: #f0ece0;
+  --teal: #0A5A45; --teal-dk: #063d2e; --teal-lt: #e4f3ee;
+  --gold: #C9963A; --gold-pale: #f5dfa0;
+  --red: #b83228; --red-bg: #fff2f0;
+  --rule: rgba(60,55,45,.12);
+  --shadow: 0 2px 20px rgba(0,0,0,.08);
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:var(--warm); color:var(--ink); min-height:100vh; }
+
+.layout { display:flex; min-height:100vh; }
+
+.sidebar {
+  width:250px; background:var(--teal-dk); position:fixed; top:0; left:0; height:100vh;
+  display:flex; flex-direction:column; z-index:100;
+}
+.sb-brand { padding:26px 22px 18px; border-bottom:1px solid rgba(255,255,255,.08); }
+.sb-logo { font-family:'EB Garamond',serif; font-size:16px; color:#fff; line-height:1.4; }
+.sb-logo span { color:var(--gold-pale); }
+.sb-tag { font-size:9.5px; color:rgba(255,255,255,.35); margin-top:4px; }
+.sb-nav { padding:14px 10px; flex:1; }
+.nb {
+  display:flex; align-items:center; gap:10px; padding:10px 13px; border-radius:8px;
+  color:rgba(255,255,255,.55); font-size:13px; cursor:pointer; transition:background .15s,color .15s;
+  margin-bottom:2px; border:none; background:none; width:100%; text-align:left; text-decoration:none;
+}
+.nb:hover { background:rgba(255,255,255,.08); color:#fff; }
+.nb.on { background:var(--teal); color:#fff; }
+.sb-user { padding:14px 22px 22px; border-top:1px solid rgba(255,255,255,.08); font-size:11.5px; color:rgba(255,255,255,.4); }
+.sb-un { color:#fff; font-weight:500; font-size:13px; margin-bottom:2px; }
+.sb-role { color:var(--gold-pale); font-size:11px; margin-bottom:8px; }
+.sb-out { margin-top:6px; background:none; border:1px solid rgba(255,255,255,.14); color:rgba(255,255,255,.4); padding:5px 11px; border-radius:6px; font-size:11.5px; cursor:pointer; }
+.sb-out:hover { border-color:rgba(255,255,255,.4); color:#fff; }
+
+.main { margin-left:250px; flex:1; padding:36px 44px; }
+.page-title { font-family:'EB Garamond',serif; font-size:25px; color:var(--teal-dk); margin-bottom:4px; }
+.page-desc { font-size:13px; color:var(--ink-dim); margin-bottom:26px; }
+
+.card { background:var(--paper); border-radius:12px; box-shadow:var(--shadow); padding:24px; margin-bottom:24px; }
+.card-title { font-family:'EB Garamond',serif; font-size:18px; color:var(--teal-dk); margin-bottom:16px; }
+
+/* Student cards */
+.student-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+.student-card {
+  background:var(--paper); border-radius:12px; box-shadow:var(--shadow); padding:20px;
+  cursor:pointer; transition:all .15s; border:2px solid transparent;
+}
+.student-card:hover { border-color:var(--teal); transform:translateY(-2px); }
+.student-card.active { border-color:var(--gold); }
+.sc-name { font-weight:600; font-size:15px; margin-bottom:4px; }
+.sc-email { font-size:12px; color:var(--ink-dim); margin-bottom:8px; }
+.sc-stats { display:flex; gap:16px; font-size:12px; color:var(--ink-mid); }
+.sc-stat { text-align:center; }
+.sc-stat-num { font-family:'EB Garamond',serif; font-size:20px; color:var(--teal-dk); }
+
+/* Add student */
+.add-row { display:flex; gap:10px; margin-bottom:20px; }
+.add-row input { flex:1; padding:10px 14px; border:1.5px solid #d8d0c8; border-radius:8px; font-size:14px; outline:none; }
+.add-row input:focus { border-color:var(--teal); }
+
+.btn { padding:8px 18px; border:none; border-radius:8px; font-size:13px; cursor:pointer; transition:all .15s; font-weight:500; }
+.btn-teal { background:var(--teal); color:#fff; }
+.btn-teal:hover { background:var(--teal-dk); }
+.btn-gold { background:var(--gold); color:#fff; }
+.btn-gold:hover { background:#b8862f; }
+.btn-red { background:var(--red); color:#fff; font-size:11px; padding:5px 12px; }
+.btn-red:hover { background:#9e2a22; }
+.btn-outline { background:none; border:1.5px solid var(--teal); color:var(--teal); }
+.btn-outline:hover { background:var(--teal-lt); }
+
+/* Detail panel */
+.detail-panel { display:none; }
+.detail-panel.on { display:block; }
+.detail-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.back-btn { background:none; border:none; color:var(--teal); font-size:14px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+.back-btn:hover { text-decoration:underline; }
+
+.tabs { display:flex; gap:4px; margin-bottom:20px; }
+.tab { padding:8px 20px; border-radius:8px 8px 0 0; border:1.5px solid var(--rule); border-bottom:none; background:var(--warm); color:var(--ink-dim); cursor:pointer; font-size:13px; }
+.tab.on { background:var(--paper); color:var(--teal-dk); font-weight:600; }
+
+.tab-content { display:none; }
+.tab-content.on { display:block; }
+
+/* History list */
+.history-item { padding:14px 0; border-bottom:1px solid var(--rule); }
+.hi-date { font-size:11px; color:var(--ink-dim); }
+.hi-q { font-family:'EB Garamond',serif; font-size:15px; color:var(--teal-dk); margin:4px 0; }
+.hi-score { font-size:12px; color:var(--gold); }
+.hi-answer { font-size:12px; color:var(--ink-mid); margin-top:6px; max-height:60px; overflow:hidden; }
+
+/* Game history */
+.game-item { padding:14px 0; border-bottom:1px solid var(--rule); display:flex; justify-content:space-between; align-items:center; }
+.gi-info { flex:1; }
+.gi-score { font-family:'EB Garamond',serif; font-size:24px; color:var(--teal-dk); }
+.gi-meta { font-size:12px; color:var(--ink-dim); }
+
+/* Report */
+.report-area { background:#fff; border-radius:8px; padding:24px; line-height:1.8; font-size:14px; white-space:pre-wrap; }
+.report-loading { text-align:center; padding:40px; color:var(--ink-dim); }
+
+.toast { position:fixed; top:20px; right:20px; padding:12px 24px; border-radius:8px; font-size:13px; color:#fff; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; }
+.toast.show { opacity:1; }
+.toast.ok { background:var(--teal); }
+.toast.err { background:var(--red); }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <div class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">教师面板 · <span>Teacher</span></div>
+      <div class="sb-tag">Nick Speaking Platform</div>
+    </div>
+    <div class="sb-nav">
+      <a class="nb" href="/admin" id="nav-admin" style="display:none;"><span>📊</span> 管理后台</a>
+      <a class="nb on" href="/teacher"><span>👨‍🏫</span> 教师面板</a>
+      <a class="nb" href="/"><span>🏠</span> 返回主站</a>
+      <a class="nb" href="/game"><span>🎮</span> 口语模考</a>
+    </div>
+    <div class="sb-user">
+      <div class="sb-un" id="sb-name">老师</div>
+      <div class="sb-role" id="sb-role">Teacher</div>
+      <button class="sb-out" onclick="location.href='/auth/sign-out'">退出登录</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Student list view -->
+    <div id="list-view">
+      <div class="page-title">我的学生</div>
+      <div class="page-desc">添加学生 · 查看练习和模考记录 · 生成学习报告</div>
+
+      <div class="card">
+        <div class="card-title">添加学生</div>
+        <div class="add-row">
+          <input id="add-email" placeholder="输入学生注册邮箱..." onkeydown="if(event.key==='Enter') addStudent()">
+          <button class="btn btn-teal" onclick="addStudent()">添加</button>
+        </div>
+      </div>
+
+      <div class="student-grid" id="student-grid">
+        <div style="text-align:center;color:var(--ink-dim);padding:40px;grid-column:1/-1;">加载中...</div>
+      </div>
+    </div>
+
+    <!-- Student detail view -->
+    <div id="detail-view" class="detail-panel">
+      <div class="detail-header">
+        <button class="back-btn" onclick="showList()">← 返回学生列表</button>
+        <div>
+          <button class="btn btn-gold" onclick="generateReport()">🤖 AI 生成学习报告</button>
+          <button class="btn btn-red" onclick="removeCurrentStudent()" style="margin-left:8px;">移除学生</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:20px;font-weight:600;" id="detail-name">--</div>
+            <div style="font-size:13px;color:var(--ink-dim);" id="detail-email">--</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:'EB Garamond',serif;font-size:28px;color:var(--teal-dk);" id="detail-credits">--</div>
+            <div style="font-size:11px;color:var(--ink-dim);">剩余积分</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab on" onclick="switchTab('practice')">📝 练习记录</div>
+        <div class="tab" onclick="switchTab('game')">🎮 模考记录</div>
+        <div class="tab" onclick="switchTab('report')">📋 学习报告</div>
+      </div>
+
+      <div id="tab-practice" class="tab-content on card">
+        <div id="practice-list">加载中...</div>
+      </div>
+
+      <div id="tab-game" class="tab-content card">
+        <div id="game-list">加载中...</div>
+      </div>
+
+      <div id="tab-report" class="tab-content card">
+        <div id="report-area" class="report-area">
+          <div style="text-align:center;color:var(--ink-dim);padding:20px;">点击上方"AI 生成学习报告"按钮，基于学生的练习和模考数据自动生成个性化学习计划。</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let myRole = '';
+let students = [];
+let currentStudentId = null;
+let currentStudentName = '';
+
+async function init() {
+  try {
+    const res = await fetch('/api/me', { credentials:'include' });
+    if (!res.ok) { location.href = '/auth/sign-in'; return; }
+    const me = await res.json();
+    if (me.role !== 'teacher' && me.role !== 'admin') { location.href = '/'; return; }
+    myRole = me.role;
+    document.getElementById('sb-name').textContent = me.display_name || me.email;
+    document.getElementById('sb-role').textContent = me.role === 'admin' ? 'Admin' : 'Teacher';
+    if (me.role === 'admin') document.getElementById('nav-admin').style.display = '';
+    loadStudents();
+  } catch(e) { location.href = '/auth/sign-in'; }
+}
+
+async function loadStudents() {
+  try {
+    const res = await fetch('/api/teacher/students', { credentials:'include' });
+    students = await res.json();
+    renderStudents();
+  } catch(e) { toast('加载学生列表失败','err'); }
+}
+
+function renderStudents() {
+  const grid = document.getElementById('student-grid');
+  if (!students.length) {
+    grid.innerHTML = '<div style="text-align:center;color:var(--ink-dim);padding:40px;grid-column:1/-1;">还没有学生，在上方输入邮箱添加</div>';
+    return;
+  }
+  grid.innerHTML = students.map(s => `
+    <div class="student-card" onclick="showStudent(${s.id})">
+      <div class="sc-name">${esc(s.display_name || '未命名')}</div>
+      <div class="sc-email">${esc(s.email)}</div>
+      <div class="sc-stats">
+        <div class="sc-stat"><div class="sc-stat-num">${s.credits}</div>积分</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function addStudent() {
+  const email = document.getElementById('add-email').value.trim();
+  if (!email) { toast('请输入学生邮箱','err'); return; }
+  try {
+    const res = await fetch('/api/teacher/add-student', {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || '添加失败');
+    toast('已添加学生 ' + (data.display_name || email), 'ok');
+    document.getElementById('add-email').value = '';
+    loadStudents();
+  } catch(e) { toast(e.message,'err'); }
+}
+
+async function showStudent(id) {
+  currentStudentId = id;
+  const s = students.find(s => s.id === id);
+  currentStudentName = s ? (s.display_name || s.email) : '';
+
+  document.getElementById('detail-name').textContent = s ? (s.display_name || '未命名') : '--';
+  document.getElementById('detail-email').textContent = s ? s.email : '--';
+  document.getElementById('detail-credits').textContent = s ? s.credits : '--';
+
+  document.getElementById('list-view').style.display = 'none';
+  document.getElementById('detail-view').classList.add('on');
+
+  switchTab('practice');
+  loadPracticeHistory(id);
+  loadGameHistory(id);
+  document.getElementById('report-area').innerHTML = '<div style="text-align:center;color:var(--ink-dim);padding:20px;">点击上方"AI 生成学习报告"按钮</div>';
+}
+
+function showList() {
+  document.getElementById('list-view').style.display = '';
+  document.getElementById('detail-view').classList.remove('on');
+  currentStudentId = null;
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['practice','game','report'];
+    t.classList.toggle('on', names[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('on'));
+  document.getElementById('tab-'+name).classList.add('on');
+}
+
+async function loadPracticeHistory(studentId) {
+  const el = document.getElementById('practice-list');
+  el.innerHTML = '<div style="color:var(--ink-dim);">加载中...</div>';
+  try {
+    const res = await fetch(`/api/teacher/student/${studentId}/practice-history`, { credentials:'include' });
+    const data = await res.json();
+    if (!data.length) { el.innerHTML = '<div style="color:var(--ink-dim);">暂无练习记录</div>'; return; }
+    el.innerHTML = data.map(c => `
+      <div class="history-item">
+        <div class="hi-date">${esc(c.created_at)}</div>
+        <div class="hi-q">${esc(c.question)}</div>
+        ${c.score ? `<div class="hi-score">${esc(c.score)}</div>` : ''}
+        ${c.user_input ? `<div class="hi-answer">${esc(c.user_input.substring(0,200))}${c.user_input.length>200?'...':''}</div>` : ''}
+      </div>
+    `).join('');
+  } catch(e) { el.innerHTML = '<div style="color:var(--red);">加载失败</div>'; }
+}
+
+async function loadGameHistory(studentId) {
+  const el = document.getElementById('game-list');
+  el.innerHTML = '<div style="color:var(--ink-dim);">加载中...</div>';
+  try {
+    const res = await fetch(`/api/teacher/student/${studentId}/game-history`, { credentials:'include' });
+    const data = await res.json();
+    if (!data.length) { el.innerHTML = '<div style="color:var(--ink-dim);">暂无模考记录</div>'; return; }
+    el.innerHTML = data.map(g => {
+      const v = g.verdict || {};
+      return `
+        <div class="game-item">
+          <div class="gi-info">
+            <div class="gi-meta">${esc(g.created_at)} · ${g.mode === 'multiplayer' ? '多人' : '单人'}${g.player_count > 1 ? ' · 排名 '+g.rank+'/'+g.player_count : ''}</div>
+            ${v.comment ? `<div style="font-size:12px;color:var(--ink-mid);margin-top:4px;">${esc(v.comment.substring(0,150))}${v.comment.length>150?'...':''}</div>` : ''}
+          </div>
+          <div class="gi-score">${g.overall_score || '--'}</div>
+        </div>
+      `;
+    }).join('');
+  } catch(e) { el.innerHTML = '<div style="color:var(--red);">加载失败</div>'; }
+}
+
+async function generateReport() {
+  if (!currentStudentId) return;
+  const area = document.getElementById('report-area');
+  area.innerHTML = '<div class="report-loading">🤖 AI 正在分析学生数据并生成学习报告，请稍候...</div>';
+  switchTab('report');
+
+  try {
+    const res = await fetch(`/api/teacher/student/${currentStudentId}/generate-report`, {
+      method:'POST', credentials:'include'
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || '生成失败');
+    // Simple markdown rendering
+    area.innerHTML = data.report
+      .replace(/^### (.*$)/gm, '<h3 style="color:var(--teal-dk);margin:20px 0 8px;">$1</h3>')
+      .replace(/^## (.*$)/gm, '<h2 style="color:var(--teal-dk);margin:24px 0 10px;font-family:EB Garamond,serif;">$1</h2>')
+      .replace(/^# (.*$)/gm, '<h1 style="color:var(--teal-dk);margin:28px 0 12px;font-family:EB Garamond,serif;">$1</h1>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^- (.*$)/gm, '<li style="margin-left:20px;">$1</li>')
+      .replace(/\n/g, '<br>');
+    toast('报告生成完成','ok');
+  } catch(e) {
+    area.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px;">生成报告失败：' + esc(e.message) + '</div>';
+    toast(e.message,'err');
+  }
+}
+
+async function removeCurrentStudent() {
+  if (!currentStudentId) return;
+  if (!confirm('确定要将 ' + currentStudentName + ' 从你的学生列表中移除吗？')) return;
+  try {
+    const res = await fetch(`/api/teacher/remove-student/${currentStudentId}`, {
+      method:'DELETE', credentials:'include'
+    });
+    if (!res.ok) throw new Error('移除失败');
+    toast('已移除学生','ok');
+    showList();
+    loadStudents();
+  } catch(e) { toast(e.message,'err'); }
+}
+
+function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg,type='') { const el=document.getElementById('toast'); el.textContent=msg; el.className='toast '+type+' show'; setTimeout(()=>el.classList.remove('show'),3000); }
+
+init();
+</script>
+</body>
+</html>

@@ -279,6 +279,8 @@ mark.ins.lit { filter:brightness(.87); box-shadow:0 0 0 2px var(--grn); }
       <a class="nb" href="/game" style="text-decoration:none"><span class="ico">⚖️</span> 雅思口语模考</a>
       <button class="nb" id="nb-h" onclick="nav('history')"><span class="ico">📋</span> 历史记录</button>
       <a class="nb" href="/guide" style="text-decoration:none"><span class="ico">📖</span> 使用说明</a>
+      <a class="nb" href="/teacher" id="nb-teacher" style="display:none;text-decoration:none"><span class="ico">👨‍🏫</span> 教师面板</a>
+      <a class="nb" href="/admin" id="nb-admin" style="display:none;text-decoration:none"><span class="ico">📊</span> 管理后台</a>
     </div>
     <div class="sb-user">
       <div class="sb-av">👤</div>
@@ -506,6 +508,13 @@ function showApp(data) {
   document.getElementById('sb-name').textContent   = data.display_name || data.email || 'User';
   if (data.credits !== undefined) {
     document.getElementById('sb-credits').textContent = '剩余次数：' + data.credits;
+  }
+  // Show role-based nav items
+  if (data.role === 'teacher' || data.role === 'admin') {
+    document.getElementById('nb-teacher').style.display = '';
+  }
+  if (data.role === 'admin') {
+    document.getElementById('nb-admin').style.display = '';
   }
   toast('欢迎回来 👋', 'ok');
 }

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理后台 · Nick Speaking Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1a1714; --ink-mid: #42403c; --ink-dim: #8a837a;
+  --paper: #faf8f4; --warm: #f0ece0;
+  --teal: #0A5A45; --teal-dk: #063d2e; --teal-lt: #e4f3ee;
+  --gold: #C9963A; --gold-pale: #f5dfa0;
+  --red: #b83228; --red-bg: #fff2f0;
+  --rule: rgba(60,55,45,.12);
+  --shadow: 0 2px 20px rgba(0,0,0,.08);
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:var(--warm); color:var(--ink); min-height:100vh; }
+
+.layout { display:flex; min-height:100vh; }
+
+/* Sidebar */
+.sidebar {
+  width:250px; background:var(--teal-dk); position:fixed; top:0; left:0; height:100vh;
+  display:flex; flex-direction:column; z-index:100;
+}
+.sb-brand { padding:26px 22px 18px; border-bottom:1px solid rgba(255,255,255,.08); }
+.sb-logo { font-family:'EB Garamond',serif; font-size:16px; color:#fff; line-height:1.4; }
+.sb-logo span { color:var(--gold-pale); }
+.sb-tag { font-size:9.5px; color:rgba(255,255,255,.35); margin-top:4px; }
+.sb-nav { padding:14px 10px; flex:1; }
+.nb {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 13px; border-radius:8px;
+  color:rgba(255,255,255,.55); font-size:13px;
+  cursor:pointer; transition:background .15s,color .15s;
+  margin-bottom:2px; border:none; background:none; width:100%; text-align:left;
+  text-decoration:none;
+}
+.nb:hover { background:rgba(255,255,255,.08); color:#fff; }
+.nb.on { background:var(--teal); color:#fff; }
+.sb-user {
+  padding:14px 22px 22px; border-top:1px solid rgba(255,255,255,.08);
+  font-size:11.5px; color:rgba(255,255,255,.4);
+}
+.sb-un { color:#fff; font-weight:500; font-size:13px; margin-bottom:2px; }
+.sb-role { color:var(--gold-pale); font-size:11px; margin-bottom:8px; }
+.sb-out { margin-top:6px; background:none; border:1px solid rgba(255,255,255,.14); color:rgba(255,255,255,.4); padding:5px 11px; border-radius:6px; font-size:11.5px; cursor:pointer; }
+.sb-out:hover { border-color:rgba(255,255,255,.4); color:#fff; }
+
+/* Main */
+.main { margin-left:250px; flex:1; padding:36px 44px; }
+.page-title { font-family:'EB Garamond',serif; font-size:25px; color:var(--teal-dk); margin-bottom:4px; }
+.page-desc { font-size:13px; color:var(--ink-dim); margin-bottom:26px; }
+
+/* Stats cards */
+.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:32px; }
+.stat-card { background:var(--paper); border-radius:12px; box-shadow:var(--shadow); padding:20px 24px; }
+.stat-num { font-family:'EB Garamond',serif; font-size:32px; color:var(--teal-dk); }
+.stat-label { font-size:12px; color:var(--ink-dim); margin-top:4px; }
+
+/* Table */
+.card { background:var(--paper); border-radius:12px; box-shadow:var(--shadow); padding:24px; margin-bottom:24px; }
+.card-title { font-family:'EB Garamond',serif; font-size:18px; color:var(--teal-dk); margin-bottom:16px; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { text-align:left; padding:10px 12px; border-bottom:2px solid var(--rule); color:var(--ink-dim); font-size:11px; text-transform:uppercase; letter-spacing:.5px; }
+td { padding:10px 12px; border-bottom:1px solid var(--rule); }
+tr:hover td { background:var(--teal-lt); }
+
+/* Badges */
+.badge { display:inline-block; padding:2px 10px; border-radius:12px; font-size:11px; font-weight:600; }
+.badge-admin { background:#ede7f6; color:#4a148c; }
+.badge-teacher { background:#e3f2fd; color:#1565c0; }
+.badge-student { background:var(--teal-lt); color:var(--teal); }
+
+/* Buttons */
+.btn { padding:6px 14px; border:none; border-radius:6px; font-size:12px; cursor:pointer; transition:all .15s; }
+.btn-teal { background:var(--teal); color:#fff; }
+.btn-teal:hover { background:var(--teal-dk); }
+.btn-gold { background:var(--gold); color:#fff; }
+.btn-gold:hover { background:#b8862f; }
+.btn-red { background:var(--red); color:#fff; }
+.btn-red:hover { background:#9e2a22; }
+
+/* Select */
+select { padding:5px 10px; border:1.5px solid #d8d0c8; border-radius:6px; font-size:12px; background:#fff; }
+
+/* Modal */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:200; align-items:center; justify-content:center; }
+.modal-overlay.on { display:flex; }
+.modal { background:var(--paper); border-radius:16px; padding:32px; width:420px; max-width:90vw; box-shadow:0 8px 40px rgba(0,0,0,.2); }
+.modal-title { font-family:'EB Garamond',serif; font-size:20px; color:var(--teal-dk); margin-bottom:16px; }
+.modal input { width:100%; padding:10px 14px; border:1.5px solid #d8d0c8; border-radius:8px; font-size:14px; margin-bottom:12px; outline:none; }
+.modal input:focus { border-color:var(--teal); }
+
+/* Toast */
+.toast { position:fixed; top:20px; right:20px; padding:12px 24px; border-radius:8px; font-size:13px; color:#fff; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; }
+.toast.show { opacity:1; }
+.toast.ok { background:var(--teal); }
+.toast.err { background:var(--red); }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <div class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">管理后台 · <span>Admin</span></div>
+      <div class="sb-tag">Nick Speaking Platform</div>
+    </div>
+    <div class="sb-nav">
+      <a class="nb on" href="/admin"><span>📊</span> 管理后台</a>
+      <a class="nb" href="/teacher"><span>👨‍🏫</span> 教师面板</a>
+      <a class="nb" href="/"><span>🏠</span> 返回主站</a>
+      <a class="nb" href="/game"><span>🎮</span> 口语模考</a>
+    </div>
+    <div class="sb-user">
+      <div class="sb-un" id="sb-name">管理员</div>
+      <div class="sb-role" id="sb-role">Admin</div>
+      <button class="sb-out" onclick="location.href='/auth/sign-out'">退出登录</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page-title">管理后台</div>
+    <div class="page-desc">用户管理 · 角色分配 · 积分充值 · 数据统计</div>
+
+    <!-- Stats -->
+    <div class="stats" id="stats">
+      <div class="stat-card"><div class="stat-num" id="s-users">--</div><div class="stat-label">总用户数</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-convos">--</div><div class="stat-label">练习次数</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-games">--</div><div class="stat-label">模考次数</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-teachers">--</div><div class="stat-label">教师数量</div></div>
+    </div>
+
+    <!-- User table -->
+    <div class="card">
+      <div class="card-title">用户列表</div>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>邮箱</th><th>名称</th><th>角色</th><th>积分</th><th>注册时间</th><th>操作</th></tr>
+        </thead>
+        <tbody id="user-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Edit user modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">编辑用户</div>
+    <div id="edit-info" style="font-size:13px;color:var(--ink-dim);margin-bottom:12px;"></div>
+    <label style="font-size:11px;color:var(--ink-dim);">角色</label>
+    <select id="edit-role" style="width:100%;margin-bottom:12px;padding:10px;">
+      <option value="student">Student 学生</option>
+      <option value="teacher">Teacher 老师</option>
+      <option value="admin">Admin 管理员</option>
+    </select>
+    <label style="font-size:11px;color:var(--ink-dim);">积分</label>
+    <input id="edit-credits" type="number" min="0" placeholder="积分数量">
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn" onclick="closeEditModal()" style="background:#eee;">取消</button>
+      <button class="btn btn-teal" onclick="saveUser()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentEditId = null;
+
+async function init() {
+  try {
+    const res = await fetch('/api/me', { credentials:'include' });
+    if (!res.ok) { location.href = '/auth/sign-in'; return; }
+    const me = await res.json();
+    if (me.role !== 'admin') { location.href = '/'; return; }
+    document.getElementById('sb-name').textContent = me.display_name || me.email;
+    document.getElementById('sb-role').textContent = me.role.toUpperCase();
+    loadStats();
+    loadUsers();
+  } catch(e) { location.href = '/auth/sign-in'; }
+}
+
+async function loadStats() {
+  try {
+    const res = await fetch('/api/admin/stats', { credentials:'include' });
+    const d = await res.json();
+    document.getElementById('s-users').textContent = d.total_users;
+    document.getElementById('s-convos').textContent = d.total_conversations;
+    document.getElementById('s-games').textContent = d.total_games;
+    document.getElementById('s-teachers').textContent = d.role_counts?.teacher || 0;
+  } catch(e) {}
+}
+
+async function loadUsers() {
+  try {
+    const res = await fetch('/api/admin/users', { credentials:'include' });
+    const users = await res.json();
+    const tbody = document.getElementById('user-table');
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td>${u.id}</td>
+        <td>${esc(u.email)}</td>
+        <td>${esc(u.display_name)}</td>
+        <td><span class="badge badge-${u.role}">${u.role}</span></td>
+        <td>${u.credits}</td>
+        <td>${u.created_at ? u.created_at.split('.')[0] : ''}</td>
+        <td><button class="btn btn-teal" onclick="editUser(${u.id},'${esc(u.email)}','${u.role}',${u.credits})">编辑</button></td>
+      </tr>
+    `).join('');
+  } catch(e) { toast('加载用户列表失败','err'); }
+}
+
+function editUser(id, email, role, credits) {
+  currentEditId = id;
+  document.getElementById('edit-info').textContent = email;
+  document.getElementById('edit-role').value = role;
+  document.getElementById('edit-credits').value = credits;
+  document.getElementById('edit-modal').classList.add('on');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('on');
+  currentEditId = null;
+}
+
+async function saveUser() {
+  if (!currentEditId) return;
+  const role = document.getElementById('edit-role').value;
+  const credits = parseInt(document.getElementById('edit-credits').value) || 0;
+  try {
+    const res = await fetch(`/api/admin/users/${currentEditId}/update`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ role, credits })
+    });
+    if (!res.ok) throw new Error('保存失败');
+    toast('保存成功','ok');
+    closeEditModal();
+    loadUsers();
+    loadStats();
+  } catch(e) { toast(e.message,'err'); }
+}
+
+function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function toast(msg,type='') { const el=document.getElementById('toast'); el.textContent=msg; el.className='toast '+type+' show'; setTimeout(()=>el.classList.remove('show'),3000); }
+
+init();
+</script>
+</body>
+</html>
