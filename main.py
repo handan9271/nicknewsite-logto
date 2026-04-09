@@ -157,6 +157,21 @@ class Conversation(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 
+class GameSession(Base):
+    __tablename__ = "game_sessions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    logto_user_id = Column(String(255), nullable=False, index=True)
+    room_code = Column(String(10), default="")
+    mode = Column(String(20), default="solo")  # solo / multiplayer
+    answers_json = Column(Text)       # JSON: [{part, question, answer, scores}]
+    verdict_json = Column(Text)       # JSON: {scores, overall, verdict, comment}
+    overall_score = Column(String(10), default="")
+    rank = Column(Integer, default=0)
+    player_count = Column(Integer, default=1)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+
 class UserSession(Base):
     __tablename__ = "user_sessions"
     id = Column(Integer, primary_key=True, index=True)
@@ -674,6 +689,36 @@ async def run_game_loop(room: Room):
         room.status = 'done'
         await broadcast(room, {'type': 'verdict_result', 'leaderboard': leaderboard})
 
+        # Save game sessions to database
+        try:
+            db = SessionLocal()
+            for entry in leaderboard:
+                username = entry['username']
+                player = room.players.get(username)
+                if not player:
+                    continue
+                # Find user in database
+                db_user = db.query(User).filter(User.logto_user_id == username).first()
+                user_id = db_user.id if db_user else 0
+
+                game_session = GameSession(
+                    user_id=user_id,
+                    logto_user_id=username,
+                    room_code=room.code,
+                    mode='multiplayer' if len(room.players) > 1 else 'solo',
+                    answers_json=json.dumps(player.answers, ensure_ascii=False),
+                    verdict_json=json.dumps(player.final_verdict, ensure_ascii=False) if player.final_verdict else '{}',
+                    overall_score=str(entry.get('overall', '')),
+                    rank=entry.get('rank', 0),
+                    player_count=len(room.players),
+                )
+                db.add(game_session)
+            db.commit()
+            logger.info(f"[Room {room.code}] Saved {len(leaderboard)} game sessions to database")
+            db.close()
+        except Exception as save_err:
+            logger.error(f"[Room {room.code}] Failed to save game sessions: {save_err}")
+
     except asyncio.CancelledError:
         pass
     except Exception as e:
@@ -928,6 +973,63 @@ async def get_history(user: User = Depends(get_current_user), db: Session = Depe
         })
 
     return history
+
+
+class SaveGameSessionRequest(BaseModel):
+    mode: str = "solo"
+    answers: list = []
+    verdict: dict = {}
+
+
+@app.post("/api/save-game-session")
+async def save_game_session(body: SaveGameSessionRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Save a game mock test session to database."""
+    overall = body.verdict.get('overall', '')
+    game_session = GameSession(
+        user_id=user.id,
+        logto_user_id=user.logto_user_id,
+        room_code='',
+        mode=body.mode,
+        answers_json=json.dumps(body.answers, ensure_ascii=False),
+        verdict_json=json.dumps(body.verdict, ensure_ascii=False),
+        overall_score=str(overall),
+        rank=1,
+        player_count=1,
+    )
+    db.add(game_session)
+    db.commit()
+    return {"ok": True}
+
+
+@app.get("/api/game-history")
+async def get_game_history(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get user's game mock test history."""
+    sessions = db.query(GameSession).filter(
+        GameSession.user_id == user.id
+    ).order_by(GameSession.timestamp.desc()).limit(50).all()
+
+    beijing_tz = timezone(timedelta(hours=8))
+    result = []
+    for s in sessions:
+        ts = s.timestamp
+        if ts:
+            utc_time = ts.replace(tzinfo=timezone.utc)
+            formatted_time = utc_time.astimezone(beijing_tz).strftime("%Y-%m-%d %H:%M")
+        else:
+            formatted_time = ""
+
+        result.append({
+            "id": s.id,
+            "created_at": formatted_time,
+            "mode": s.mode,
+            "overall_score": s.overall_score,
+            "rank": s.rank,
+            "player_count": s.player_count,
+            "answers": json.loads(s.answers_json) if s.answers_json else [],
+            "verdict": json.loads(s.verdict_json) if s.verdict_json else {},
+        })
+
+    return result
 
 
 # ─── MULTIPLAYER ENDPOINTS ──────────────────────────────────────────────────

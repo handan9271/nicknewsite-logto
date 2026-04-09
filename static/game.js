@@ -772,6 +772,28 @@ Respond ONLY with this JSON (no markdown):
       D.verdict_text.textContent = v.verdict || '';
       D.verdict_comment.textContent = v.comment || '';
     }, 800 + cards.length * 1000 + 500);
+
+    // Save solo game session to database
+    if (!S.multiplayer) {
+      saveGameSession(v);
+    }
+  }
+
+  async function saveGameSession(verdict) {
+    try {
+      await fetch('/api/save-game-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          mode: 'solo',
+          answers: S.answers,
+          verdict: verdict,
+        }),
+      });
+    } catch (e) {
+      console.warn('Failed to save game session:', e);
+    }
   }
 
   // ── Start game ──
