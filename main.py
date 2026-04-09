@@ -79,7 +79,20 @@ async def security_headers(request: Request, call_next):
 
 # ─── CONFIG ─────────────────────────────────────────────────────────────────
 
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+# DeepSeek multi-key round-robin: comma-separated keys in env var
+_deepseek_keys_raw = os.getenv("DEEPSEEK_API_KEY", "")
+DEEPSEEK_API_KEYS = [k.strip() for k in _deepseek_keys_raw.split(",") if k.strip()]
+_deepseek_key_index = 0
+
+def get_deepseek_key() -> str:
+    global _deepseek_key_index
+    if not DEEPSEEK_API_KEYS:
+        return ""
+    key = DEEPSEEK_API_KEYS[_deepseek_key_index % len(DEEPSEEK_API_KEYS)]
+    _deepseek_key_index += 1
+    return key
+
+logger.info(f"Loaded {len(DEEPSEEK_API_KEYS)} DeepSeek API key(s)")
 DEEPSEEK_BASE = "https://api.deepseek.com/v1/chat/completions"
 
 LOGTO_ENDPOINT = os.getenv("LOGTO_ENDPOINT", "")
@@ -339,7 +352,8 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)) -> U
 
 async def call_deepseek(messages: list, max_tokens: int = 1800, temperature: float = 0.5) -> str:
     """Call DeepSeek API and return the full text response."""
-    if not DEEPSEEK_API_KEY:
+    api_key = get_deepseek_key()
+    if not api_key:
         raise Exception("DEEPSEEK_API_KEY not configured")
     payload = {
         "model": "deepseek-chat",
@@ -353,7 +367,7 @@ async def call_deepseek(messages: list, max_tokens: int = 1800, temperature: flo
         async with client.stream(
             "POST", DEEPSEEK_BASE,
             headers={
-                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             },
             json=payload,
@@ -1132,7 +1146,8 @@ class UpgradeRequest(BaseModel):
 @app.post("/api/upgrade")
 async def upgrade(request: Request, body: UpgradeRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Proxy to DeepSeek with credit check, forwarding stream back to client."""
-    if not DEEPSEEK_API_KEY:
+    api_key = get_deepseek_key()
+    if not api_key:
         raise HTTPException(status_code=500, detail="DEEPSEEK_API_KEY not configured")
 
     # Rate limit
@@ -1163,7 +1178,7 @@ async def upgrade(request: Request, body: UpgradeRequest, user: User = Depends(g
             async with client.stream(
                 "POST", DEEPSEEK_BASE,
                 headers={
-                    "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                    "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
                 },
                 json=payload,
