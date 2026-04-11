@@ -151,3 +151,7 @@ uvicorn main:app --reload --port 8000
 - [ ] 前端 UI/UX 优化（响应式、深色模式）
 - [ ] 品牌升级（Logo、文案、Landing Page）
 - [ ] 多语言支持
+- [ ] 教师学习报告一键发送邮件给学生（需要 SMTP 配置）
+- [ ] 教师学习报告一键发送微信给学生（需要企业微信/服务号认证）
+- [ ] favicon.ico
+- [ ] Redis 缓存（高并发时）

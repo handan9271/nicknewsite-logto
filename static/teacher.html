@@ -194,8 +194,15 @@ body { font-family:'DM Sans',sans-serif; background:var(--warm); color:var(--ink
       </div>
 
       <div id="tab-report" class="tab-content card">
-        <div id="report-area" class="report-area">
+        <div id="report-toolbar" style="display:none;margin-bottom:12px;padding:10px 14px;background:var(--teal-lt);border-radius:8px;font-size:12px;color:var(--teal-dk);">
+          ✏️ 报告内容可直接编辑，修改后点击下方"复制报告"即可粘贴到邮件或微信发送给学生
+        </div>
+        <div id="report-area" class="report-area" contenteditable="false">
           <div style="text-align:center;color:var(--ink-dim);padding:20px;">点击上方"AI 生成学习报告"按钮，基于学生的练习和模考数据自动生成个性化学习计划。</div>
+        </div>
+        <div id="report-actions" style="display:none;margin-top:16px;text-align:right;">
+          <button class="btn btn-outline" onclick="copyReport()">📋 复制报告</button>
+          <button class="btn btn-teal" onclick="toggleEdit()" id="edit-btn" style="margin-left:8px;">✏️ 开始编辑</button>
         </div>
       </div>
     </div>
@@ -340,10 +347,14 @@ async function loadGameHistory(studentId) {
   } catch(e) { el.innerHTML = '<div style="color:var(--red);">加载失败</div>'; }
 }
 
+let _currentReportMarkdown = '';
+
 async function generateReport() {
   if (!currentStudentId) return;
   const area = document.getElementById('report-area');
   area.innerHTML = '<div class="report-loading">🤖 AI 正在分析学生数据并生成学习报告，请稍候...</div>';
+  document.getElementById('report-toolbar').style.display = 'none';
+  document.getElementById('report-actions').style.display = 'none';
   switchTab('report');
 
   try {
@@ -352,6 +363,7 @@ async function generateReport() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || '生成失败');
+    _currentReportMarkdown = data.report;
     // Simple markdown rendering
     area.innerHTML = data.report
       .replace(/^### (.*$)/gm, '<h3 style="color:var(--teal-dk);margin:20px 0 8px;">$1</h3>')
@@ -360,11 +372,50 @@ async function generateReport() {
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/^- (.*$)/gm, '<li style="margin-left:20px;">$1</li>')
       .replace(/\n/g, '<br>');
-    toast('报告生成完成','ok');
+    document.getElementById('report-toolbar').style.display = '';
+    document.getElementById('report-actions').style.display = '';
+    toast('报告生成完成，可直接编辑','ok');
   } catch(e) {
     area.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px;">生成报告失败：' + esc(e.message) + '</div>';
     toast(e.message,'err');
   }
+}
+
+function toggleEdit() {
+  const area = document.getElementById('report-area');
+  const btn = document.getElementById('edit-btn');
+  const editing = area.contentEditable === 'true';
+  if (editing) {
+    area.contentEditable = 'false';
+    area.style.outline = '';
+    area.style.background = '';
+    btn.innerHTML = '✏️ 开始编辑';
+    toast('已退出编辑','ok');
+  } else {
+    area.contentEditable = 'true';
+    area.style.outline = '2px solid var(--teal)';
+    area.style.background = '#fffdf5';
+    btn.innerHTML = '✓ 完成编辑';
+    area.focus();
+  }
+}
+
+function copyReport() {
+  const area = document.getElementById('report-area');
+  // Copy as plain text (strip HTML)
+  const text = area.innerText || area.textContent || '';
+  navigator.clipboard.writeText(text).then(() => {
+    toast('报告已复制到剪贴板','ok');
+  }).catch(() => {
+    // Fallback: select and copy
+    const range = document.createRange();
+    range.selectNodeContents(area);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    try { document.execCommand('copy'); toast('报告已复制','ok'); } catch(e) { toast('复制失败，请手动选择','err'); }
+    sel.removeAllRanges();
+  });
 }
 
 async function removeCurrentStudent() {
