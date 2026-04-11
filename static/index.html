@@ -252,8 +252,17 @@ mark.ins.lit { filter:brightness(.87); box-shadow:0 0 0 2px var(--grn); }
 <svg id="svg-ol" xmlns="http://www.w3.org/2000/svg"></svg>
 <div class="toast ok" id="toast"></div>
 
+<!-- ═══ LOADING (shown initially to prevent flash) ═══ -->
+<div id="v-loading" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--warm);">
+  <div style="text-align:center;">
+    <div style="width:48px;height:48px;border:4px solid var(--teal-lt);border-top-color:var(--teal);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;"></div>
+    <div style="font-family:'EB Garamond',serif;font-size:18px;color:var(--teal-dk);">正在加载...</div>
+  </div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
 <!-- ═══ LOGIN ═══ -->
-<div id="v-login" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--warm);">
+<div id="v-login" style="display:none;align-items:center;justify-content:center;min-height:100vh;background:var(--warm);">
   <div class="login-box">
     <div class="ll">雅思考官尼克和他的<span>朋友们</span></div>
     <div class="ld">AI 口语教练 · 考官视角诊断 · 逐句升级到 Band 9</div>
@@ -500,9 +509,12 @@ function login() {
   window.location.href = '/auth/sign-in';
 }
 function logout() {
-  window.location.href = '/auth/sign-out';
+  if (confirm('确定要退出登录吗？')) {
+    window.location.href = '/auth/sign-out';
+  }
 }
 function showApp(data) {
+  document.getElementById('v-loading').style.display = 'none';
   document.getElementById('v-login').style.display = 'none';
   document.getElementById('v-app').style.display   = 'block';
   document.getElementById('sb-name').textContent   = data.display_name || data.email || 'User';
@@ -517,6 +529,12 @@ function showApp(data) {
     document.getElementById('nb-admin').style.display = '';
   }
   toast('欢迎回来 👋', 'ok');
+}
+
+function showLoginPage() {
+  document.getElementById('v-loading').style.display = 'none';
+  document.getElementById('v-login').style.display = 'flex';
+  document.getElementById('v-app').style.display = 'none';
 }
 function updateCredits(credits) {
   document.getElementById('sb-credits').textContent = '剩余次数：' + credits;
@@ -700,7 +718,12 @@ async function streamRequest(sysPrompt, userMsg, onToken){
     })
   });
   if(!resp.ok){
-    if(resp.status===401){ toast('登录已过期，请重新登录','err'); logout(); throw new Error('未登录'); }
+    if(resp.status===401){ toast('登录已过期，请重新登录','err'); setTimeout(()=>location.href='/auth/sign-in',1500); throw new Error('未登录'); }
+    if(resp.status===402){
+      alert('⚠️ 积分已用完\n\n你的积分已耗尽，请联系老师或管理员充值后继续使用。');
+      throw new Error('积分已用完');
+    }
+    if(resp.status===429){ throw new Error('请求过于频繁，请稍等片刻再试'); }
     const e=await resp.json().catch(()=>({})); throw new Error(e.detail||'HTTP '+resp.status);
   }
   let buffer='';
@@ -1094,9 +1117,12 @@ function toast(msg,type=''){ const el=document.getElementById('toast'); el.textC
       const data = await res.json();
       showApp(data);
       nav('practice');
+    } else {
+      showLoginPage();
     }
-    // else: stay on login page
-  } catch(e){ /* stay on login */ }
+  } catch(e){
+    showLoginPage();
+  }
 })();
 </script>
 </body>

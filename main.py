@@ -106,13 +106,14 @@ class SimpleRateLimiter:
     def __init__(self):
         self.requests = defaultdict(list)
 
-    def is_allowed(self, ip: str, limit_per_minute: int = 10) -> bool:
+    def is_allowed(self, key: str, limit_per_minute: int = 10) -> bool:
+        """Check if a given key (IP or user ID) is within rate limit."""
         now = time_now()
         minute_ago = now - 60
-        self.requests[ip] = [t for t in self.requests[ip] if t > minute_ago]
-        if len(self.requests[ip]) >= limit_per_minute:
+        self.requests[key] = [t for t in self.requests[key] if t > minute_ago]
+        if len(self.requests[key]) >= limit_per_minute:
             return False
-        self.requests[ip].append(now)
+        self.requests[key].append(now)
         return True
 
 rate_limiter = SimpleRateLimiter()
@@ -1145,25 +1146,19 @@ class UpgradeRequest(BaseModel):
 
 @app.post("/api/upgrade")
 async def upgrade(request: Request, body: UpgradeRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Proxy to DeepSeek with credit check, forwarding stream back to client."""
+    """Proxy to DeepSeek. Credit is checked here but deducted in save-conversation."""
     api_key = get_deepseek_key()
     if not api_key:
         raise HTTPException(status_code=500, detail="DEEPSEEK_API_KEY not configured")
 
-    # Rate limit
-    client_ip = get_client_ip(request)
-    if not rate_limiter.is_allowed(client_ip):
-        raise HTTPException(status_code=429, detail="请求过于频繁，请稍后再试")
+    # Per-user rate limit (50/min/user, supports ~10 full practice sessions per minute)
+    # Using logto_user_id so users on shared WiFi don't interfere with each other
+    if not rate_limiter.is_allowed(f"user:{user.logto_user_id}", limit_per_minute=50):
+        raise HTTPException(status_code=429, detail="请求过于频繁，请稍等片刻再试")
 
-    # Credit check
+    # Credit check only (not deducted here; deducted in save-conversation to avoid over-charging on parallel requests)
     if user.credits <= 0:
         raise HTTPException(status_code=402, detail="积分已用完，请联系管理员充值")
-
-    # Deduct credit
-    locked_user = db.query(User).filter(User.id == user.id).first()
-    if locked_user and locked_user.credits > 0:
-        locked_user.credits -= 1
-        db.commit()
 
     payload = {
         "model": "deepseek-chat",
@@ -1199,7 +1194,13 @@ class SaveConversationRequest(BaseModel):
 
 @app.post("/api/save-conversation")
 async def save_conversation(body: SaveConversationRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Save a completed conversation to database."""
+    """Save a completed conversation to database and deduct 1 credit."""
+    # Deduct 1 credit per successful practice session
+    fresh_user = db.query(User).filter(User.id == user.id).first()
+    if fresh_user and fresh_user.credits > 0:
+        fresh_user.credits -= 1
+        db.commit()
+
     conv = Conversation(
         user_id=user.id,
         question=body.question,
@@ -1211,8 +1212,6 @@ async def save_conversation(body: SaveConversationRequest, user: User = Depends(
     db.add(conv)
     db.commit()
 
-    # Return current credits
-    fresh_user = db.query(User).filter(User.id == user.id).first()
     return {"ok": True, "credits": fresh_user.credits if fresh_user else 0}
 
 
@@ -1420,6 +1419,12 @@ async def health_check():
 static_dir = Path("./static")
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+@app.get("/favicon.ico")
+async def favicon():
+    # Return empty 204 to avoid 404 logs
+    from fastapi.responses import Response
+    return Response(status_code=204)
 
 @app.get("/")
 async def index():
