@@ -417,6 +417,13 @@ tr:hover td { background:var(--teal-lt); }
     </select>
     <label class="form-label">积分</label>
     <input class="form-input" id="edit-credits" type="number" min="0" style="width:100%;margin-bottom:16px;">
+    <label style="display:flex;align-items:center;gap:10px;padding:12px;background:linear-gradient(135deg,#fff8e0,#fff6d0);border-radius:8px;border:2px dashed var(--gold);cursor:pointer;margin-bottom:16px;">
+      <input type="checkbox" id="edit-vip" class="chk">
+      <div>
+        <div style="font-weight:600;color:var(--gold);">⭐ VIP 学员</div>
+        <div style="font-size:11px;color:var(--ink-dim);margin-top:2px;">VIP 学员可以使用 AI 学习计划等专属功能</div>
+      </div>
+    </label>
     <div style="display:flex;gap:10px;justify-content:flex-end;">
       <button class="btn btn-ghost" onclick="closeEditModal()">取消</button>
       <button class="btn btn-teal" onclick="saveUser()">保存</button>
@@ -651,7 +658,7 @@ function renderUsers() {
       <td>${u.id}</td>
       <td><a href="javascript:void(0)" onclick="showUserDetail(${u.id})" style="color:var(--teal);text-decoration:none;">${esc(u.email)}</a></td>
       <td>${esc(u.display_name)}</td>
-      <td><span class="badge badge-${u.role}">${u.role}</span></td>
+      <td><span class="badge badge-${u.role}">${u.role}</span>${u.is_vip?'<span style="margin-left:4px;background:linear-gradient(135deg,#FFD700,#FFA500);color:#fff;padding:1px 6px;border-radius:8px;font-size:9px;font-weight:600;">⭐VIP</span>':''}</td>
       <td>${u.credits}</td>
       <td>${u.is_disabled ? '<span class="badge badge-disabled">已禁用</span>' : '<span style="color:var(--teal);">✓</span>'}</td>
       <td style="font-size:11px;color:var(--ink-dim);">${u.last_active_at ? u.last_active_at.split('.')[0] : '--'}</td>
@@ -690,6 +697,7 @@ function editUser(id) {
   document.getElementById('edit-name').value = u.display_name || '';
   document.getElementById('edit-role').value = u.role;
   document.getElementById('edit-credits').value = u.credits;
+  document.getElementById('edit-vip').checked = !!u.is_vip;
   document.getElementById('edit-modal').classList.add('on');
 }
 function closeEditModal() {
@@ -701,11 +709,12 @@ async function saveUser() {
   const role = document.getElementById('edit-role').value;
   const credits = parseInt(document.getElementById('edit-credits').value) || 0;
   const display_name = document.getElementById('edit-name').value.trim();
+  const is_vip = document.getElementById('edit-vip').checked ? 1 : 0;
   try {
     const res = await fetch(`/api/admin/users/${currentEditUserId}/update`, {
       method:'POST', credentials:'include',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ role, credits, display_name })
+      body: JSON.stringify({ role, credits, display_name, is_vip })
     });
     if (!res.ok) throw new Error('保存失败');
     toast('保存成功','ok');

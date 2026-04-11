@@ -287,15 +287,19 @@ mark.ins.lit { filter:brightness(.87); box-shadow:0 0 0 2px var(--grn); }
       <button class="nb on" id="nb-p" onclick="nav('practice')"><span class="ico">✏️</span> 口语练习</button>
       <a class="nb" href="/game" style="text-decoration:none"><span class="ico">⚖️</span> 口语模考</a>
       <button class="nb" id="nb-h" onclick="nav('history')"><span class="ico">📋</span> 历史记录</button>
+      <button class="nb" id="nb-t" onclick="nav('timeline')"><span class="ico">📈</span> 学习时间轴</button>
       <a class="nb" href="/guide" style="text-decoration:none"><span class="ico">📖</span> 使用说明</a>
       <a class="nb" href="/teacher" id="nb-teacher" style="display:none;text-decoration:none"><span class="ico">👨‍🏫</span> 教师面板</a>
       <a class="nb" href="/admin" id="nb-admin" style="display:none;text-decoration:none"><span class="ico">📊</span> 管理后台</a>
     </div>
     <div class="sb-user">
       <div class="sb-av">👤</div>
-      <div class="sb-un" id="sb-name">同学</div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div class="sb-un" id="sb-name">同学</div>
+        <span id="sb-vip-badge" style="display:none;background:linear-gradient(135deg,#FFD700,#FFA500);color:#fff;padding:1px 8px;border-radius:10px;font-size:9px;font-weight:600;">⭐ VIP</span>
+      </div>
       <div id="sb-credits" style="color:rgba(255,255,255,.55);margin-top:2px;">剩余次数：--</div>
-      <div style="margin-top:2px;">目标分数：Band 7.5</div>
+      <div id="sb-target" style="margin-top:2px;">目标分数：Band 7.5</div>
       <button class="sb-out" onclick="logout()">退出登录</button>
     </div>
   </div>
@@ -382,6 +386,28 @@ mark.ins.lit { filter:brightness(.87); box-shadow:0 0 0 2px var(--grn); }
       <div class="ph">历史记录</div>
       <div class="ps">点击任意卡片重新查看报告</div>
       <div class="hg" id="hg"></div>
+    </div>
+
+    <!-- ── TIMELINE ── -->
+    <div id="v-timeline" class="view" style="padding:36px 44px;background:var(--warm);flex:1;">
+      <div class="ph">学习时间轴</div>
+      <div class="ps">追踪你的学习进度、阶段成就和学习计划</div>
+
+      <!-- Profile card -->
+      <div id="tl-profile" class="card" style="margin-top:16px;">加载中...</div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:4px;margin-top:20px;">
+        <div class="tl-tab on" data-tltab="overview" style="padding:8px 18px;border-radius:8px 8px 0 0;border:1.5px solid var(--rule);border-bottom:none;background:var(--paper);color:var(--teal-dk);cursor:pointer;font-size:13px;font-weight:600;">📈 时间轴</div>
+        <div class="tl-tab" data-tltab="reports" style="padding:8px 18px;border-radius:8px 8px 0 0;border:1.5px solid var(--rule);border-bottom:none;background:var(--warm);color:var(--ink-dim);cursor:pointer;font-size:13px;">📋 学习报告</div>
+        <div class="tl-tab" data-tltab="plans" style="padding:8px 18px;border-radius:8px 8px 0 0;border:1.5px solid var(--rule);border-bottom:none;background:var(--warm);color:var(--ink-dim);cursor:pointer;font-size:13px;">📅 学习计划 <span style="background:linear-gradient(135deg,#FFD700,#FFA500);color:#fff;padding:1px 6px;border-radius:8px;font-size:9px;margin-left:4px;">VIP</span></div>
+      </div>
+
+      <div class="card" style="margin-top:0;border-top-left-radius:0;">
+        <div id="tl-overview">加载中...</div>
+        <div id="tl-reports" style="display:none;"></div>
+        <div id="tl-plans" style="display:none;"></div>
+      </div>
     </div>
 
   </div>
@@ -516,13 +542,22 @@ function logout() {
     window.location.href = '/auth/sign-out';
   }
 }
+let _myProfile = null;
+
 function showApp(data) {
+  _myProfile = data;
   document.getElementById('v-loading').style.display = 'none';
   document.getElementById('v-login').style.display = 'none';
   document.getElementById('v-app').style.display   = 'block';
   document.getElementById('sb-name').textContent   = data.display_name || data.email || 'User';
   if (data.credits !== undefined) {
     document.getElementById('sb-credits').textContent = '剩余次数：' + data.credits;
+  }
+  if (data.is_vip) {
+    document.getElementById('sb-vip-badge').style.display = '';
+  }
+  if (data.target_band) {
+    document.getElementById('sb-target').textContent = '目标分数：Band ' + data.target_band;
   }
   // Show role-based nav items
   if (data.role === 'teacher' || data.role === 'admin') {
@@ -566,7 +601,7 @@ function updateCredits(credits) {
 
 // ─── NAV ──────────────────────────────────────────────────────────
 function nav(name) {
-  ['practice','report','history'].forEach(v => {
+  ['practice','report','history','timeline'].forEach(v => {
     const el = document.getElementById('v-'+v);
     if(el){ el.classList.remove('on'); el.style.display='none'; }
   });
@@ -574,7 +609,224 @@ function nav(name) {
   if(t){ t.classList.add('on'); t.style.display='flex'; }
   document.getElementById('nb-p')?.classList.toggle('on', name==='practice'||name==='report');
   document.getElementById('nb-h')?.classList.toggle('on', name==='history');
+  document.getElementById('nb-t')?.classList.toggle('on', name==='timeline');
   if(name==='history') renderHistory();
+  if(name==='timeline') renderMyTimeline();
+}
+
+// ─── MY TIMELINE ──────────────────────────────────────────────────
+let _myTimelineData = null;
+
+async function renderMyTimeline() {
+  const profEl = document.getElementById('tl-profile');
+  profEl.innerHTML = '<div style="text-align:center;color:var(--ink-dim);padding:20px;">加载中...</div>';
+  try {
+    const res = await fetch('/api/me/timeline', { credentials:'include' });
+    if (!res.ok) throw new Error('加载失败');
+    const d = await res.json();
+    _myTimelineData = d;
+    const p = d.profile;
+
+    const isVip = p.is_vip;
+    const startB = p.starting_band || '--';
+    const curB = p.current_band || '--';
+    const tarB = p.target_band || '--';
+    const examD = p.exam_date || '未设置';
+
+    let progressHtml = '';
+    if (p.starting_band && p.target_band && p.current_band) {
+      const total = p.target_band - p.starting_band;
+      const done = p.current_band - p.starting_band;
+      const pct = total > 0 ? Math.min(100, Math.max(0, (done / total) * 100)) : 0;
+      progressHtml = `
+        <div style="margin-top:18px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-dim);margin-bottom:6px;">
+            <span>Band ${p.starting_band} → ${p.current_band} → ${p.target_band}</span>
+            <span>${pct.toFixed(0)}%</span>
+          </div>
+          <div style="height:12px;background:var(--warm);border-radius:6px;overflow:hidden;">
+            <div style="height:100%;background:linear-gradient(90deg,var(--teal),var(--gold));width:${pct}%;transition:width .5s;"></div>
+          </div>
+        </div>
+      `;
+    } else {
+      progressHtml = `
+        <div style="margin-top:18px;padding:14px;background:var(--warm);border-radius:8px;font-size:13px;color:var(--ink-dim);text-align:center;">
+          📌 你的老师还没有为你设置学情数据，等老师评估后这里会显示你的学习进度
+        </div>
+      `;
+    }
+
+    profEl.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px;">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-family:'EB Garamond',serif;font-size:24px;color:var(--teal-dk);">我的学习档案</div>
+            ${isVip?'<span style="background:linear-gradient(135deg,#FFD700,#FFA500);color:#fff;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:600;">⭐ VIP 学员</span>':''}
+          </div>
+          <div style="font-size:12px;color:var(--ink-dim);margin-top:4px;">考试日期: ${examD}</div>
+        </div>
+        <div style="display:flex;gap:24px;">
+          <div style="text-align:center;"><div style="font-family:'EB Garamond',serif;font-size:22px;color:var(--ink-dim);">${startB}</div><div style="font-size:10px;color:var(--ink-dim);">起始</div></div>
+          <div style="text-align:center;"><div style="font-family:'EB Garamond',serif;font-size:30px;color:var(--teal-dk);">${curB}</div><div style="font-size:10px;color:var(--ink-dim);">当前 Band</div></div>
+          <div style="text-align:center;"><div style="font-family:'EB Garamond',serif;font-size:22px;color:var(--gold);">${tarB}</div><div style="font-size:10px;color:var(--ink-dim);">目标</div></div>
+        </div>
+      </div>
+      ${progressHtml}
+    `;
+
+    bindTimelineTabs();
+    renderMyOverview();
+  } catch(e) {
+    profEl.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px;">加载失败</div>';
+  }
+}
+
+function bindTimelineTabs() {
+  document.querySelectorAll('.tl-tab').forEach(tab => {
+    tab.onclick = () => {
+      const name = tab.dataset.tltab;
+      document.querySelectorAll('.tl-tab').forEach(t => {
+        const on = t.dataset.tltab === name;
+        t.classList.toggle('on', on);
+        t.style.background = on ? 'var(--paper)' : 'var(--warm)';
+        t.style.color = on ? 'var(--teal-dk)' : 'var(--ink-dim)';
+        t.style.fontWeight = on ? '600' : 'normal';
+      });
+      document.getElementById('tl-overview').style.display = name === 'overview' ? '' : 'none';
+      document.getElementById('tl-reports').style.display = name === 'reports' ? '' : 'none';
+      document.getElementById('tl-plans').style.display = name === 'plans' ? '' : 'none';
+      if (name === 'overview') renderMyOverview();
+      if (name === 'reports') renderMyReports();
+      if (name === 'plans') renderMyPlans();
+    };
+  });
+}
+
+function renderMyOverview() {
+  const el = document.getElementById('tl-overview');
+  if (!_myTimelineData) return;
+  const ms = _myTimelineData.milestones || [];
+  if (!ms.length) {
+    el.innerHTML = '<div style="color:var(--ink-dim);text-align:center;padding:40px;">还没有阶段成就<br>每提升 0.5 分可解锁一个里程碑</div>';
+    return;
+  }
+  el.innerHTML = `
+    <h3 style="font-family:'EB Garamond',serif;color:var(--teal-dk);margin-bottom:14px;">🏆 阶段成就</h3>
+    <div style="position:relative;padding-left:30px;">
+      <div style="position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--gold);"></div>
+      ${ms.map(m => `
+        <div style="position:relative;margin-bottom:18px;">
+          <div style="position:absolute;left:-26px;top:6px;width:14px;height:14px;border-radius:50%;background:#fff8e0;border:2px solid var(--gold);"></div>
+          <div style="background:#fff8e0;border-left:3px solid var(--gold);padding:12px 16px;border-radius:8px;">
+            <div style="font-size:11px;color:var(--ink-dim);">${esc(m.achieved_at)}</div>
+            <div style="font-weight:600;color:var(--gold);font-size:16px;margin:4px 0;font-family:'EB Garamond',serif;">🏆 Band ${m.from_band} → ${m.to_band}</div>
+            ${m.notes?`<div style="font-size:12px;color:var(--ink-mid);">${esc(m.notes)}</div>`:''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderMyReports() {
+  const el = document.getElementById('tl-reports');
+  if (!_myTimelineData) return;
+  const reports = _myTimelineData.reports || [];
+  if (!reports.length) {
+    el.innerHTML = '<div style="color:var(--ink-dim);text-align:center;padding:40px;">还没有学习报告<br>报告由你的老师生成</div>';
+    return;
+  }
+  el.innerHTML = `
+    <h3 style="font-family:'EB Garamond',serif;color:var(--teal-dk);margin-bottom:14px;">📋 我的学习报告</h3>
+    ${reports.map((r, i) => `
+      <div style="padding:14px;background:#fff;border-radius:8px;margin-bottom:10px;border-left:3px solid var(--teal);">
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleMyReport(${i})">
+          <div>
+            <div style="font-weight:600;font-size:14px;">${esc(r.title)}</div>
+            <div style="font-size:11px;color:var(--ink-dim);margin-top:2px;">${esc(r.created_at)}</div>
+          </div>
+          <span id="my-rep-arrow-${i}" style="color:var(--ink-dim);">▼</span>
+        </div>
+        <div id="my-rep-content-${i}" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule);font-size:13px;line-height:1.7;color:var(--ink);">${renderMd(r.content)}</div>
+      </div>
+    `).join('')}
+  `;
+}
+function toggleMyReport(i) {
+  const c = document.getElementById('my-rep-content-'+i);
+  const a = document.getElementById('my-rep-arrow-'+i);
+  if (c.style.display === 'none') { c.style.display = ''; a.textContent = '▲'; }
+  else { c.style.display = 'none'; a.textContent = '▼'; }
+}
+
+function renderMyPlans() {
+  const el = document.getElementById('tl-plans');
+  if (!_myTimelineData) return;
+  const isVip = _myTimelineData.profile.is_vip;
+  const plans = _myTimelineData.plans || [];
+
+  if (!isVip) {
+    el.innerHTML = `
+      <div style="padding:40px 20px;text-align:center;">
+        <div style="font-size:48px;margin-bottom:14px;">⭐</div>
+        <h3 style="font-family:'EB Garamond',serif;color:var(--gold);font-size:22px;margin-bottom:10px;">VIP 专属服务</h3>
+        <p style="color:var(--ink-mid);max-width:480px;margin:0 auto 16px;line-height:1.7;font-size:14px;">
+          AI 个性化学习计划是 <strong style="color:var(--gold);">VIP 学员专属服务</strong>。<br>
+          我们将根据你的当前水平、目标分数和考试日期，为你量身定制详细的学习路径。
+        </p>
+        <div style="background:linear-gradient(135deg,#fff8e0,#fff6d0);border:2px dashed var(--gold);border-radius:12px;padding:20px;max-width:480px;margin:20px auto;text-align:left;">
+          <div style="font-weight:600;color:var(--teal-dk);margin-bottom:10px;">VIP 服务包含：</div>
+          <ul style="font-size:13px;color:var(--ink-mid);line-height:1.9;padding-left:20px;">
+            <li>📅 AI 生成的个性化学习计划</li>
+            <li>🎯 阶段目标分解与每日学习安排</li>
+            <li>📊 学情深度分析报告</li>
+            <li>🏆 学习里程碑追踪</li>
+            <li>📞 老师专属指导</li>
+          </ul>
+        </div>
+        <div style="font-size:12px;color:var(--ink-dim);">联系你的老师或管理员升级 VIP</div>
+      </div>
+    `;
+    return;
+  }
+
+  if (!plans.length) {
+    el.innerHTML = '<div style="color:var(--ink-dim);text-align:center;padding:40px;">还没有学习计划<br>请联系你的老师为你生成</div>';
+    return;
+  }
+
+  el.innerHTML = `
+    <h3 style="font-family:'EB Garamond',serif;color:var(--teal-dk);margin-bottom:14px;">📅 我的学习计划</h3>
+    ${plans.map((p, i) => `
+      <div style="padding:14px;background:#fff;border-radius:8px;margin-bottom:10px;border-left:3px solid var(--gold);">
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleMyPlan(${i})">
+          <div>
+            <div style="font-weight:600;font-size:14px;">${esc(p.title)}</div>
+            <div style="font-size:11px;color:var(--ink-dim);margin-top:2px;">目标 Band ${p.target_band}${p.exam_date?' · 考试 '+p.exam_date:''} · ${esc(p.created_at)}</div>
+          </div>
+          <span id="my-plan-arrow-${i}" style="color:var(--ink-dim);">▼</span>
+        </div>
+        <div id="my-plan-content-${i}" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule);font-size:13px;line-height:1.7;color:var(--ink);">${renderMd(p.content)}</div>
+      </div>
+    `).join('')}
+  `;
+}
+function toggleMyPlan(i) {
+  const c = document.getElementById('my-plan-content-'+i);
+  const a = document.getElementById('my-plan-arrow-'+i);
+  if (c.style.display === 'none') { c.style.display = ''; a.textContent = '▲'; }
+  else { c.style.display = 'none'; a.textContent = '▼'; }
+}
+
+function renderMd(text) {
+  return (text || '')
+    .replace(/^### (.*$)/gm, '<h3 style="color:var(--teal-dk);margin:14px 0 6px;font-size:14px;">$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2 style="color:var(--teal-dk);margin:18px 0 8px;font-family:EB Garamond,serif;font-size:17px;">$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1 style="color:var(--teal-dk);margin:20px 0 10px;font-family:EB Garamond,serif;font-size:20px;">$1</h1>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.*$)/gm, '<li style="margin-left:20px;">$1</li>')
+    .replace(/\n/g, '<br>');
 }
 
 // ─── QUICK FILL ───────────────────────────────────────────────────

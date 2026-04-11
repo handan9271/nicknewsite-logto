@@ -29,7 +29,7 @@ from fastapi.responses import FileResponse, StreamingResponse, JSONResponse, Red
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, create_engine, func, or_
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Float, create_engine, func, or_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from logto import LogtoClient, LogtoConfig, Storage
@@ -158,6 +158,11 @@ class User(Base):
     role = Column(String(20), default="student")  # admin / teacher / student
     credits = Column(Integer, default=20)
     is_disabled = Column(Boolean, default=False)
+    is_vip = Column(Boolean, default=False)
+    starting_band = Column(Float, default=0)  # band when joined
+    current_band = Column(Float, default=0)   # current evaluated band
+    target_band = Column(Float, default=0)    # goal band
+    exam_date = Column(DateTime, nullable=True)
     last_active_at = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -245,6 +250,41 @@ class ContentItem(Base):
     content = Column(Text)
     updated_at = Column(DateTime, default=datetime.utcnow)
     updated_by = Column(Integer, default=0)
+
+
+class LearningReport(Base):
+    __tablename__ = "learning_reports"
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, nullable=False, index=True)
+    teacher_id = Column(Integer, nullable=False, index=True)
+    title = Column(String(255), default="学习报告")
+    content = Column(Text)
+    band_at_time = Column(Float, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Milestone(Base):
+    __tablename__ = "milestones"
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, nullable=False, index=True)
+    from_band = Column(Float, default=0)
+    to_band = Column(Float, default=0)
+    notes = Column(Text, default="")
+    created_by = Column(Integer, default=0)  # teacher who marked it
+    achieved_at = Column(DateTime, default=datetime.utcnow)
+
+
+class StudyPlan(Base):
+    __tablename__ = "study_plans"
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, nullable=False, index=True)
+    teacher_id = Column(Integer, nullable=False, index=True)
+    title = Column(String(255), default="学习计划")
+    target_band = Column(Float, default=0)
+    exam_date = Column(DateTime, nullable=True)
+    content = Column(Text)
+    status = Column(String(20), default="active")  # active / completed / archived
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class UserSession(Base):
@@ -946,6 +986,11 @@ async def me(user: User = Depends(get_current_user)):
         "email": user.email,
         "credits": user.credits,
         "role": user.role or "student",
+        "is_vip": user.is_vip or False,
+        "current_band": user.current_band or 0,
+        "target_band": user.target_band or 0,
+        "starting_band": user.starting_band or 0,
+        "exam_date": user.exam_date.strftime("%Y-%m-%d") if user.exam_date else "",
         "created_at": str(user.created_at) if user.created_at else None,
     }
 
@@ -1034,6 +1079,9 @@ async def admin_list_users(
             "role": u.role or "student",
             "credits": u.credits,
             "is_disabled": u.is_disabled or False,
+            "is_vip": u.is_vip or False,
+            "current_band": u.current_band or 0,
+            "target_band": u.target_band or 0,
             "last_active_at": str(u.last_active_at) if u.last_active_at else "",
             "created_at": str(u.created_at) if u.created_at else "",
         } for u in users],
@@ -1044,11 +1092,12 @@ class UpdateUserRequest(BaseModel):
     role: str = ""
     credits: int = -1
     display_name: str = ""
+    is_vip: int = -1  # -1 = no change, 0 / 1
 
 
 @app.post("/api/admin/users/{user_id}/update")
 async def admin_update_user(user_id: int, body: UpdateUserRequest, user: User = Depends(require_admin), db: Session = Depends(get_db)):
-    """Update user role, credits, or display name."""
+    """Update user role, credits, display name, or VIP status."""
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="用户不存在")
@@ -1063,11 +1112,16 @@ async def admin_update_user(user_id: int, body: UpdateUserRequest, user: User = 
     if body.display_name and target.display_name != body.display_name:
         changes.append(f"name {target.display_name} -> {body.display_name}")
         target.display_name = body.display_name
+    if body.is_vip in (0, 1):
+        new_vip = bool(body.is_vip)
+        if (target.is_vip or False) != new_vip:
+            changes.append(f"vip {target.is_vip or False} -> {new_vip}")
+            target.is_vip = new_vip
 
     db.commit()
     if changes:
         log_audit(db, user, "update_user", "user", user_id, "; ".join(changes))
-    return {"ok": True, "role": target.role, "credits": target.credits, "display_name": target.display_name}
+    return {"ok": True, "role": target.role, "credits": target.credits, "display_name": target.display_name, "is_vip": target.is_vip or False}
 
 
 @app.post("/api/admin/users/{user_id}/disable")
@@ -1773,10 +1827,391 @@ async def teacher_generate_report(student_id: int, user: User = Depends(require_
             {'role': 'system', 'content': '你是一位资深雅思口语教师，擅长根据学生数据制定个性化学习计划。'},
             {'role': 'user', 'content': prompt},
         ], max_tokens=3000, temperature=0.7)
-        return {"ok": True, "report": report}
+
+        # Auto-save the generated report
+        saved = LearningReport(
+            student_id=student_id,
+            teacher_id=user.id,
+            title=f"学习报告 {datetime.utcnow().strftime('%Y-%m-%d')}",
+            content=report,
+            band_at_time=student.current_band or 0,
+        )
+        db.add(saved)
+        db.commit()
+        db.refresh(saved)
+
+        return {"ok": True, "report": report, "report_id": saved.id}
     except Exception as e:
         logger.error(f"Failed to generate report: {e}")
         raise HTTPException(status_code=500, detail="生成报告失败，请稍后重试")
+
+
+# ─── LEARNING REPORTS / TIMELINE / MILESTONES / STUDY PLANS ──────────────────
+
+def _can_view_student(teacher: User, student_id: int, db: Session) -> bool:
+    """Check if teacher (or admin) can access this student."""
+    if teacher.role == 'admin':
+        return True
+    link = db.query(TeacherStudent).filter(
+        TeacherStudent.teacher_id == teacher.id,
+        TeacherStudent.student_id == student_id,
+    ).first()
+    return link is not None
+
+
+@app.get("/api/teacher/student/{student_id}/reports")
+async def list_student_reports(student_id: int, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    if not _can_view_student(user, student_id, db):
+        raise HTTPException(status_code=403, detail="无权访问该学生")
+    reports = db.query(LearningReport).filter(
+        LearningReport.student_id == student_id
+    ).order_by(LearningReport.created_at.desc()).all()
+    beijing_tz = timezone(timedelta(hours=8))
+    return [{
+        "id": r.id,
+        "title": r.title,
+        "content": r.content,
+        "band_at_time": r.band_at_time,
+        "created_at": r.created_at.replace(tzinfo=timezone.utc).astimezone(beijing_tz).strftime("%Y-%m-%d %H:%M") if r.created_at else "",
+    } for r in reports]
+
+
+@app.delete("/api/teacher/reports/{report_id}")
+async def delete_report(report_id: int, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    r = db.query(LearningReport).filter(LearningReport.id == report_id).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="报告不存在")
+    if user.role != 'admin' and r.teacher_id != user.id:
+        raise HTTPException(status_code=403, detail="无权删除该报告")
+    db.delete(r)
+    db.commit()
+    return {"ok": True}
+
+
+class UpdateReportRequest(BaseModel):
+    title: str = ""
+    content: str = ""
+
+
+@app.post("/api/teacher/reports/{report_id}/update")
+async def update_report(report_id: int, body: UpdateReportRequest, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    r = db.query(LearningReport).filter(LearningReport.id == report_id).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="报告不存在")
+    if user.role != 'admin' and r.teacher_id != user.id:
+        raise HTTPException(status_code=403, detail="无权编辑该报告")
+    if body.title:
+        r.title = body.title
+    if body.content:
+        r.content = body.content
+    db.commit()
+    return {"ok": True}
+
+
+class StudentProfileRequest(BaseModel):
+    starting_band: float = -1
+    current_band: float = -1
+    target_band: float = -1
+    exam_date: str = ""  # YYYY-MM-DD
+    is_vip: int = -1  # -1 = no change, 0 / 1
+
+
+@app.post("/api/teacher/student/{student_id}/profile")
+async def update_student_profile(student_id: int, body: StudentProfileRequest, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    """Update a student's learning profile (band, target, exam date)."""
+    if not _can_view_student(user, student_id, db):
+        raise HTTPException(status_code=403, detail="无权访问该学生")
+    student = db.query(User).filter(User.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="学生不存在")
+
+    old_band = student.current_band or 0
+
+    if body.starting_band >= 0:
+        student.starting_band = body.starting_band
+        if not student.current_band:
+            student.current_band = body.starting_band
+    if body.current_band >= 0:
+        student.current_band = body.current_band
+    if body.target_band >= 0:
+        student.target_band = body.target_band
+    if body.exam_date:
+        try:
+            student.exam_date = datetime.strptime(body.exam_date, "%Y-%m-%d")
+        except ValueError:
+            pass
+    if body.is_vip in (0, 1):
+        # Only admin can change VIP
+        if user.role == 'admin':
+            student.is_vip = bool(body.is_vip)
+    db.commit()
+
+    # Auto-create milestone if band advanced by >=0.5
+    new_band = student.current_band or 0
+    if new_band > old_band and new_band - old_band >= 0.5:
+        # Create milestone for each 0.5 step
+        steps = int(round((new_band - old_band) / 0.5))
+        for i in range(steps):
+            from_b = old_band + i * 0.5
+            to_b = old_band + (i + 1) * 0.5
+            ms = Milestone(
+                student_id=student_id,
+                from_band=from_b,
+                to_band=to_b,
+                notes=f"老师 {user.display_name or user.email} 评估通过 Band {to_b}",
+                created_by=user.id,
+            )
+            db.add(ms)
+        db.commit()
+
+    return {"ok": True}
+
+
+@app.get("/api/teacher/student/{student_id}/timeline")
+async def student_timeline(student_id: int, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    """Combined timeline: profile, milestones, reports, study plans, recent practice/games."""
+    if not _can_view_student(user, student_id, db):
+        raise HTTPException(status_code=403, detail="无权访问该学生")
+    student = db.query(User).filter(User.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="学生不存在")
+
+    beijing_tz = timezone(timedelta(hours=8))
+    fmt = lambda t: t.replace(tzinfo=timezone.utc).astimezone(beijing_tz).strftime("%Y-%m-%d %H:%M") if t else ""
+    fmt_d = lambda t: t.strftime("%Y-%m-%d") if t else ""
+
+    milestones = db.query(Milestone).filter(Milestone.student_id == student_id).order_by(Milestone.achieved_at.desc()).all()
+    reports = db.query(LearningReport).filter(LearningReport.student_id == student_id).order_by(LearningReport.created_at.desc()).all()
+    plans = db.query(StudyPlan).filter(StudyPlan.student_id == student_id).order_by(StudyPlan.created_at.desc()).all()
+
+    # Recent activity
+    recent_practice = db.query(Conversation).filter(Conversation.user_id == student_id).order_by(Conversation.timestamp.desc()).limit(5).all()
+    recent_games = db.query(GameSession).filter(GameSession.user_id == student_id).order_by(GameSession.timestamp.desc()).limit(5).all()
+
+    # Build unified events list
+    events = []
+    for ms in milestones:
+        events.append({
+            "type": "milestone",
+            "timestamp": fmt(ms.achieved_at),
+            "title": f"🏆 Band {ms.from_band} → {ms.to_band}",
+            "description": ms.notes or "",
+            "data": {"id": ms.id, "from_band": ms.from_band, "to_band": ms.to_band},
+        })
+    for r in reports:
+        events.append({
+            "type": "report",
+            "timestamp": fmt(r.created_at),
+            "title": f"📋 {r.title}",
+            "description": (r.content or "")[:100],
+            "data": {"id": r.id, "band_at_time": r.band_at_time},
+        })
+    for p in plans:
+        events.append({
+            "type": "plan",
+            "timestamp": fmt(p.created_at),
+            "title": f"📅 {p.title}",
+            "description": f"目标 Band {p.target_band}" + (f" · 考试 {fmt_d(p.exam_date)}" if p.exam_date else ""),
+            "data": {"id": p.id, "target_band": p.target_band, "status": p.status},
+        })
+    for c in recent_practice:
+        events.append({
+            "type": "practice",
+            "timestamp": fmt(c.timestamp),
+            "title": f"✏️ {(c.question or '')[:60]}",
+            "description": c.score or "",
+            "data": {"id": c.id},
+        })
+    for g in recent_games:
+        events.append({
+            "type": "game",
+            "timestamp": fmt(g.timestamp),
+            "title": f"⚖️ 模考 {g.mode} · {g.overall_score or '--'}",
+            "description": "",
+            "data": {"id": g.id, "overall_score": g.overall_score},
+        })
+
+    events.sort(key=lambda e: e["timestamp"], reverse=True)
+
+    return {
+        "student": {
+            "id": student.id,
+            "email": student.email,
+            "display_name": student.display_name,
+            "is_vip": student.is_vip or False,
+            "starting_band": student.starting_band or 0,
+            "current_band": student.current_band or 0,
+            "target_band": student.target_band or 0,
+            "exam_date": fmt_d(student.exam_date),
+            "credits": student.credits,
+        },
+        "events": events,
+        "milestones": [{
+            "id": m.id, "from_band": m.from_band, "to_band": m.to_band,
+            "notes": m.notes, "achieved_at": fmt(m.achieved_at),
+        } for m in milestones],
+        "reports": [{
+            "id": r.id, "title": r.title, "band_at_time": r.band_at_time,
+            "created_at": fmt(r.created_at),
+        } for r in reports],
+        "plans": [{
+            "id": p.id, "title": p.title, "target_band": p.target_band,
+            "exam_date": fmt_d(p.exam_date), "status": p.status,
+            "content": p.content,
+            "created_at": fmt(p.created_at),
+        } for p in plans],
+    }
+
+
+class GeneratePlanRequest(BaseModel):
+    target_band: float = 6.5
+    exam_date: str = ""  # YYYY-MM-DD
+
+
+@app.post("/api/teacher/student/{student_id}/generate-plan")
+async def generate_study_plan(student_id: int, body: GeneratePlanRequest, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    """Generate AI study plan for a VIP student. Saves to DB."""
+    if not _can_view_student(user, student_id, db):
+        raise HTTPException(status_code=403, detail="无权访问该学生")
+    student = db.query(User).filter(User.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="学生不存在")
+
+    # VIP gating: only VIP students get this feature (or admin override)
+    if not student.is_vip and user.role != 'admin':
+        raise HTTPException(status_code=403, detail="该功能仅 VIP 学员可用")
+
+    exam_dt = None
+    days_until_exam = ""
+    if body.exam_date:
+        try:
+            exam_dt = datetime.strptime(body.exam_date, "%Y-%m-%d")
+            delta = (exam_dt - datetime.utcnow()).days
+            days_until_exam = f"距离考试还有 {delta} 天"
+        except ValueError:
+            pass
+
+    # Gather student data
+    convs = db.query(Conversation).filter(Conversation.user_id == student_id).order_by(Conversation.timestamp.desc()).limit(15).all()
+    games = db.query(GameSession).filter(GameSession.user_id == student_id).order_by(GameSession.timestamp.desc()).limit(5).all()
+    milestones = db.query(Milestone).filter(Milestone.student_id == student_id).all()
+
+    practice_sum = "\n".join([f"- {c.question} ({c.score})" for c in convs]) or "暂无练习记录"
+    game_sum = "\n".join([f"- 总分 {g.overall_score}, 模式 {g.mode}" for g in games]) or "暂无模考记录"
+    ms_sum = "\n".join([f"- Band {m.from_band} → {m.to_band}" for m in milestones]) or "暂无里程碑"
+
+    current_band = student.current_band or 0
+    starting_band = student.starting_band or 0
+
+    prompt = f"""你是一位资深雅思口语和写作教师，请为学生制定个性化的详细学习计划。
+
+学生信息：
+- 姓名: {student.display_name or student.email}
+- 入学时分数: {starting_band}
+- 当前分数: {current_band}
+- 目标分数: {body.target_band}
+- {days_until_exam if days_until_exam else '考试日期未定'}
+- VIP 学员
+
+最近练习：
+{practice_sum}
+
+最近模考：
+{game_sum}
+
+历史里程碑：
+{ms_sum}
+
+请生成一份完整的学习计划，包含：
+
+1. **学情分析**：当前水平评估、主要短板、需要重点突破的能力
+2. **阶段目标分解**：把从 {current_band} 到 {body.target_band} 分为几个小阶段，每个阶段的能力目标
+3. **每周学习安排**（具体到每天）：
+   - 周一/周二/周三/周四/周五/周六/周日 各学什么
+   - 每天大约学多长时间
+   - 用什么资源/方法
+4. **练习量建议**：每天/每周应该完成多少次本平台的口语练习和模考
+5. **提升关键点**：针对学生具体的弱项，给出 3-5 个可执行的改进策略
+6. **考试冲刺策略**（如果有考试日期）：考前 2 周的冲刺安排
+7. **预期成果**：按计划执行的话，多久能达到目标分数
+
+请用中文，markdown 格式，详细具体，不要泛泛而谈。"""
+
+    try:
+        plan_content = await call_deepseek([
+            {'role': 'system', 'content': '你是一位资深雅思教师，擅长制定个性化学习计划。'},
+            {'role': 'user', 'content': prompt},
+        ], max_tokens=3500, temperature=0.7)
+
+        # Save plan
+        plan = StudyPlan(
+            student_id=student_id,
+            teacher_id=user.id,
+            title=f"学习计划 {datetime.utcnow().strftime('%Y-%m-%d')} (目标 Band {body.target_band})",
+            target_band=body.target_band,
+            exam_date=exam_dt,
+            content=plan_content,
+            status="active",
+        )
+        db.add(plan)
+        db.commit()
+        db.refresh(plan)
+
+        return {"ok": True, "plan_id": plan.id, "content": plan_content}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to generate plan: {e}")
+        raise HTTPException(status_code=500, detail="生成学习计划失败")
+
+
+@app.delete("/api/teacher/plans/{plan_id}")
+async def delete_plan(plan_id: int, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    p = db.query(StudyPlan).filter(StudyPlan.id == plan_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="计划不存在")
+    if user.role != 'admin' and p.teacher_id != user.id:
+        raise HTTPException(status_code=403, detail="无权删除该计划")
+    db.delete(p)
+    db.commit()
+    return {"ok": True}
+
+
+# ─── STUDENT VIEW: own timeline ─────────────────────────────────────────────
+
+@app.get("/api/me/timeline")
+async def my_timeline(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Student's own learning timeline (limited info)."""
+    beijing_tz = timezone(timedelta(hours=8))
+    fmt = lambda t: t.replace(tzinfo=timezone.utc).astimezone(beijing_tz).strftime("%Y-%m-%d %H:%M") if t else ""
+    fmt_d = lambda t: t.strftime("%Y-%m-%d") if t else ""
+
+    milestones = db.query(Milestone).filter(Milestone.student_id == user.id).order_by(Milestone.achieved_at.desc()).all()
+    reports = db.query(LearningReport).filter(LearningReport.student_id == user.id).order_by(LearningReport.created_at.desc()).all()
+    plans = db.query(StudyPlan).filter(StudyPlan.student_id == user.id).order_by(StudyPlan.created_at.desc()).all()
+
+    return {
+        "profile": {
+            "is_vip": user.is_vip or False,
+            "starting_band": user.starting_band or 0,
+            "current_band": user.current_band or 0,
+            "target_band": user.target_band or 0,
+            "exam_date": fmt_d(user.exam_date),
+        },
+        "milestones": [{
+            "id": m.id, "from_band": m.from_band, "to_band": m.to_band,
+            "notes": m.notes, "achieved_at": fmt(m.achieved_at),
+        } for m in milestones],
+        "reports": [{
+            "id": r.id, "title": r.title, "content": r.content,
+            "band_at_time": r.band_at_time, "created_at": fmt(r.created_at),
+        } for r in reports],
+        "plans": [{
+            "id": p.id, "title": p.title, "target_band": p.target_band,
+            "exam_date": fmt_d(p.exam_date), "status": p.status,
+            "content": p.content, "created_at": fmt(p.created_at),
+        } for p in plans],
+    }
 
 
 class UpgradeRequest(BaseModel):

@@ -168,31 +168,70 @@ body { font-family:'DM Sans',sans-serif; background:var(--warm); color:var(--ink
       <div class="detail-header">
         <button class="back-btn" onclick="showList()">← 返回学生列表</button>
         <div>
-          <button class="btn btn-gold" onclick="generateReport()">🤖 AI 生成学习报告</button>
+          <button class="btn btn-outline" onclick="openProfileModal()">⚙️ 学情设置</button>
+          <button class="btn btn-gold" onclick="generateReport()" style="margin-left:8px;">🤖 生成学习报告</button>
           <button class="btn btn-red" onclick="removeCurrentStudent()" style="margin-left:8px;">移除学生</button>
         </div>
       </div>
 
+      <!-- Student profile card -->
       <div class="card" style="margin-bottom:20px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div style="font-size:20px;font-weight:600;" id="detail-name">--</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px;">
+          <div style="flex:1;min-width:200px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+              <div style="font-size:22px;font-weight:600;" id="detail-name">--</div>
+              <span id="detail-vip-badge" style="display:none;background:linear-gradient(135deg,#FFD700,#FFA500);color:#fff;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:600;">⭐ VIP</span>
+            </div>
             <div style="font-size:13px;color:var(--ink-dim);" id="detail-email">--</div>
           </div>
-          <div style="text-align:center;">
-            <div style="font-family:'EB Garamond',serif;font-size:28px;color:var(--teal-dk);" id="detail-credits">--</div>
-            <div style="font-size:11px;color:var(--ink-dim);">剩余积分</div>
+          <div style="display:flex;gap:24px;">
+            <div style="text-align:center;">
+              <div style="font-family:'EB Garamond',serif;font-size:24px;color:var(--ink-dim);" id="detail-start-band">--</div>
+              <div style="font-size:11px;color:var(--ink-dim);">起始</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-family:'EB Garamond',serif;font-size:28px;color:var(--teal-dk);" id="detail-current-band">--</div>
+              <div style="font-size:11px;color:var(--ink-dim);">当前 Band</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-family:'EB Garamond',serif;font-size:24px;color:var(--gold);" id="detail-target-band">--</div>
+              <div style="font-size:11px;color:var(--ink-dim);">目标</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-family:'EB Garamond',serif;font-size:18px;color:var(--ink-mid);" id="detail-exam-date">--</div>
+              <div style="font-size:11px;color:var(--ink-dim);">考试日期</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-family:'EB Garamond',serif;font-size:24px;color:var(--teal-dk);" id="detail-credits">--</div>
+              <div style="font-size:11px;color:var(--ink-dim);">积分</div>
+            </div>
+          </div>
+        </div>
+        <!-- Progress bar -->
+        <div id="detail-progress" style="margin-top:16px;display:none;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-dim);margin-bottom:4px;">
+            <span id="detail-progress-label">学习进度</span>
+            <span id="detail-progress-pct">--</span>
+          </div>
+          <div style="height:8px;background:var(--warm);border-radius:4px;overflow:hidden;">
+            <div id="detail-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--teal),var(--gold));border-radius:4px;width:0;transition:width .5s;"></div>
           </div>
         </div>
       </div>
 
       <div class="tabs">
-        <div class="tab on" onclick="switchTab('practice')">📝 练习记录</div>
+        <div class="tab on" onclick="switchTab('timeline')">📈 学习时间轴</div>
+        <div class="tab" onclick="switchTab('practice')">📝 练习记录</div>
         <div class="tab" onclick="switchTab('game')">🎮 模考记录</div>
-        <div class="tab" onclick="switchTab('report')">📋 学习报告</div>
+        <div class="tab" onclick="switchTab('reports')">📋 学习报告</div>
+        <div class="tab" onclick="switchTab('plans')">📅 学习计划 <span style="background:linear-gradient(135deg,#FFD700,#FFA500);color:#fff;padding:1px 6px;border-radius:8px;font-size:9px;margin-left:4px;">VIP</span></div>
       </div>
 
-      <div id="tab-practice" class="tab-content on card">
+      <div id="tab-timeline" class="tab-content on card">
+        <div id="timeline-list">加载中...</div>
+      </div>
+
+      <div id="tab-practice" class="tab-content card">
         <div id="practice-list">加载中...</div>
       </div>
 
@@ -200,20 +239,76 @@ body { font-family:'DM Sans',sans-serif; background:var(--warm); color:var(--ink
         <div id="game-list">加载中...</div>
       </div>
 
-      <div id="tab-report" class="tab-content card">
-        <div id="report-toolbar" style="display:none;margin-bottom:12px;padding:10px 14px;background:var(--teal-lt);border-radius:8px;font-size:12px;color:var(--teal-dk);">
-          ✏️ 报告内容可直接编辑，修改后点击下方"复制报告"即可粘贴到邮件或微信发送给学生
+      <div id="tab-reports" class="tab-content card">
+        <div id="reports-list">加载中...</div>
+        <div id="report-detail" style="display:none;margin-top:20px;border-top:2px solid var(--rule);padding-top:20px;">
+          <div id="report-toolbar" style="margin-bottom:12px;padding:10px 14px;background:var(--teal-lt);border-radius:8px;font-size:12px;color:var(--teal-dk);">
+            ✏️ 报告内容可直接编辑，修改后点击"复制报告"即可粘贴到邮件或微信
+          </div>
+          <div id="report-area" class="report-area" contenteditable="false"></div>
+          <div style="margin-top:16px;text-align:right;">
+            <button class="btn btn-outline" onclick="copyReport()">📋 复制报告</button>
+            <button class="btn btn-teal" onclick="toggleEdit()" id="edit-btn" style="margin-left:8px;">✏️ 开始编辑</button>
+            <button class="btn btn-red" onclick="closeReportDetail()" style="margin-left:8px;">关闭</button>
+          </div>
         </div>
-        <div id="report-area" class="report-area" contenteditable="false">
-          <div style="text-align:center;color:var(--ink-dim);padding:20px;">点击上方"AI 生成学习报告"按钮，基于学生的练习和模考数据自动生成个性化学习计划。</div>
-        </div>
-        <div id="report-actions" style="display:none;margin-top:16px;text-align:right;">
-          <button class="btn btn-outline" onclick="copyReport()">📋 复制报告</button>
-          <button class="btn btn-teal" onclick="toggleEdit()" id="edit-btn" style="margin-left:8px;">✏️ 开始编辑</button>
+      </div>
+
+      <div id="tab-plans" class="tab-content card">
+        <div id="plans-list">加载中...</div>
+        <div id="plan-detail" style="display:none;margin-top:20px;border-top:2px solid var(--rule);padding-top:20px;">
+          <div id="plan-area" class="report-area"></div>
+          <div style="margin-top:16px;text-align:right;">
+            <button class="btn btn-outline" onclick="copyPlan()">📋 复制计划</button>
+            <button class="btn btn-red" onclick="closePlanDetail()" style="margin-left:8px;">关闭</button>
+          </div>
         </div>
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div class="modal-overlay" id="profile-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:var(--paper);border-radius:16px;padding:28px;width:480px;max-width:92vw;box-shadow:0 8px 40px rgba(0,0,0,.2);">
+    <div style="font-family:'EB Garamond',serif;font-size:20px;color:var(--teal-dk);margin-bottom:18px;">学情设置</div>
+
+    <label style="font-size:11px;color:var(--ink-dim);font-weight:600;text-transform:uppercase;">入学时分数</label>
+    <input id="prof-start" type="number" step="0.5" min="0" max="9" style="width:100%;padding:10px;border:1.5px solid #d8d0c8;border-radius:6px;margin:4px 0 12px;">
+
+    <label style="font-size:11px;color:var(--ink-dim);font-weight:600;text-transform:uppercase;">当前 Band（提升 0.5 自动生成里程碑）</label>
+    <input id="prof-current" type="number" step="0.5" min="0" max="9" style="width:100%;padding:10px;border:1.5px solid #d8d0c8;border-radius:6px;margin:4px 0 12px;">
+
+    <label style="font-size:11px;color:var(--ink-dim);font-weight:600;text-transform:uppercase;">目标分数</label>
+    <input id="prof-target" type="number" step="0.5" min="0" max="9" style="width:100%;padding:10px;border:1.5px solid #d8d0c8;border-radius:6px;margin:4px 0 12px;">
+
+    <label style="font-size:11px;color:var(--ink-dim);font-weight:600;text-transform:uppercase;">考试日期</label>
+    <input id="prof-exam" type="date" style="width:100%;padding:10px;border:1.5px solid #d8d0c8;border-radius:6px;margin:4px 0 16px;">
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn" style="background:#eee;" onclick="closeProfileModal()">取消</button>
+      <button class="btn btn-teal" onclick="saveProfile()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generate Plan Modal -->
+<div class="modal-overlay" id="plan-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:var(--paper);border-radius:16px;padding:28px;width:480px;max-width:92vw;box-shadow:0 8px 40px rgba(0,0,0,.2);">
+    <div style="font-family:'EB Garamond',serif;font-size:20px;color:var(--teal-dk);margin-bottom:18px;">生成 AI 学习计划</div>
+    <div id="plan-vip-info" style="font-size:12px;color:var(--ink-dim);margin-bottom:14px;"></div>
+
+    <label style="font-size:11px;color:var(--ink-dim);font-weight:600;text-transform:uppercase;">目标分数</label>
+    <input id="plan-target" type="number" step="0.5" min="0" max="9" value="6.5" style="width:100%;padding:10px;border:1.5px solid #d8d0c8;border-radius:6px;margin:4px 0 12px;">
+
+    <label style="font-size:11px;color:var(--ink-dim);font-weight:600;text-transform:uppercase;">考试日期</label>
+    <input id="plan-exam" type="date" style="width:100%;padding:10px;border:1.5px solid #d8d0c8;border-radius:6px;margin:4px 0 16px;">
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn" style="background:#eee;" onclick="closePlanModal()">取消</button>
+      <button class="btn btn-gold" onclick="submitGeneratePlan()">🤖 生成计划</button>
+    </div>
   </div>
 </div>
 
@@ -284,37 +379,132 @@ async function addStudent() {
   } catch(e) { toast(e.message,'err'); }
 }
 
+let currentStudentProfile = null;
+
 async function showStudent(id) {
   currentStudentId = id;
-  const s = students.find(s => s.id === id);
-  currentStudentName = s ? (s.display_name || s.email) : '';
-
-  document.getElementById('detail-name').textContent = s ? (s.display_name || '未命名') : '--';
-  document.getElementById('detail-email').textContent = s ? s.email : '--';
-  document.getElementById('detail-credits').textContent = s ? s.credits : '--';
-
   document.getElementById('list-view').style.display = 'none';
   document.getElementById('detail-view').classList.add('on');
 
-  switchTab('practice');
+  switchTab('timeline');
+  await loadTimeline(id);
   loadPracticeHistory(id);
   loadGameHistory(id);
-  document.getElementById('report-area').innerHTML = '<div style="text-align:center;color:var(--ink-dim);padding:20px;">点击上方"AI 生成学习报告"按钮</div>';
+  loadReports(id);
+  loadPlans(id);
 }
 
 function showList() {
   document.getElementById('list-view').style.display = '';
   document.getElementById('detail-view').classList.remove('on');
   currentStudentId = null;
+  currentStudentProfile = null;
 }
 
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => {
-    const names = ['practice','game','report'];
-    t.classList.toggle('on', names[i] === name);
-  });
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('on'));
+  const tabs = document.querySelectorAll('.tab');
+  const names = ['timeline','practice','game','reports','plans'];
+  const idx = names.indexOf(name);
+  if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('on');
   document.getElementById('tab-'+name).classList.add('on');
+}
+
+async function loadTimeline(studentId) {
+  const el = document.getElementById('timeline-list');
+  el.innerHTML = '<div style="color:var(--ink-dim);">加载中...</div>';
+  try {
+    const res = await fetch(`/api/teacher/student/${studentId}/timeline`, { credentials:'include' });
+    const d = await res.json();
+    currentStudentProfile = d.student;
+    currentStudentName = d.student.display_name || d.student.email;
+
+    // Update header card
+    document.getElementById('detail-name').textContent = d.student.display_name || '未命名';
+    document.getElementById('detail-email').textContent = d.student.email || '--';
+    document.getElementById('detail-credits').textContent = d.student.credits;
+    document.getElementById('detail-start-band').textContent = d.student.starting_band || '--';
+    document.getElementById('detail-current-band').textContent = d.student.current_band || '--';
+    document.getElementById('detail-target-band').textContent = d.student.target_band || '--';
+    document.getElementById('detail-exam-date').textContent = d.student.exam_date || '--';
+    document.getElementById('detail-vip-badge').style.display = d.student.is_vip ? '' : 'none';
+
+    // Progress bar
+    if (d.student.starting_band && d.student.target_band && d.student.current_band) {
+      const total = d.student.target_band - d.student.starting_band;
+      const done = d.student.current_band - d.student.starting_band;
+      const pct = total > 0 ? Math.min(100, Math.max(0, (done / total) * 100)) : 0;
+      document.getElementById('detail-progress').style.display = '';
+      document.getElementById('detail-progress-bar').style.width = pct + '%';
+      document.getElementById('detail-progress-pct').textContent = pct.toFixed(0) + '%';
+      document.getElementById('detail-progress-label').textContent =
+        `Band ${d.student.starting_band} → ${d.student.current_band} → ${d.student.target_band}`;
+    } else {
+      document.getElementById('detail-progress').style.display = 'none';
+    }
+
+    // Render timeline
+    if (!d.events.length) {
+      el.innerHTML = '<div style="text-align:center;color:var(--ink-dim);padding:40px;">暂无学习记录</div>';
+      return;
+    }
+    const iconMap = {
+      milestone: { color:'var(--gold)', bg:'#fff8e0', border:'var(--gold)' },
+      report: { color:'var(--teal)', bg:'var(--teal-lt)', border:'var(--teal)' },
+      plan: { color:'var(--purple,#4B3FA0)', bg:'#f3f1fd', border:'#4B3FA0' },
+      practice: { color:'var(--ink-mid)', bg:'#fff', border:'var(--ink-dim)' },
+      game: { color:'var(--blue,#1A3A6B)', bg:'#e7efff', border:'#1A3A6B' },
+    };
+    el.innerHTML = `
+      <div style="position:relative;padding-left:30px;">
+        <div style="position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--rule);"></div>
+        ${d.events.map(ev => {
+          const ic = iconMap[ev.type] || iconMap.practice;
+          return `
+            <div style="position:relative;margin-bottom:18px;">
+              <div style="position:absolute;left:-26px;top:6px;width:14px;height:14px;border-radius:50%;background:${ic.bg};border:2px solid ${ic.border};"></div>
+              <div style="background:${ic.bg};border-left:3px solid ${ic.border};padding:10px 14px;border-radius:8px;">
+                <div style="font-size:11px;color:var(--ink-dim);">${esc(ev.timestamp)}</div>
+                <div style="font-weight:600;color:${ic.color};margin:3px 0;">${esc(ev.title)}</div>
+                ${ev.description ? `<div style="font-size:12px;color:var(--ink-mid);">${esc(ev.description)}</div>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  } catch(e) { el.innerHTML = '<div style="color:var(--red);">加载失败</div>'; }
+}
+
+// ─── PROFILE EDIT ───
+function openProfileModal() {
+  if (!currentStudentProfile) return;
+  document.getElementById('prof-start').value = currentStudentProfile.starting_band || '';
+  document.getElementById('prof-current').value = currentStudentProfile.current_band || '';
+  document.getElementById('prof-target').value = currentStudentProfile.target_band || '';
+  document.getElementById('prof-exam').value = currentStudentProfile.exam_date || '';
+  document.getElementById('profile-modal').style.display = 'flex';
+}
+function closeProfileModal() { document.getElementById('profile-modal').style.display = 'none'; }
+async function saveProfile() {
+  const body = {
+    starting_band: parseFloat(document.getElementById('prof-start').value) || 0,
+    current_band: parseFloat(document.getElementById('prof-current').value) || 0,
+    target_band: parseFloat(document.getElementById('prof-target').value) || 0,
+    exam_date: document.getElementById('prof-exam').value,
+  };
+  try {
+    const res = await fetch(`/api/teacher/student/${currentStudentId}/profile`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('保存失败');
+    toast('学情已更新','ok');
+    closeProfileModal();
+    loadTimeline(currentStudentId);
+  } catch(e) { toast(e.message,'err'); }
 }
 
 async function loadPracticeHistory(studentId) {
@@ -358,14 +548,23 @@ async function loadGameHistory(studentId) {
 }
 
 let _currentReportMarkdown = '';
+let _currentPlanMarkdown = '';
+
+function renderMarkdown(text) {
+  return (text || '')
+    .replace(/^### (.*$)/gm, '<h3 style="color:var(--teal-dk);margin:20px 0 8px;">$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2 style="color:var(--teal-dk);margin:24px 0 10px;font-family:EB Garamond,serif;">$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1 style="color:var(--teal-dk);margin:28px 0 12px;font-family:EB Garamond,serif;">$1</h1>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.*$)/gm, '<li style="margin-left:20px;">$1</li>')
+    .replace(/\n/g, '<br>');
+}
 
 async function generateReport() {
   if (!currentStudentId) return;
-  const area = document.getElementById('report-area');
-  area.innerHTML = '<div class="report-loading">🤖 AI 正在分析学生数据并生成学习报告，请稍候...</div>';
-  document.getElementById('report-toolbar').style.display = 'none';
-  document.getElementById('report-actions').style.display = 'none';
-  switchTab('report');
+  switchTab('reports');
+  const list = document.getElementById('reports-list');
+  list.innerHTML = '<div style="text-align:center;color:var(--ink-dim);padding:40px;">🤖 AI 正在分析学生数据并生成学习报告，请稍候 (约 30 秒)...</div>';
 
   try {
     const res = await fetch(`/api/teacher/student/${currentStudentId}/generate-report`, {
@@ -373,22 +572,175 @@ async function generateReport() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || '生成失败');
-    _currentReportMarkdown = data.report;
-    // Simple markdown rendering
-    area.innerHTML = data.report
-      .replace(/^### (.*$)/gm, '<h3 style="color:var(--teal-dk);margin:20px 0 8px;">$1</h3>')
-      .replace(/^## (.*$)/gm, '<h2 style="color:var(--teal-dk);margin:24px 0 10px;font-family:EB Garamond,serif;">$1</h2>')
-      .replace(/^# (.*$)/gm, '<h1 style="color:var(--teal-dk);margin:28px 0 12px;font-family:EB Garamond,serif;">$1</h1>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/^- (.*$)/gm, '<li style="margin-left:20px;">$1</li>')
-      .replace(/\n/g, '<br>');
-    document.getElementById('report-toolbar').style.display = '';
-    document.getElementById('report-actions').style.display = '';
-    toast('报告生成完成，可直接编辑','ok');
+    toast('报告生成完成，已自动保存','ok');
+    await loadReports(currentStudentId);
+    await loadTimeline(currentStudentId); // refresh timeline to show new report
+    // Auto-open the new report
+    if (data.report_id) {
+      viewReport(data.report_id, data.report);
+    }
   } catch(e) {
-    area.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px;">生成报告失败：' + esc(e.message) + '</div>';
+    list.innerHTML = `<div style="color:var(--red);text-align:center;padding:20px;">生成失败：${esc(e.message)}</div>`;
     toast(e.message,'err');
   }
+}
+
+let _currentReports = [];
+
+async function loadReports(studentId) {
+  const list = document.getElementById('reports-list');
+  list.innerHTML = '<div style="color:var(--ink-dim);">加载中...</div>';
+  try {
+    const res = await fetch(`/api/teacher/student/${studentId}/reports`, { credentials:'include' });
+    const data = await res.json();
+    _currentReports = data;
+    if (!data.length) {
+      list.innerHTML = '<div style="color:var(--ink-dim);text-align:center;padding:30px;">暂无学习报告，点击页面顶部"生成学习报告"按钮创建</div>';
+      return;
+    }
+    list.innerHTML = data.map(r => `
+      <div style="padding:14px;background:#fff;border-radius:8px;margin-bottom:10px;border-left:3px solid var(--teal);display:flex;justify-content:space-between;align-items:center;">
+        <div style="flex:1;cursor:pointer;" onclick="viewReport(${r.id})">
+          <div style="font-weight:600;font-size:14px;">${esc(r.title)}</div>
+          <div style="font-size:11px;color:var(--ink-dim);margin-top:2px;">${esc(r.created_at)}${r.band_at_time?' · 当时 Band '+r.band_at_time:''}</div>
+        </div>
+        <div>
+          <button class="btn btn-sm btn-outline" onclick="viewReport(${r.id})">查看</button>
+          <button class="btn btn-sm btn-red" onclick="deleteReport(${r.id})">删除</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { list.innerHTML = '<div style="color:var(--red);">加载失败</div>'; }
+}
+
+function viewReport(id, contentOverride) {
+  const r = _currentReports.find(x => x.id === id);
+  const content = contentOverride || (r ? r.content : '');
+  if (!content) return;
+  _currentReportMarkdown = content;
+  document.getElementById('report-area').innerHTML = renderMarkdown(content);
+  document.getElementById('report-detail').style.display = '';
+  document.getElementById('report-detail').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function closeReportDetail() {
+  document.getElementById('report-detail').style.display = 'none';
+}
+async function deleteReport(id) {
+  if (!confirm('确定要删除这份报告吗？')) return;
+  try {
+    const res = await fetch(`/api/teacher/reports/${id}`, { method:'DELETE', credentials:'include' });
+    if (!res.ok) throw new Error('删除失败');
+    toast('已删除','ok');
+    loadReports(currentStudentId);
+    loadTimeline(currentStudentId);
+  } catch(e) { toast(e.message,'err'); }
+}
+
+// ─── PLANS ───
+let _currentPlans = [];
+
+async function loadPlans(studentId) {
+  const list = document.getElementById('plans-list');
+  list.innerHTML = '<div style="color:var(--ink-dim);">加载中...</div>';
+  try {
+    const res = await fetch(`/api/teacher/student/${studentId}/timeline`, { credentials:'include' });
+    const d = await res.json();
+    _currentPlans = d.plans || [];
+    const isVip = d.student.is_vip;
+
+    let header = '';
+    if (!isVip) {
+      header = `
+        <div style="padding:20px;background:linear-gradient(135deg,#fff8e0,#fff6d0);border-radius:8px;margin-bottom:16px;border:2px dashed var(--gold);text-align:center;">
+          <div style="font-size:18px;color:var(--gold);margin-bottom:8px;">⭐ VIP 专属功能</div>
+          <div style="font-size:13px;color:var(--ink-mid);">该学生当前不是 VIP，无法生成 AI 学习计划<br>请联系管理员升级该学生为 VIP 学员</div>
+        </div>
+      `;
+    } else {
+      header = `
+        <div style="margin-bottom:14px;text-align:right;">
+          <button class="btn btn-gold" onclick="openPlanModal()">🤖 生成新学习计划</button>
+        </div>
+      `;
+    }
+
+    if (!_currentPlans.length) {
+      list.innerHTML = header + '<div style="color:var(--ink-dim);text-align:center;padding:30px;">暂无学习计划</div>';
+      return;
+    }
+    list.innerHTML = header + _currentPlans.map(p => `
+      <div style="padding:14px;background:#fff;border-radius:8px;margin-bottom:10px;border-left:3px solid var(--gold);display:flex;justify-content:space-between;align-items:center;">
+        <div style="flex:1;cursor:pointer;" onclick="viewPlan(${p.id})">
+          <div style="font-weight:600;font-size:14px;">${esc(p.title)}</div>
+          <div style="font-size:11px;color:var(--ink-dim);margin-top:2px;">${esc(p.created_at)} · 目标 Band ${p.target_band}${p.exam_date?' · 考试 '+p.exam_date:''}</div>
+        </div>
+        <div>
+          <button class="btn btn-sm btn-outline" onclick="viewPlan(${p.id})">查看</button>
+          <button class="btn btn-sm btn-red" onclick="deletePlan(${p.id})">删除</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { list.innerHTML = '<div style="color:var(--red);">加载失败</div>'; }
+}
+
+function openPlanModal() {
+  if (!currentStudentProfile) return;
+  if (!currentStudentProfile.is_vip) { toast('该学生不是 VIP','err'); return; }
+  document.getElementById('plan-vip-info').textContent = `为 ${currentStudentName} 生成学习计划`;
+  document.getElementById('plan-target').value = currentStudentProfile.target_band || 6.5;
+  document.getElementById('plan-exam').value = currentStudentProfile.exam_date || '';
+  document.getElementById('plan-modal').style.display = 'flex';
+}
+function closePlanModal() { document.getElementById('plan-modal').style.display = 'none'; }
+
+async function submitGeneratePlan() {
+  const body = {
+    target_band: parseFloat(document.getElementById('plan-target').value) || 6.5,
+    exam_date: document.getElementById('plan-exam').value,
+  };
+  closePlanModal();
+  const list = document.getElementById('plans-list');
+  list.innerHTML = '<div style="text-align:center;color:var(--ink-dim);padding:40px;">🤖 AI 正在生成详细学习计划，请稍候 (约 40 秒)...</div>';
+  try {
+    const res = await fetch(`/api/teacher/student/${currentStudentId}/generate-plan`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.detail || '生成失败');
+    toast('学习计划已生成','ok');
+    await loadPlans(currentStudentId);
+    await loadTimeline(currentStudentId);
+    if (d.plan_id) viewPlan(d.plan_id, d.content);
+  } catch(e) {
+    toast(e.message,'err');
+    loadPlans(currentStudentId);
+  }
+}
+
+function viewPlan(id, contentOverride) {
+  const p = _currentPlans.find(x => x.id === id);
+  const content = contentOverride || (p ? p.content : '');
+  if (!content) { toast('内容为空','err'); return; }
+  _currentPlanMarkdown = content;
+  document.getElementById('plan-area').innerHTML = renderMarkdown(content);
+  document.getElementById('plan-detail').style.display = '';
+  document.getElementById('plan-detail').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function closePlanDetail() { document.getElementById('plan-detail').style.display = 'none'; }
+async function deletePlan(id) {
+  if (!confirm('确定要删除该学习计划吗？')) return;
+  try {
+    const res = await fetch(`/api/teacher/plans/${id}`, { method:'DELETE', credentials:'include' });
+    if (!res.ok) throw new Error('删除失败');
+    toast('已删除','ok');
+    loadPlans(currentStudentId);
+    loadTimeline(currentStudentId);
+  } catch(e) { toast(e.message,'err'); }
+}
+function copyPlan() {
+  navigator.clipboard.writeText(_currentPlanMarkdown).then(()=>toast('已复制','ok')).catch(()=>toast('复制失败','err'));
 }
 
 function toggleEdit() {
