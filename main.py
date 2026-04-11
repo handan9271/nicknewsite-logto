@@ -2165,6 +2165,87 @@ async def generate_study_plan(student_id: int, body: GeneratePlanRequest, user: 
         raise HTTPException(status_code=500, detail="生成学习计划失败")
 
 
+class WritePlanRequest(BaseModel):
+    title: str = ""
+    target_band: float = 0
+    exam_date: str = ""
+    content: str = ""
+
+
+@app.post("/api/teacher/student/{student_id}/write-plan")
+async def write_plan(student_id: int, body: WritePlanRequest, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    """Save a plan that the teacher wrote manually."""
+    if not _can_view_student(user, student_id, db):
+        raise HTTPException(status_code=403, detail="无权访问该学生")
+    if not body.content.strip():
+        raise HTTPException(status_code=400, detail="计划内容不能为空")
+    student = db.query(User).filter(User.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="学生不存在")
+
+    exam_dt = None
+    if body.exam_date:
+        try:
+            exam_dt = datetime.strptime(body.exam_date, "%Y-%m-%d")
+        except ValueError:
+            pass
+
+    plan = StudyPlan(
+        student_id=student_id,
+        teacher_id=user.id,
+        title=body.title or f"学习计划 {datetime.utcnow().strftime('%Y-%m-%d')}",
+        target_band=body.target_band,
+        exam_date=exam_dt,
+        content=body.content,
+        status="active",
+    )
+    db.add(plan)
+    db.commit()
+    db.refresh(plan)
+    return {"ok": True, "plan_id": plan.id}
+
+
+class OptimizePlanRequest(BaseModel):
+    content: str = ""
+
+
+@app.post("/api/teacher/optimize-plan")
+async def optimize_plan(body: OptimizePlanRequest, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    """AI optimize a plan's wording — does NOT add new content, just makes it clearer/more rigorous."""
+    if not body.content.strip():
+        raise HTTPException(status_code=400, detail="内容不能为空")
+
+    prompt = f"""你是一位资深的教学专家。下面是一份老师写的学生学习计划，请对它进行优化。
+
+【重要原则】：
+- 不要添加任何老师没有提到的新内容（如新的练习项、新的资源、新的目标等）
+- 不要扩展或发挥老师的原意
+- 不要改变计划的整体结构和顺序
+- 只在原有内容的基础上：
+  1. 让表达更严谨、清晰、专业
+  2. 修正语法错误和不通顺的地方
+  3. 适当使用 markdown 格式（标题、列表、加粗）让结构更清晰
+  4. 把模糊的表达说得更具体（但只针对老师已经写到的内容）
+- 保持老师原有的语气和教学风格
+
+老师写的原始计划：
+---
+{body.content}
+---
+
+请直接输出优化后的计划，不要加任何前言、解释或后记。"""
+
+    try:
+        optimized = await call_deepseek([
+            {'role': 'system', 'content': '你是一位资深的教学文档编辑专家，专门帮老师优化学习计划的措辞，但绝不添加新内容。'},
+            {'role': 'user', 'content': prompt},
+        ], max_tokens=3500, temperature=0.3)
+        return {"ok": True, "optimized": optimized}
+    except Exception as e:
+        logger.error(f"Failed to optimize plan: {e}")
+        raise HTTPException(status_code=500, detail="优化失败，请稍后重试")
+
+
 @app.delete("/api/teacher/plans/{plan_id}")
 async def delete_plan(plan_id: int, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
     p = db.query(StudyPlan).filter(StudyPlan.id == plan_id).first()

@@ -312,6 +312,40 @@ body { font-family:'DM Sans',sans-serif; background:var(--warm); color:var(--ink
   </div>
 </div>
 
+<!-- Write Plan Modal (manual + AI optimize) -->
+<div class="modal-overlay" id="write-plan-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--paper);border-radius:16px;padding:28px;width:760px;max-width:96vw;max-height:92vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.2);">
+    <div style="font-family:'EB Garamond',serif;font-size:20px;color:var(--teal-dk);margin-bottom:18px;">✍️ 手写学习计划</div>
+
+    <label style="font-size:11px;color:var(--ink-dim);font-weight:600;text-transform:uppercase;">计划标题</label>
+    <input id="wp-title" placeholder="例：口语 6.5 冲刺计划" style="width:100%;padding:10px;border:1.5px solid #d8d0c8;border-radius:6px;margin:4px 0 12px;">
+
+    <div style="display:flex;gap:12px;">
+      <div style="flex:1;">
+        <label style="font-size:11px;color:var(--ink-dim);font-weight:600;text-transform:uppercase;">目标分数</label>
+        <input id="wp-target" type="number" step="0.5" min="0" max="9" value="6.5" style="width:100%;padding:10px;border:1.5px solid #d8d0c8;border-radius:6px;margin:4px 0 12px;">
+      </div>
+      <div style="flex:1;">
+        <label style="font-size:11px;color:var(--ink-dim);font-weight:600;text-transform:uppercase;">考试日期</label>
+        <input id="wp-exam" type="date" style="width:100%;padding:10px;border:1.5px solid #d8d0c8;border-radius:6px;margin:4px 0 12px;">
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+      <label style="font-size:11px;color:var(--ink-dim);font-weight:600;text-transform:uppercase;">计划内容（支持 Markdown）</label>
+      <button class="btn btn-gold btn-sm" id="wp-optimize-btn" onclick="optimizePlan()">✨ AI 优化（仅润色，不加新内容）</button>
+    </div>
+    <textarea id="wp-content" placeholder="把你想写的学习计划在这里写下来...&#10;&#10;例如：&#10;每天 30 分钟跟读练习&#10;每周 2 次模考&#10;重点突破语法和词汇..." style="width:100%;min-height:300px;padding:14px;border:1.5px solid #d8d0c8;border-radius:8px;margin:6px 0 16px;font-family:inherit;font-size:13px;line-height:1.7;resize:vertical;"></textarea>
+
+    <div id="wp-optimize-status" style="display:none;margin-bottom:12px;padding:10px 14px;background:var(--teal-lt);border-radius:6px;font-size:12px;color:var(--teal-dk);"></div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn" style="background:#eee;" onclick="closeWritePlanModal()">取消</button>
+      <button class="btn btn-teal" onclick="submitWritePlan()">保存计划</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -653,13 +687,14 @@ async function loadPlans(studentId) {
       header = `
         <div style="padding:20px;background:linear-gradient(135deg,#fff8e0,#fff6d0);border-radius:8px;margin-bottom:16px;border:2px dashed var(--gold);text-align:center;">
           <div style="font-size:18px;color:var(--gold);margin-bottom:8px;">⭐ VIP 专属功能</div>
-          <div style="font-size:13px;color:var(--ink-mid);">该学生当前不是 VIP，无法生成 AI 学习计划<br>请联系管理员升级该学生为 VIP 学员</div>
+          <div style="font-size:13px;color:var(--ink-mid);">该学生当前不是 VIP，无法生成或保存学习计划<br>请联系管理员升级该学生为 VIP 学员</div>
         </div>
       `;
     } else {
       header = `
         <div style="margin-bottom:14px;text-align:right;">
-          <button class="btn btn-gold" onclick="openPlanModal()">🤖 生成新学习计划</button>
+          <button class="btn btn-outline" onclick="openWritePlanModal()">✍️ 手写新计划</button>
+          <button class="btn btn-gold" onclick="openPlanModal()" style="margin-left:8px;">🤖 AI 生成计划</button>
         </div>
       `;
     }
@@ -741,6 +776,78 @@ async function deletePlan(id) {
 }
 function copyPlan() {
   navigator.clipboard.writeText(_currentPlanMarkdown).then(()=>toast('已复制','ok')).catch(()=>toast('复制失败','err'));
+}
+
+// ─── WRITE PLAN (manual + AI optimize) ───
+function openWritePlanModal() {
+  if (!currentStudentProfile) return;
+  if (!currentStudentProfile.is_vip) { toast('该学生不是 VIP','err'); return; }
+  document.getElementById('wp-title').value = '';
+  document.getElementById('wp-target').value = currentStudentProfile.target_band || 6.5;
+  document.getElementById('wp-exam').value = currentStudentProfile.exam_date || '';
+  document.getElementById('wp-content').value = '';
+  document.getElementById('wp-optimize-status').style.display = 'none';
+  document.getElementById('write-plan-modal').style.display = 'flex';
+}
+function closeWritePlanModal() {
+  document.getElementById('write-plan-modal').style.display = 'none';
+}
+
+async function optimizePlan() {
+  const content = document.getElementById('wp-content').value.trim();
+  if (!content) { toast('请先写一些内容','err'); return; }
+  const btn = document.getElementById('wp-optimize-btn');
+  const status = document.getElementById('wp-optimize-status');
+  btn.disabled = true;
+  btn.textContent = '✨ 优化中...';
+  status.style.display = '';
+  status.textContent = '🤖 AI 正在润色你的计划，不会添加新内容...';
+  try {
+    const res = await fetch('/api/teacher/optimize-plan', {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ content })
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.detail || '优化失败');
+    document.getElementById('wp-content').value = d.optimized;
+    status.textContent = '✓ 已优化，可继续编辑或保存';
+    status.style.background = 'var(--teal-lt)';
+    status.style.color = 'var(--teal-dk)';
+    toast('优化完成','ok');
+  } catch(e) {
+    status.textContent = '❌ 优化失败：' + e.message;
+    status.style.background = 'var(--red-bg)';
+    status.style.color = 'var(--red)';
+    toast(e.message,'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ AI 优化（仅润色，不加新内容）';
+  }
+}
+
+async function submitWritePlan() {
+  const body = {
+    title: document.getElementById('wp-title').value.trim(),
+    target_band: parseFloat(document.getElementById('wp-target').value) || 0,
+    exam_date: document.getElementById('wp-exam').value,
+    content: document.getElementById('wp-content').value.trim(),
+  };
+  if (!body.content) { toast('请填写计划内容','err'); return; }
+  try {
+    const res = await fetch(`/api/teacher/student/${currentStudentId}/write-plan`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.detail || '保存失败');
+    toast('计划已保存','ok');
+    closeWritePlanModal();
+    loadPlans(currentStudentId);
+    loadTimeline(currentStudentId);
+    if (d.plan_id) viewPlan(d.plan_id, body.content);
+  } catch(e) { toast(e.message,'err'); }
 }
 
 function toggleEdit() {
