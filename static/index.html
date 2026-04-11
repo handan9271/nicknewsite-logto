@@ -303,6 +303,9 @@ mark.ins.lit { filter:brightness(.87); box-shadow:0 0 0 2px var(--grn); }
   <!-- Main -->
   <div class="main">
 
+    <!-- ── Announcement Banner ── -->
+    <div id="announcement-bar" style="display:none;padding:14px 44px;background:linear-gradient(90deg,var(--gold-pale),#fff6e0);border-bottom:2px solid var(--gold);"></div>
+
     <!-- ── PRACTICE ── -->
     <div id="v-practice" class="view on" style="padding:36px 44px;background:var(--warm);flex:1;">
       <div class="ph">口语诊断练习</div>
@@ -528,7 +531,28 @@ function showApp(data) {
   if (data.role === 'admin') {
     document.getElementById('nb-admin').style.display = '';
   }
+  loadAnnouncements();
   toast('欢迎回来 👋', 'ok');
+}
+
+async function loadAnnouncements() {
+  try {
+    const res = await fetch('/api/announcements/active', { credentials:'include' });
+    if (!res.ok) return;
+    const items = await res.json();
+    const bar = document.getElementById('announcement-bar');
+    if (!items || !items.length) { bar.style.display = 'none'; return; }
+    bar.innerHTML = items.map(a => `
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <span style="font-size:18px;">📣</span>
+        <div style="flex:1;">
+          <strong style="color:var(--teal-dk);">${esc(a.title)}</strong>
+          <div style="font-size:13px;color:var(--ink-mid);margin-top:2px;white-space:pre-wrap;">${esc(a.content)}</div>
+        </div>
+      </div>
+    `).join('<div style="height:8px;"></div>');
+    bar.style.display = 'block';
+  } catch(e) {}
 }
 
 function showLoginPage() {

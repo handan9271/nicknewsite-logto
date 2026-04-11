@@ -29,7 +29,7 @@ from fastapi.responses import FileResponse, StreamingResponse, JSONResponse, Red
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String, Text, DateTime, create_engine
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, create_engine, func, or_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from logto import LogtoClient, LogtoConfig, Storage
@@ -157,6 +157,8 @@ class User(Base):
     display_name = Column(String(255), default="")
     role = Column(String(20), default="student")  # admin / teacher / student
     credits = Column(Integer, default=20)
+    is_disabled = Column(Boolean, default=False)
+    last_active_at = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -193,6 +195,56 @@ class TeacherStudent(Base):
     teacher_id = Column(Integer, nullable=False, index=True)
     student_id = Column(Integer, nullable=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Announcement(Base):
+    __tablename__ = "announcements"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255))
+    content = Column(Text)
+    target_role = Column(String(20), default="all")  # all, student, teacher, admin
+    active = Column(Boolean, default=True)
+    created_by = Column(Integer)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, index=True)
+    admin_email = Column(String(255))
+    action = Column(String(100))
+    target_type = Column(String(50))
+    target_id = Column(Integer, default=0)
+    details = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class Classroom(Base):
+    __tablename__ = "classes"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255))
+    teacher_id = Column(Integer, index=True)
+    description = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ClassStudent(Base):
+    __tablename__ = "class_students"
+    id = Column(Integer, primary_key=True, index=True)
+    class_id = Column(Integer, index=True)
+    student_id = Column(Integer, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ContentItem(Base):
+    __tablename__ = "content_items"
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(100), unique=True, index=True)  # 'sample_food', 'prompt_meta', etc
+    kind = Column(String(20), default="sample")  # sample / prompt / question
+    content = Column(Text)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    updated_by = Column(Integer, default=0)
 
 
 class UserSession(Base):
@@ -341,10 +393,18 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)) -> U
         db.refresh(db_user)
         logger.info(f"New user created: {email}")
 
+    # Block disabled users
+    if db_user.is_disabled:
+        raise HTTPException(status_code=403, detail="您的账号已被禁用，请联系管理员")
+
     # Update display_name if changed
     if name and db_user.display_name != name:
         db_user.display_name = name
-        db.commit()
+    # Update last_active_at (throttle to 5 min to avoid too many writes)
+    now = datetime.utcnow()
+    if not db_user.last_active_at or (now - db_user.last_active_at).total_seconds() > 300:
+        db_user.last_active_at = now
+    db.commit()
 
     return db_user
 
@@ -898,6 +958,23 @@ async def require_admin(request: Request, db: Session = Depends(get_db)) -> User
         raise HTTPException(status_code=403, detail="需要管理员权限")
     return user
 
+
+def log_audit(db: Session, admin: User, action: str, target_type: str = "", target_id: int = 0, details: str = ""):
+    """Write an audit log entry."""
+    try:
+        entry = AuditLog(
+            admin_id=admin.id,
+            admin_email=admin.email or "",
+            action=action,
+            target_type=target_type,
+            target_id=target_id,
+            details=details[:1000] if details else "",
+        )
+        db.add(entry)
+        db.commit()
+    except Exception as e:
+        logger.error(f"Failed to write audit log: {e}")
+
 async def require_teacher_or_admin(request: Request, db: Session = Depends(get_db)) -> User:
     user = await get_current_user(request, db)
     if user.role not in ('admin', 'teacher'):
@@ -905,44 +982,609 @@ async def require_teacher_or_admin(request: Request, db: Session = Depends(get_d
     return user
 
 
-# ─── ADMIN API ──────────────────────────────────────────────────────────────
+# ─── ADMIN API: USER MANAGEMENT ─────────────────────────────────────────────
 
 @app.get("/api/admin/users")
-async def admin_list_users(user: User = Depends(require_admin), db: Session = Depends(get_db)):
-    """List all users (admin only)."""
-    users = db.query(User).order_by(User.created_at.desc()).all()
-    return [{
-        "id": u.id,
-        "email": u.email or "",
-        "display_name": u.display_name or "",
-        "role": u.role or "student",
-        "credits": u.credits,
-        "created_at": str(u.created_at) if u.created_at else "",
-    } for u in users]
+async def admin_list_users(
+    q: str = "",
+    role: str = "",
+    disabled: str = "",
+    sort: str = "created_at",
+    page: int = 1,
+    limit: int = 50,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """List/search/filter users with pagination."""
+    query = db.query(User)
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(or_(User.email.like(like), User.display_name.like(like)))
+    if role and role in ('admin', 'teacher', 'student'):
+        query = query.filter(User.role == role)
+    if disabled == 'true':
+        query = query.filter(User.is_disabled == True)
+    elif disabled == 'false':
+        query = query.filter(User.is_disabled == False)
+
+    total = query.count()
+
+    if sort == "credits":
+        query = query.order_by(User.credits.desc())
+    elif sort == "last_active":
+        query = query.order_by(User.last_active_at.desc())
+    elif sort == "email":
+        query = query.order_by(User.email.asc())
+    else:
+        query = query.order_by(User.created_at.desc())
+
+    page = max(1, page)
+    limit = min(max(1, limit), 200)
+    users = query.offset((page - 1) * limit).limit(limit).all()
+
+    return {
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "users": [{
+            "id": u.id,
+            "email": u.email or "",
+            "display_name": u.display_name or "",
+            "role": u.role or "student",
+            "credits": u.credits,
+            "is_disabled": u.is_disabled or False,
+            "last_active_at": str(u.last_active_at) if u.last_active_at else "",
+            "created_at": str(u.created_at) if u.created_at else "",
+        } for u in users],
+    }
 
 
 class UpdateUserRequest(BaseModel):
     role: str = ""
-    credits: int = -1  # -1 means don't change
+    credits: int = -1
+    display_name: str = ""
 
 
 @app.post("/api/admin/users/{user_id}/update")
 async def admin_update_user(user_id: int, body: UpdateUserRequest, user: User = Depends(require_admin), db: Session = Depends(get_db)):
-    """Update user role or credits (admin only)."""
+    """Update user role, credits, or display name."""
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="用户不存在")
-    if body.role and body.role in ('admin', 'teacher', 'student'):
+
+    changes = []
+    if body.role and body.role in ('admin', 'teacher', 'student') and target.role != body.role:
+        changes.append(f"role {target.role} -> {body.role}")
         target.role = body.role
-    if body.credits >= 0:
+    if body.credits >= 0 and target.credits != body.credits:
+        changes.append(f"credits {target.credits} -> {body.credits}")
         target.credits = body.credits
+    if body.display_name and target.display_name != body.display_name:
+        changes.append(f"name {target.display_name} -> {body.display_name}")
+        target.display_name = body.display_name
+
     db.commit()
-    return {"ok": True, "role": target.role, "credits": target.credits}
+    if changes:
+        log_audit(db, user, "update_user", "user", user_id, "; ".join(changes))
+    return {"ok": True, "role": target.role, "credits": target.credits, "display_name": target.display_name}
 
 
+@app.post("/api/admin/users/{user_id}/disable")
+async def admin_disable_user(user_id: int, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Disable a user account."""
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    if target.id == user.id:
+        raise HTTPException(status_code=400, detail="不能禁用自己")
+    target.is_disabled = True
+    db.commit()
+    log_audit(db, user, "disable_user", "user", user_id, f"disabled {target.email}")
+    return {"ok": True}
+
+
+@app.post("/api/admin/users/{user_id}/enable")
+async def admin_enable_user(user_id: int, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Re-enable a disabled user."""
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    target.is_disabled = False
+    db.commit()
+    log_audit(db, user, "enable_user", "user", user_id, f"enabled {target.email}")
+    return {"ok": True}
+
+
+@app.get("/api/admin/users/{user_id}/details")
+async def admin_user_details(user_id: int, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Get full user details including history."""
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    practice_count = db.query(Conversation).filter(Conversation.user_id == user_id).count()
+    game_count = db.query(GameSession).filter(GameSession.user_id == user_id).count()
+
+    recent_practice = db.query(Conversation).filter(
+        Conversation.user_id == user_id
+    ).order_by(Conversation.timestamp.desc()).limit(20).all()
+
+    recent_games = db.query(GameSession).filter(
+        GameSession.user_id == user_id
+    ).order_by(GameSession.timestamp.desc()).limit(10).all()
+
+    beijing_tz = timezone(timedelta(hours=8))
+    fmt = lambda t: t.replace(tzinfo=timezone.utc).astimezone(beijing_tz).strftime("%Y-%m-%d %H:%M") if t else ""
+
+    return {
+        "user": {
+            "id": target.id,
+            "email": target.email or "",
+            "display_name": target.display_name or "",
+            "role": target.role or "student",
+            "credits": target.credits,
+            "is_disabled": target.is_disabled or False,
+            "created_at": fmt(target.created_at),
+            "last_active_at": fmt(target.last_active_at),
+        },
+        "stats": {
+            "practice_count": practice_count,
+            "game_count": game_count,
+        },
+        "recent_practice": [{
+            "id": c.id,
+            "created_at": fmt(c.timestamp),
+            "question": c.question or "",
+            "score": c.score or "",
+            "topic_type": c.topic_type or "",
+        } for c in recent_practice],
+        "recent_games": [{
+            "id": g.id,
+            "created_at": fmt(g.timestamp),
+            "mode": g.mode,
+            "overall_score": g.overall_score,
+            "rank": g.rank,
+            "player_count": g.player_count,
+        } for g in recent_games],
+    }
+
+
+class BulkCreditRequest(BaseModel):
+    user_ids: list = []
+    amount: int = 20
+    mode: str = "set"  # "set" or "add"
+
+
+@app.post("/api/admin/bulk-credit")
+async def admin_bulk_credit(body: BulkCreditRequest, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Bulk credit top-up for multiple users."""
+    if not body.user_ids:
+        raise HTTPException(status_code=400, detail="请选择用户")
+    if body.amount < 0:
+        raise HTTPException(status_code=400, detail="积分数必须 >= 0")
+
+    updated = 0
+    for uid in body.user_ids:
+        target = db.query(User).filter(User.id == uid).first()
+        if target:
+            if body.mode == "add":
+                target.credits += body.amount
+            else:
+                target.credits = body.amount
+            updated += 1
+    db.commit()
+    log_audit(db, user, "bulk_credit", "user", 0,
+              f"{body.mode} {body.amount} to {updated} users: {body.user_ids[:20]}")
+    return {"ok": True, "updated": updated}
+
+
+# ─── ADMIN API: ANALYTICS ───────────────────────────────────────────────────
+
+@app.get("/api/admin/analytics")
+async def admin_analytics(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Dashboard analytics: stats, trends, top questions, etc."""
+    now = datetime.utcnow()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=7)
+    month_start = today_start - timedelta(days=30)
+
+    # Basic counts
+    total_users = db.query(User).count()
+    total_teachers = db.query(User).filter(User.role == 'teacher').count()
+    total_students = db.query(User).filter(User.role == 'student').count()
+    total_admins = db.query(User).filter(User.role == 'admin').count()
+    total_disabled = db.query(User).filter(User.is_disabled == True).count()
+    total_conversations = db.query(Conversation).count()
+    total_games = db.query(GameSession).count()
+
+    # DAU / WAU / MAU (from conversations)
+    dau = db.query(func.count(func.distinct(Conversation.user_id))).filter(
+        Conversation.timestamp >= today_start
+    ).scalar() or 0
+    wau = db.query(func.count(func.distinct(Conversation.user_id))).filter(
+        Conversation.timestamp >= week_start
+    ).scalar() or 0
+    mau = db.query(func.count(func.distinct(Conversation.user_id))).filter(
+        Conversation.timestamp >= month_start
+    ).scalar() or 0
+
+    # Today's usage
+    today_conversations = db.query(Conversation).filter(Conversation.timestamp >= today_start).count()
+    today_games = db.query(GameSession).filter(GameSession.timestamp >= today_start).count()
+    today_new_users = db.query(User).filter(User.created_at >= today_start).count()
+
+    # Daily trend (last 14 days)
+    trend = []
+    for i in range(13, -1, -1):
+        day_start = today_start - timedelta(days=i)
+        day_end = day_start + timedelta(days=1)
+        count_c = db.query(Conversation).filter(
+            Conversation.timestamp >= day_start, Conversation.timestamp < day_end
+        ).count()
+        count_g = db.query(GameSession).filter(
+            GameSession.timestamp >= day_start, GameSession.timestamp < day_end
+        ).count()
+        trend.append({
+            "date": day_start.strftime("%m-%d"),
+            "practice": count_c,
+            "game": count_g,
+        })
+
+    # Top questions (last 30 days)
+    top_questions_rows = db.query(
+        Conversation.question, func.count(Conversation.id).label('cnt')
+    ).filter(
+        Conversation.timestamp >= month_start
+    ).group_by(Conversation.question).order_by(func.count(Conversation.id).desc()).limit(10).all()
+    top_questions = [{"question": row[0] or "(空)", "count": row[1]} for row in top_questions_rows]
+
+    # Top teachers (by number of students)
+    top_teachers_rows = db.query(
+        TeacherStudent.teacher_id, func.count(TeacherStudent.student_id).label('cnt')
+    ).group_by(TeacherStudent.teacher_id).order_by(func.count(TeacherStudent.student_id).desc()).limit(5).all()
+    top_teachers = []
+    for row in top_teachers_rows:
+        t = db.query(User).filter(User.id == row[0]).first()
+        if t:
+            top_teachers.append({
+                "id": t.id,
+                "email": t.email,
+                "display_name": t.display_name,
+                "student_count": row[1],
+            })
+
+    # Cost estimation (rough: 1 conversation ≈ ¥0.016, 1 game ≈ ¥0.018)
+    total_cost_estimate = round(total_conversations * 0.016 + total_games * 0.018, 2)
+    month_conversations = db.query(Conversation).filter(Conversation.timestamp >= month_start).count()
+    month_games = db.query(GameSession).filter(GameSession.timestamp >= month_start).count()
+    month_cost_estimate = round(month_conversations * 0.016 + month_games * 0.018, 2)
+
+    return {
+        "summary": {
+            "total_users": total_users,
+            "total_teachers": total_teachers,
+            "total_students": total_students,
+            "total_admins": total_admins,
+            "total_disabled": total_disabled,
+            "total_conversations": total_conversations,
+            "total_games": total_games,
+            "dau": dau,
+            "wau": wau,
+            "mau": mau,
+            "today_conversations": today_conversations,
+            "today_games": today_games,
+            "today_new_users": today_new_users,
+            "total_cost_cny": total_cost_estimate,
+            "month_cost_cny": month_cost_estimate,
+        },
+        "trend_14d": trend,
+        "top_questions": top_questions,
+        "top_teachers": top_teachers,
+    }
+
+
+# ─── ADMIN API: ANNOUNCEMENTS ───────────────────────────────────────────────
+
+class AnnouncementRequest(BaseModel):
+    title: str = ""
+    content: str = ""
+    target_role: str = "all"
+    active: bool = True
+
+
+@app.get("/api/admin/announcements")
+async def admin_list_announcements(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    items = db.query(Announcement).order_by(Announcement.created_at.desc()).all()
+    return [{
+        "id": a.id,
+        "title": a.title,
+        "content": a.content,
+        "target_role": a.target_role,
+        "active": a.active,
+        "created_at": str(a.created_at) if a.created_at else "",
+    } for a in items]
+
+
+@app.post("/api/admin/announcements")
+async def admin_create_announcement(body: AnnouncementRequest, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    a = Announcement(
+        title=body.title, content=body.content,
+        target_role=body.target_role if body.target_role in ('all', 'student', 'teacher', 'admin') else 'all',
+        active=body.active, created_by=user.id,
+    )
+    db.add(a)
+    db.commit()
+    db.refresh(a)
+    log_audit(db, user, "create_announcement", "announcement", a.id, body.title)
+    return {"ok": True, "id": a.id}
+
+
+@app.post("/api/admin/announcements/{ann_id}/update")
+async def admin_update_announcement(ann_id: int, body: AnnouncementRequest, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    a = db.query(Announcement).filter(Announcement.id == ann_id).first()
+    if not a:
+        raise HTTPException(status_code=404, detail="公告不存在")
+    a.title = body.title
+    a.content = body.content
+    a.target_role = body.target_role
+    a.active = body.active
+    db.commit()
+    log_audit(db, user, "update_announcement", "announcement", ann_id, body.title)
+    return {"ok": True}
+
+
+@app.delete("/api/admin/announcements/{ann_id}")
+async def admin_delete_announcement(ann_id: int, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    db.query(Announcement).filter(Announcement.id == ann_id).delete()
+    db.commit()
+    log_audit(db, user, "delete_announcement", "announcement", ann_id)
+    return {"ok": True}
+
+
+@app.get("/api/announcements/active")
+async def get_active_announcements(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Public endpoint: get active announcements for current user's role."""
+    my_role = user.role or "student"
+    items = db.query(Announcement).filter(
+        Announcement.active == True,
+        or_(Announcement.target_role == "all", Announcement.target_role == my_role)
+    ).order_by(Announcement.created_at.desc()).limit(5).all()
+    return [{"id": a.id, "title": a.title, "content": a.content} for a in items]
+
+
+# ─── ADMIN API: AUDIT LOGS ──────────────────────────────────────────────────
+
+@app.get("/api/admin/audit-logs")
+async def admin_list_audit_logs(limit: int = 100, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    limit = min(max(1, limit), 500)
+    logs = db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit).all()
+    beijing_tz = timezone(timedelta(hours=8))
+    return [{
+        "id": l.id,
+        "admin_email": l.admin_email or "",
+        "action": l.action,
+        "target_type": l.target_type,
+        "target_id": l.target_id,
+        "details": l.details or "",
+        "created_at": l.created_at.replace(tzinfo=timezone.utc).astimezone(beijing_tz).strftime("%Y-%m-%d %H:%M:%S") if l.created_at else "",
+    } for l in logs]
+
+
+# ─── ADMIN API: EXPORT ──────────────────────────────────────────────────────
+
+@app.get("/api/admin/export/users.csv")
+async def admin_export_users(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Export all users as CSV."""
+    users = db.query(User).order_by(User.created_at.desc()).all()
+    lines = ["id,email,display_name,role,credits,is_disabled,created_at,last_active_at"]
+    for u in users:
+        lines.append(
+            f'{u.id},"{u.email or ""}","{u.display_name or ""}",{u.role or ""},{u.credits},{u.is_disabled or False},{u.created_at or ""},{u.last_active_at or ""}'
+        )
+    csv_text = "\n".join(lines)
+    log_audit(db, user, "export_users", "user", 0, f"exported {len(users)} users")
+    from fastapi.responses import Response
+    return Response(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="users.csv"'},
+    )
+
+
+@app.get("/api/admin/export/user/{user_id}.json")
+async def admin_export_user(user_id: int, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Export a single user's full data as JSON."""
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    convs = db.query(Conversation).filter(Conversation.user_id == user_id).all()
+    games = db.query(GameSession).filter(GameSession.user_id == user_id).all()
+
+    data = {
+        "user": {
+            "id": target.id, "email": target.email, "display_name": target.display_name,
+            "role": target.role, "credits": target.credits,
+            "created_at": str(target.created_at) if target.created_at else None,
+        },
+        "conversations": [{
+            "id": c.id, "question": c.question, "user_input": c.user_input,
+            "ai_reply": c.ai_reply, "topic_type": c.topic_type, "score": c.score,
+            "timestamp": str(c.timestamp) if c.timestamp else None,
+        } for c in convs],
+        "game_sessions": [{
+            "id": g.id, "mode": g.mode, "overall_score": g.overall_score,
+            "rank": g.rank, "player_count": g.player_count,
+            "answers": json.loads(g.answers_json) if g.answers_json else [],
+            "verdict": json.loads(g.verdict_json) if g.verdict_json else {},
+            "timestamp": str(g.timestamp) if g.timestamp else None,
+        } for g in games],
+    }
+    log_audit(db, user, "export_user", "user", user_id)
+    return JSONResponse(
+        content=data,
+        headers={"Content-Disposition": f'attachment; filename="user-{user_id}.json"'},
+    )
+
+
+# ─── ADMIN API: CLASSROOM MANAGEMENT ───────────────────────────────────────
+
+class ClassRequest(BaseModel):
+    name: str = ""
+    teacher_id: int = 0
+    description: str = ""
+
+
+@app.get("/api/admin/classes")
+async def admin_list_classes(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    classes = db.query(Classroom).order_by(Classroom.created_at.desc()).all()
+    result = []
+    for c in classes:
+        teacher = db.query(User).filter(User.id == c.teacher_id).first()
+        student_count = db.query(ClassStudent).filter(ClassStudent.class_id == c.id).count()
+        result.append({
+            "id": c.id,
+            "name": c.name,
+            "description": c.description or "",
+            "teacher_id": c.teacher_id,
+            "teacher_name": teacher.display_name if teacher else "",
+            "teacher_email": teacher.email if teacher else "",
+            "student_count": student_count,
+            "created_at": str(c.created_at) if c.created_at else "",
+        })
+    return result
+
+
+@app.post("/api/admin/classes")
+async def admin_create_class(body: ClassRequest, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    if not body.name:
+        raise HTTPException(status_code=400, detail="班级名不能为空")
+    teacher = db.query(User).filter(User.id == body.teacher_id).first()
+    if not teacher or teacher.role not in ('teacher', 'admin'):
+        raise HTTPException(status_code=400, detail="指定的老师不存在或不是教师角色")
+    c = Classroom(name=body.name, teacher_id=body.teacher_id, description=body.description)
+    db.add(c)
+    db.commit()
+    db.refresh(c)
+    log_audit(db, user, "create_class", "class", c.id, body.name)
+    return {"ok": True, "id": c.id}
+
+
+@app.delete("/api/admin/classes/{class_id}")
+async def admin_delete_class(class_id: int, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    db.query(ClassStudent).filter(ClassStudent.class_id == class_id).delete()
+    db.query(Classroom).filter(Classroom.id == class_id).delete()
+    db.commit()
+    log_audit(db, user, "delete_class", "class", class_id)
+    return {"ok": True}
+
+
+class ClassAddStudentRequest(BaseModel):
+    student_emails: list = []
+
+
+@app.post("/api/admin/classes/{class_id}/add-students")
+async def admin_add_class_students(class_id: int, body: ClassAddStudentRequest, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    c = db.query(Classroom).filter(Classroom.id == class_id).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="班级不存在")
+    added = 0
+    not_found = []
+    for email in body.student_emails:
+        student = db.query(User).filter(User.email == email).first()
+        if not student:
+            not_found.append(email)
+            continue
+        existing = db.query(ClassStudent).filter(
+            ClassStudent.class_id == class_id, ClassStudent.student_id == student.id
+        ).first()
+        if existing:
+            continue
+        # Also auto-add student to teacher's list
+        teacher_link = db.query(TeacherStudent).filter(
+            TeacherStudent.teacher_id == c.teacher_id, TeacherStudent.student_id == student.id
+        ).first()
+        if not teacher_link:
+            db.add(TeacherStudent(teacher_id=c.teacher_id, student_id=student.id))
+        db.add(ClassStudent(class_id=class_id, student_id=student.id))
+        added += 1
+    db.commit()
+    log_audit(db, user, "add_class_students", "class", class_id, f"added {added}")
+    return {"ok": True, "added": added, "not_found": not_found}
+
+
+@app.get("/api/admin/classes/{class_id}/students")
+async def admin_class_students(class_id: int, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    links = db.query(ClassStudent).filter(ClassStudent.class_id == class_id).all()
+    ids = [l.student_id for l in links]
+    if not ids:
+        return []
+    students = db.query(User).filter(User.id.in_(ids)).all()
+    return [{
+        "id": s.id, "email": s.email, "display_name": s.display_name,
+        "credits": s.credits, "is_disabled": s.is_disabled or False,
+    } for s in students]
+
+
+@app.delete("/api/admin/classes/{class_id}/students/{student_id}")
+async def admin_remove_class_student(class_id: int, student_id: int, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    db.query(ClassStudent).filter(
+        ClassStudent.class_id == class_id, ClassStudent.student_id == student_id
+    ).delete()
+    db.commit()
+    log_audit(db, user, "remove_class_student", "class", class_id, f"student {student_id}")
+    return {"ok": True}
+
+
+# ─── ADMIN API: CONTENT MANAGEMENT ─────────────────────────────────────────
+
+class ContentRequest(BaseModel):
+    key: str = ""
+    kind: str = "sample"
+    content: str = ""
+
+
+@app.get("/api/admin/content")
+async def admin_list_content(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    items = db.query(ContentItem).order_by(ContentItem.kind, ContentItem.key).all()
+    return [{
+        "id": i.id, "key": i.key, "kind": i.kind, "content": i.content,
+        "updated_at": str(i.updated_at) if i.updated_at else "",
+    } for i in items]
+
+
+@app.post("/api/admin/content")
+async def admin_upsert_content(body: ContentRequest, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    if not body.key:
+        raise HTTPException(status_code=400, detail="key 不能为空")
+    item = db.query(ContentItem).filter(ContentItem.key == body.key).first()
+    if item:
+        item.content = body.content
+        item.kind = body.kind
+        item.updated_at = datetime.utcnow()
+        item.updated_by = user.id
+    else:
+        item = ContentItem(
+            key=body.key, kind=body.kind, content=body.content, updated_by=user.id,
+        )
+        db.add(item)
+    db.commit()
+    log_audit(db, user, "upsert_content", "content", 0, body.key)
+    return {"ok": True}
+
+
+@app.delete("/api/admin/content/{content_id}")
+async def admin_delete_content(content_id: int, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    db.query(ContentItem).filter(ContentItem.id == content_id).delete()
+    db.commit()
+    log_audit(db, user, "delete_content", "content", content_id)
+    return {"ok": True}
+
+
+# Legacy stats endpoint (kept for compatibility)
 @app.get("/api/admin/stats")
 async def admin_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)):
-    """Dashboard statistics (admin only)."""
     total_users = db.query(User).count()
     total_conversations = db.query(Conversation).count()
     total_games = db.query(GameSession).count()
