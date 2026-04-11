@@ -317,37 +317,10 @@ def get_base_url(request: Request) -> str:
     return f"{scheme}://{host}".rstrip('/')
 
 
-# In-memory cache for user info: {nick_session_cookie: (user_dict, expires_at)}
-# Caches Logto fetchUserInfo() result + DB user lookup for 5 minutes per session.
-_user_cache: dict = {}
-_USER_CACHE_TTL = 300  # 5 minutes
-
-
-def _get_session_key(request: Request) -> str:
-    """Extract a stable session key from the Logto cookie."""
-    # Logto stores session in 'logto_session' or similar cookie
-    for cookie_name, cookie_val in request.cookies.items():
-        if 'logto' in cookie_name.lower() or 'session' in cookie_name.lower():
-            return f"{cookie_name}:{cookie_val[:32]}"
-    return ""
-
-
 async def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
-    """Get current authenticated user from Logto session, with 5-min cache."""
+    """Get current authenticated user from Logto session."""
     if not logto_config:
         raise HTTPException(status_code=500, detail="Logto not configured")
-
-    # Check cache first
-    cache_key = _get_session_key(request)
-    if cache_key:
-        cached = _user_cache.get(cache_key)
-        if cached:
-            user_id, expires_at = cached
-            if time_now() < expires_at:
-                # Fetch fresh user from DB (lightweight, single-row lookup)
-                db_user = db.query(User).filter(User.id == user_id).first()
-                if db_user:
-                    return db_user
 
     client = LogtoClient(logto_config, storage=session_storage)
 
@@ -371,16 +344,6 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)) -> U
     if name and db_user.display_name != name:
         db_user.display_name = name
         db.commit()
-
-    # Cache the user id by session cookie
-    if cache_key:
-        _user_cache[cache_key] = (db_user.id, time_now() + _USER_CACHE_TTL)
-        # Cleanup old entries occasionally
-        if len(_user_cache) > 1000:
-            now = time_now()
-            expired = [k for k, (_, exp) in _user_cache.items() if exp < now]
-            for k in expired:
-                _user_cache.pop(k, None)
 
     return db_user
 
