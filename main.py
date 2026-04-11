@@ -67,14 +67,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Security headers
+# Security headers + auto-issue session cookie
 @app.middleware("http")
-async def security_headers(request: Request, call_next):
+async def security_and_session(request: Request, call_next):
+    # Auto-create session ID if missing (for new browsers)
+    sid = request.cookies.get("nick_sid", "").strip()
+    new_sid = None
+    if not sid or len(sid) < 16:
+        new_sid = secrets.token_urlsafe(24)
+        # Store on request.state so handlers can use it within this request
+        request.state.session_id = new_sid
+    else:
+        request.state.session_id = sid
+
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+    # Set the session cookie if it was missing
+    if new_sid:
+        response.set_cookie(
+            "nick_sid",
+            new_sid,
+            max_age=7 * 24 * 3600,
+            httponly=True,
+            samesite="lax",
+            secure=os.getenv("BASE_URL", "").startswith("https"),
+        )
     return response
 
 # ─── CONFIG ─────────────────────────────────────────────────────────────────
@@ -310,88 +331,110 @@ def get_db():
 
 
 # ─── LOGTO SESSION STORAGE ──────────────────────────────────────────────────
+# Each browser session has a unique session_id (stored in nick_sid cookie).
+# All Logto session keys are scoped/prefixed by this session_id, so multiple
+# users on different browsers don't share the same Logto session state.
 
 class DatabaseSessionStorage(Storage):
-    def __init__(self, db_session_factory=SessionLocal):
-        self._cache = {}
+    def __init__(self, session_id: str = "", db_session_factory=SessionLocal):
+        self._session_id = session_id
         self._db_session_factory = db_session_factory
-        self._cache_ttl = 300
-        self._last_cleanup = time_now()
+
+    def _scoped_key(self, key: str) -> str:
+        if self._session_id:
+            return f"{self._session_id}:{key}"
+        return key
 
     def _get_db(self):
         return self._db_session_factory()
 
-    def _cleanup_expired_cache(self):
-        now = time_now()
-        if now - self._last_cleanup > 60:
-            expired = [k for k, (v, ts) in self._cache.items() if now - ts > self._cache_ttl]
-            for k in expired:
-                del self._cache[k]
-            self._last_cleanup = now
-
     def get(self, key: str) -> Union[str, None]:
+        scoped = self._scoped_key(key)
         try:
-            self._cleanup_expired_cache()
-            if key in self._cache:
-                value, ts = self._cache[key]
-                if time_now() - ts < self._cache_ttl:
-                    return value
-                else:
-                    del self._cache[key]
             db = self._get_db()
             try:
                 session = db.query(UserSession).filter(
-                    UserSession.session_key == key,
+                    UserSession.session_key == scoped,
                     UserSession.expires_at > datetime.utcnow()
                 ).first()
-                if session:
-                    self._cache[key] = (session.session_value, time_now())
-                    return session.session_value
-                return None
+                return session.session_value if session else None
             finally:
                 db.close()
         except Exception as e:
-            logger.error(f"Failed to get session {key}: {e}")
-            if key in self._cache:
-                return self._cache[key][0]
+            logger.error(f"Failed to get session {scoped}: {e}")
             return None
 
     def set(self, key: str, value: str) -> None:
+        scoped = self._scoped_key(key)
         try:
-            self._cache[key] = (value, time_now())
             db = self._get_db()
             try:
-                expires_at = datetime.utcnow() + timedelta(hours=24)
-                session = db.query(UserSession).filter(UserSession.session_key == key).first()
+                expires_at = datetime.utcnow() + timedelta(days=7)
+                session = db.query(UserSession).filter(UserSession.session_key == scoped).first()
                 if session:
                     session.session_value = value
                     session.expires_at = expires_at
                     session.updated_at = datetime.utcnow()
                 else:
                     session = UserSession(
-                        session_key=key, session_value=value, expires_at=expires_at
+                        session_key=scoped,
+                        session_value=value,
+                        user_id=self._session_id,
+                        expires_at=expires_at,
                     )
                     db.add(session)
                 db.commit()
             finally:
                 db.close()
         except Exception as e:
-            logger.error(f"Failed to set session {key}: {e}")
+            logger.error(f"Failed to set session {scoped}: {e}")
 
     def delete(self, key: str) -> None:
+        scoped = self._scoped_key(key)
         try:
-            self._cache.pop(key, None)
             db = self._get_db()
             try:
-                db.query(UserSession).filter(UserSession.session_key == key).delete()
+                db.query(UserSession).filter(UserSession.session_key == scoped).delete()
                 db.commit()
             finally:
                 db.close()
         except Exception as e:
-            logger.error(f"Failed to delete session {key}: {e}")
+            logger.error(f"Failed to delete session {scoped}: {e}")
 
 
-session_storage = DatabaseSessionStorage()
+# Helper: get or create per-browser session ID from cookie
+SESSION_COOKIE_NAME = "nick_sid"
+
+def get_or_create_session_id(request: Request) -> tuple[str, bool]:
+    """Returns (session_id, is_new). The middleware sets request.state.session_id."""
+    # Prefer the one set by middleware
+    sid = getattr(request.state, "session_id", None) if hasattr(request, "state") else None
+    if sid:
+        # Was it newly created? Check if cookie was missing.
+        cookie_sid = request.cookies.get(SESSION_COOKIE_NAME, "").strip()
+        return sid, (cookie_sid != sid)
+    sid = request.cookies.get(SESSION_COOKIE_NAME, "").strip()
+    if sid and len(sid) >= 16:
+        return sid, False
+    return secrets.token_urlsafe(24), True
+
+
+def get_storage_for_request(request: Request) -> DatabaseSessionStorage:
+    """Get a per-browser-session Logto storage instance."""
+    sid, _ = get_or_create_session_id(request)
+    return DatabaseSessionStorage(session_id=sid)
+
+
+def set_session_cookie(response, sid: str):
+    """Attach the nick_sid cookie to a response."""
+    response.set_cookie(
+        SESSION_COOKIE_NAME,
+        sid,
+        max_age=7 * 24 * 3600,
+        httponly=True,
+        samesite="lax",
+        secure=os.getenv("BASE_URL", "").startswith("https"),
+    )
 
 logto_config = LogtoConfig(
     endpoint=LOGTO_ENDPOINT,
@@ -415,7 +458,8 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)) -> U
     if not logto_config:
         raise HTTPException(status_code=500, detail="Logto not configured")
 
-    client = LogtoClient(logto_config, storage=session_storage)
+    storage = get_storage_for_request(request)
+    client = LogtoClient(logto_config, storage=storage)
 
     if not client.isAuthenticated():
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -917,15 +961,17 @@ async def score_all_answers(room: Room, question: str, part: int):
 
 # ─── WEBSOCKET AUTH HELPER ──────────────────────────────────────────────────
 
-def ws_get_user_from_logto() -> Optional[dict]:
+def ws_get_user_from_logto(websocket: WebSocket) -> Optional[dict]:
     """Try to get user info from Logto session storage (for WebSocket auth)."""
     if not logto_config:
         return None
-    client = LogtoClient(logto_config, storage=session_storage)
+    sid = websocket.cookies.get(SESSION_COOKIE_NAME, "")
+    if not sid:
+        return None
+    storage = DatabaseSessionStorage(session_id=sid)
+    client = LogtoClient(logto_config, storage=storage)
     if not client.isAuthenticated():
         return None
-    # We can't call async fetchUserInfo here, so we parse from storage
-    # The Logto SDK stores id_token_claims in the session
     try:
         id_token = client.getIdTokenClaims()
         if id_token:
@@ -945,21 +991,31 @@ def ws_get_user_from_logto() -> Optional[dict]:
 async def sign_in(request: Request):
     if not logto_config:
         raise HTTPException(status_code=500, detail="Logto not configured")
-    client = LogtoClient(logto_config, storage=session_storage)
+    sid, is_new = get_or_create_session_id(request)
+    storage = DatabaseSessionStorage(session_id=sid)
+    client = LogtoClient(logto_config, storage=storage)
     base_url = get_base_url(request)
     redirect_uri = os.getenv("LOGTO_REDIRECT_URI", f"{base_url}/auth/callback")
     sign_in_url = await client.signIn(redirectUri=redirect_uri)
-    return RedirectResponse(sign_in_url)
+    response = RedirectResponse(sign_in_url)
+    if is_new:
+        set_session_cookie(response, sid)
+    return response
 
 
 @app.get("/auth/callback")
 async def auth_callback(request: Request):
     if not logto_config:
         raise HTTPException(status_code=500, detail="Logto not configured")
-    client = LogtoClient(logto_config, storage=session_storage)
+    sid, is_new = get_or_create_session_id(request)
+    storage = DatabaseSessionStorage(session_id=sid)
+    client = LogtoClient(logto_config, storage=storage)
     try:
         await client.handleSignInCallback(str(request.url))
-        return RedirectResponse("/")
+        response = RedirectResponse("/")
+        if is_new:
+            set_session_cookie(response, sid)
+        return response
     except Exception as e:
         logger.error(f"Auth callback error: {e}")
         raise HTTPException(status_code=500, detail="Authentication failed")
@@ -969,11 +1025,16 @@ async def auth_callback(request: Request):
 async def sign_out(request: Request):
     if not logto_config:
         raise HTTPException(status_code=500, detail="Logto not configured")
-    client = LogtoClient(logto_config, storage=session_storage)
+    sid, _ = get_or_create_session_id(request)
+    storage = DatabaseSessionStorage(session_id=sid)
+    client = LogtoClient(logto_config, storage=storage)
     base_url = get_base_url(request)
     post_logout_uri = os.getenv("LOGTO_POST_LOGOUT_URI", f"{base_url}/")
     sign_out_url = await client.signOut(postLogoutRedirectUri=post_logout_uri)
-    return RedirectResponse(sign_out_url)
+    response = RedirectResponse(sign_out_url)
+    # Also clear our session cookie
+    response.delete_cookie(SESSION_COOKIE_NAME)
+    return response
 
 
 # ─── API ROUTES ─────────────────────────────────────────────────────────────
@@ -2483,7 +2544,7 @@ async def get_room(code: str):
 async def ws_game(websocket: WebSocket, room_code: str):
     """WebSocket for multiplayer game, authenticated via Logto session."""
     # Auth via Logto session
-    user_info = ws_get_user_from_logto()
+    user_info = ws_get_user_from_logto(websocket)
     if not user_info:
         await websocket.close(code=4001, reason="Unauthorized")
         return
