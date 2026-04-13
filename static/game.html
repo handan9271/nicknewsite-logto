@@ -6,6 +6,7 @@
   <title>IELTS COURT — Examiner Nick Presiding</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/game.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -565,7 +566,10 @@
       <div id="leaderboard-entries" class="leaderboard-entries"></div>
     </div>
 
-    <button id="btn-new-trial" class="press-start blink">NEW TRIAL</button>
+    <div style="display:flex;gap:16px;justify-content:center;align-items:center;flex-wrap:wrap;">
+      <button id="btn-download-pdf" class="press-start" style="font-size:12px;padding:10px 20px;">📄 DOWNLOAD PDF REPORT</button>
+      <button id="btn-new-trial" class="press-start blink">NEW TRIAL</button>
+    </div>
   </div>
 
   <!-- ======================== AUDIO ELEMENTS ======================== -->

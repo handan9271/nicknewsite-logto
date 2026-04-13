@@ -626,7 +626,7 @@ Respond ONLY with this JSON (no markdown, no extra text):
   "reaction": "satisfied|concerned|impressed|disappointed|shocked",
   "comment": "1-2 sentence reaction referencing the SPECIFIC content of the answer.",
   "objection": null,
-  "scores": {"FC": 1-9, "LR": 1-9, "GRA": 1-9, "Pron": 6}
+  "scores": {"FC": 1-9, "LR": 1-9, "GRA": 1-9, "Pron": 4-8}
 }
 
 Or if there's a grammar/vocabulary issue:
@@ -634,7 +634,7 @@ Or if there's a grammar/vocabulary issue:
   "reaction": "concerned",
   "comment": "Your reaction",
   "objection": {"reason": "The specific error you found"},
-  "scores": {"FC": 1-9, "LR": 1-9, "GRA": 1-9, "Pron": 6}
+  "scores": {"FC": 1-9, "LR": 1-9, "GRA": 1-9, "Pron": 4-8}
 }
 
 Score guide: 4=weak, 5=limited, 6=competent, 7=good, 8=very good, 9=expert."""
@@ -645,7 +645,7 @@ Base scores strictly on the actual quality of ALL answers below. Evaluate:
 - FC (Fluency & Coherence): Full development & coherence
 - LR (Lexical Resource): Vocabulary variety & precision
 - GRA (Grammatical Range & Accuracy): Complex sentences & accuracy
-- Pron: Default 6.
+- Pron: Infer from text complexity. Basic vocabulary → 5, varied/complex → 7. Range 4-8.
 
 Score guide: 4=weak, 5=limited, 6=competent, 7=good, 8=very good, 9=expert.
 Overall = average rounded to nearest 0.5.
@@ -680,7 +680,7 @@ async def score_answer_server(answer: str, question: str, part: int) -> dict:
         'reaction': 'concerned' if words < 30 else 'satisfied',
         'comment': 'The court notes your testimony.' if words < 30 else 'The court acknowledges your response.',
         'objection': None,
-        'scores': {'FC': fc, 'LR': lr, 'GRA': gra, 'Pron': 6},
+        'scores': {'FC': fc, 'LR': lr, 'GRA': gra, 'Pron': min(max(5, round((fc+lr)/2)), 8)},
     }
 
 
@@ -701,10 +701,11 @@ async def compute_verdict_server(answers: list) -> dict:
     all_scores = [a.get('scores', {}) for a in answers if a.get('scores')]
     if all_scores:
         avg = lambda k: round(sum(s.get(k, 5) for s in all_scores) / len(all_scores))
-        fc, lr, gra, pron = avg('FC'), avg('LR'), avg('GRA'), 6
+        fc, lr, gra = avg('FC'), avg('LR'), avg('GRA')
+        pron = min(max(5, round((fc+lr)/2)), 8)
         overall = round(((fc + lr + gra + pron) / 4) * 2) / 2
     else:
-        fc, lr, gra, pron, overall = 5, 5, 5, 6, 5.5
+        fc, lr, gra, pron, overall = 5, 5, 5, 5, 5.0
     return {
         'scores': {'FC': fc, 'LR': lr, 'GRA': gra, 'Pron': pron},
         'overall': overall,
@@ -871,7 +872,7 @@ async def run_game_loop(room: Room):
             try:
                 v = await task
             except Exception:
-                v = {'scores': {'FC': 5, 'LR': 5, 'GRA': 5, 'Pron': 6}, 'overall': 5.5,
+                v = {'scores': {'FC': 5, 'LR': 5, 'GRA': 5, 'Pron': 5}, 'overall': 5.0,
                      'verdict': 'Assessment unavailable.', 'comment': '', 'reaction': 'disappointed'}
             player = room.players[username]
             player.final_verdict = v
@@ -969,7 +970,7 @@ async def score_all_answers(room: Room, question: str, part: int):
             result = await task
         except Exception:
             result = {'reaction': 'concerned', 'comment': 'The court could not evaluate.',
-                      'objection': None, 'scores': {'FC': 5, 'LR': 5, 'GRA': 5, 'Pron': 6}}
+                      'objection': None, 'scores': {'FC': 5, 'LR': 5, 'GRA': 5, 'Pron': 5}}
 
         player = room.players.get(username)
         if not player:

@@ -457,7 +457,7 @@ Respond ONLY with this JSON (no markdown, no extra text):
   "reaction": "satisfied|concerned|impressed|disappointed|shocked",
   "comment": "1-2 sentence reaction referencing the SPECIFIC content of the answer. Use courtroom language.",
   "objection": null,
-  "scores": {"FC": 1-9, "LR": 1-9, "GRA": 1-9, "Pron": 6}
+  "scores": {"FC": 1-9, "LR": 1-9, "GRA": 1-9, "Pron": 4-8}
 }
 
 Or if there's a grammar/vocabulary issue:
@@ -465,7 +465,7 @@ Or if there's a grammar/vocabulary issue:
   "reaction": "concerned",
   "comment": "Your reaction",
   "objection": {"reason": "The specific grammar or vocabulary error you found"},
-  "scores": {"FC": 1-9, "LR": 1-9, "GRA": 1-9, "Pron": 6}
+  "scores": {"FC": 1-9, "LR": 1-9, "GRA": 1-9, "Pron": 4-8}
 }
 
 Score guide: 4=weak, 5=limited, 6=competent, 7=good, 8=very good, 9=expert. Most students score 5-7. Do NOT give 8-9 unless the answer is genuinely exceptional.`;
@@ -476,10 +476,10 @@ CRITICAL: Base scores strictly on the actual quality of ALL answers below. Evalu
 - FC (Fluency & Coherence): Did they develop answers fully? Were ideas connected? Or were answers short/disjointed?
 - LR (Lexical Resource): Did they use varied, precise vocabulary? Or just basic words?
 - GRA (Grammatical Range & Accuracy): Did they use complex sentences correctly? Any errors?
-- Pron: Default 6 unless evidence suggests otherwise.
+- Pron (Pronunciation): Infer from their WRITTEN text. Consider: Do they use multi-syllable advanced words (suggesting comfort with complex pronunciation)? Do they use natural contractions (I'd, won't, gonna)? Do they use phonetically complex expressions? Score 4-8 range. If vocabulary is very basic/simple → 5. If varied and complex → 7. Do NOT give 9.
 
-Score guide: 4=weak, 5=limited, 6=competent, 7=good, 8=very good, 9=expert.
-Overall = average rounded to nearest 0.5.
+Score guide: 4=weak, 5=limited, 6=competent, 7=good, 8=very good. Pron range 4-8 only.
+Overall = average of FC+LR+GRA+Pron, rounded to nearest 0.5.
 
 Your verdict and comment MUST reference specific things the student said across their answers.
 
@@ -526,7 +526,13 @@ Respond ONLY with this JSON (no markdown):
 
     fc = Math.round(fc); lr = Math.round(lr); gra = Math.round(gra);
 
-    return { FC: fc, LR: lr, GRA: gra, Pron: 6 };
+    // Pron: infer from vocabulary complexity
+    let pron = 5;
+    if (hasComplex || avgWordLen > 5.5) pron = 7;
+    else if (variety > 0.6) pron = 6;
+    pron = Math.min(pron, 8);
+
+    return { FC: fc, LR: lr, GRA: gra, Pron: pron };
   }
 
   function offlineReaction(answer, question) {
@@ -640,7 +646,10 @@ Respond ONLY with this JSON (no markdown):
       showInput(PART1_TIME, (answer) => {
         S.answers.push({ part: 1, question: q, answer });
         hideQuestion();
-        handleAnswer(answer, q, 1, () => { S.qIndex++; askPart1(); });
+        // Skip per-question AI feedback, go directly to next question
+        setNick('neutral');
+        S.qIndex++;
+        askPart1();
       });
     });
   }
@@ -725,7 +734,10 @@ Respond ONLY with this JSON (no markdown):
       showInput(PART3_TIME, (answer) => {
         S.answers.push({ part: 3, question: q, answer });
         hideQuestion();
-        handleAnswer(answer, q, 3, () => { S.qIndex++; askPart3(); });
+        // Skip per-question AI feedback, go directly to next question
+        setNick('neutral');
+        S.qIndex++;
+        askPart3();
       });
     });
   }
@@ -768,7 +780,7 @@ Respond ONLY with this JSON (no markdown):
       const allScores = S.answers.filter(a => a.scores).map(a => a.scores);
       if (allScores.length > 0) {
         const avg = (key) => Math.round(allScores.reduce((s, sc) => s + (sc[key] || 5), 0) / allScores.length);
-        const fc = avg('FC'), lr = avg('LR'), gra = avg('GRA'), pron = 6;
+        const fc = avg('FC'), lr = avg('LR'), gra = avg('GRA'), pron = avg('Pron') || Math.round((fc + lr) / 2);
         const overall = Math.round(((fc + lr + gra + pron) / 4) * 2) / 2;
 
         let verdictText, comment, reaction;
@@ -789,7 +801,7 @@ Respond ONLY with this JSON (no markdown):
         verdict = { scores: { FC: fc, LR: lr, GRA: gra, Pron: pron }, overall, verdict: verdictText, comment, reaction };
       } else {
         verdict = {
-          scores: { FC: 5, LR: 5, GRA: 5, Pron: 6 },
+          scores: { FC: 5, LR: 5, GRA: 5, Pron: 5 },
           overall: 5.5,
           verdict: 'The court was unable to fully assess the defendant. A provisional verdict is issued.',
           comment: 'Insufficient evidence was presented. Practice giving longer, more detailed answers.',
@@ -802,6 +814,7 @@ Respond ONLY with this JSON (no markdown):
   }
 
   function showVerdictScreen(v) {
+    _lastVerdict = v;
     showScreen('verdict');
     playDrum();
 
@@ -834,6 +847,79 @@ Respond ONLY with this JSON (no markdown):
     if (!S.multiplayer) {
       saveGameSession(v);
     }
+  }
+
+  // ─── PDF REPORT ─────────────────────────────────────────────────
+  let _lastVerdict = null;
+
+  function downloadPDFReport() {
+    if (!_lastVerdict || !window.jspdf) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const v = _lastVerdict;
+    const scores = v.scores || {};
+    const margin = 20;
+    let y = 25;
+
+    // Title
+    doc.setFontSize(22);
+    doc.setTextColor(10, 90, 69); // teal
+    doc.text('IELTS COURT — Mock Test Report', margin, y);
+    y += 12;
+
+    // Theme & date
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text(`Theme: ${S.themeName || 'General'}  |  Band: ${selectedBand}  |  Date: ${new Date().toLocaleDateString()}`, margin, y);
+    y += 12;
+
+    // Scores
+    doc.setFontSize(14);
+    doc.setTextColor(0);
+    doc.text('Scores', margin, y); y += 8;
+    doc.setFontSize(12);
+    doc.text(`FC (Fluency & Coherence):  ${scores.FC || '-'}`, margin + 5, y); y += 7;
+    doc.text(`LR (Lexical Resource):     ${scores.LR || '-'}`, margin + 5, y); y += 7;
+    doc.text(`GRA (Grammar):             ${scores.GRA || '-'}`, margin + 5, y); y += 7;
+    doc.text(`Pron (Pronunciation):      ${scores.Pron || '-'}`, margin + 5, y); y += 7;
+    doc.setFontSize(14);
+    doc.setTextColor(10, 90, 69);
+    doc.text(`Overall: ${v.overall || '-'}`, margin + 5, y); y += 12;
+
+    // Verdict
+    doc.setTextColor(0);
+    doc.setFontSize(12);
+    doc.text('Verdict:', margin, y); y += 7;
+    doc.setFontSize(10);
+    const verdictLines = doc.splitTextToSize(v.verdict || '', 170);
+    doc.text(verdictLines, margin + 5, y); y += verdictLines.length * 5 + 5;
+
+    // Comment
+    doc.setFontSize(12);
+    doc.text('Feedback:', margin, y); y += 7;
+    doc.setFontSize(10);
+    const commentLines = doc.splitTextToSize(v.comment || '', 170);
+    doc.text(commentLines, margin + 5, y); y += commentLines.length * 5 + 10;
+
+    // Answers
+    doc.setFontSize(12);
+    doc.text('Your Answers:', margin, y); y += 8;
+    doc.setFontSize(9);
+    S.answers.forEach((a, i) => {
+      if (y > 260) { doc.addPage(); y = 25; }
+      doc.setTextColor(100);
+      doc.text(`[Part ${a.part}] ${a.question}`, margin + 5, y); y += 5;
+      doc.setTextColor(0);
+      const ansLines = doc.splitTextToSize(a.answer || '(No answer)', 165);
+      doc.text(ansLines, margin + 10, y); y += ansLines.length * 4.5 + 5;
+    });
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text('Generated by Nick Speaking Platform — nicknewsitelogtohk.zeabur.app', margin, 290);
+
+    doc.save(`IELTS-Mock-Report-${new Date().toISOString().slice(0,10)}.pdf`);
   }
 
   async function saveGameSession(verdict) {
@@ -1383,6 +1469,8 @@ Respond ONLY with this JSON (no markdown):
       D.player_count_badge.classList.add('hidden');
       resetToTitle();
     });
+
+    $('btn-download-pdf').addEventListener('click', downloadPDFReport);
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey && document.activeElement === D.user_input) {
