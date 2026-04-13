@@ -54,6 +54,33 @@
     }
   }
 
+  // Generate context-aware cue card bullet points for Part 2
+  function generateCueCardPoints(topic) {
+    const t = topic.toLowerCase();
+    if (t.includes('person') || t.includes('teacher') || t.includes('friend') || t.includes('student') || t.includes('someone'))
+      return ['Who this person is', 'How you know this person', 'What this person does', 'Why this person is special to you'];
+    if (t.includes('place') || t.includes('city') || t.includes('country') || t.includes('area'))
+      return ['Where this place is', 'When you went there', 'What you did there', 'Why you liked this place'];
+    if (t.includes('trip') || t.includes('journey') || t.includes('travel') || t.includes('holiday'))
+      return ['Where you went', 'When you went there', 'Who you went with', 'Why it was memorable'];
+    if (t.includes('time when') || t.includes('experience') || t.includes('occasion'))
+      return ['When it happened', 'Where it happened', 'What happened', 'How you felt about it'];
+    if (t.includes('book') || t.includes('film') || t.includes('movie') || t.includes('programme') || t.includes('video'))
+      return ['What it is', 'When you read/watched it', 'What it is about', 'Why you liked it'];
+    if (t.includes('job') || t.includes('career') || t.includes('work'))
+      return ['What the job is', 'What skills it needs', 'Why it is important', 'How you feel about it'];
+    if (t.includes('subject') || t.includes('lesson') || t.includes('course'))
+      return ['What the subject is', 'How you learned it', 'What makes it interesting', 'Why it is useful'];
+    if (t.includes('change') || t.includes('trend') || t.includes('future'))
+      return ['What the change is', 'When it started', 'How it affects people', 'What you think about it'];
+    if (t.includes('food') || t.includes('meal') || t.includes('dish'))
+      return ['What the food is', 'Where you had it', 'What it tastes like', 'Why you like it'];
+    if (t.includes('skill') || t.includes('hobby') || t.includes('activity') || t.includes('sport'))
+      return ['What the activity is', 'When you started', 'How often you do it', 'Why you enjoy it'];
+    // Default
+    return ['What it is', 'When it happened or when you experienced it', 'Why it is important or meaningful', 'How you felt about it'];
+  }
+
   // Pick questions from bank for a solo game
   function pickQuestionsFromBank() {
     if (!QUESTION_BANK || !QUESTION_BANK.themes.length) {
@@ -86,11 +113,11 @@
     const p2Pool = [...(theme.part2[selectedBand] || [])].sort(() => Math.random() - 0.5);
     const p3Pool = [...(theme.part3[selectedBand] || [])].sort(() => Math.random() - 0.5);
 
-    // Part 2: convert string to topic object
+    // Part 2: convert string to topic object with smart cue card points
     const p2Text = p2Pool[0] || 'Describe something interesting.';
     const p2Topic = {
       topic: p2Text,
-      points: ['What it was', 'When it happened', 'Why it was important', 'How you felt about it'],
+      points: generateCueCardPoints(p2Text),
     };
 
     return {
@@ -668,14 +695,17 @@ Respond ONLY with this JSON (no markdown):
 
   function showEvidence() {
     const t = S.part2Topic;
+    console.log('showEvidence called, topic:', t);
     D.evidence_topic.textContent = t.topic;
     D.evidence_points.innerHTML = '';
-    t.points.forEach((p) => { const li = document.createElement('li'); li.textContent = p; D.evidence_points.appendChild(li); });
+    (t.points || []).forEach((p) => { const li = document.createElement('li'); li.textContent = p; D.evidence_points.appendChild(li); });
     D.evidence_card.classList.remove('hidden');
+    D.evidence_card.style.display = 'block'; // force show in case CSS issues
     flash();
 
     D.evidence_close_btn.onclick = () => {
       D.evidence_card.classList.add('hidden');
+      D.evidence_card.style.display = '';
       startPart2Prep();
     };
   }
