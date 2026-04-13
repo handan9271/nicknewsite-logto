@@ -716,36 +716,68 @@ async def compute_verdict_server(answers: list) -> dict:
 
 # ─── MULTIPLAYER GAME LOOP ─────────────────────────────────────────────────
 
+def _load_question_bank_server():
+    """Load question bank JSON for server-side game loop."""
+    try:
+        qb_path = Path("./static/question_bank.json")
+        if qb_path.exists():
+            with open(qb_path, encoding="utf-8") as f:
+                return json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load question bank: {e}")
+    return None
+
+
+def _pick_server_questions(band: str = "band7"):
+    """Pick questions from bank for multiplayer game."""
+    bank = _load_question_bank_server()
+    if not bank or not bank.get('themes'):
+        # Fallback
+        return {
+            'part1': ["Do you like your job?", "What do you do in your free time?",
+                      "Do you like cooking?", "Tell me about your hometown."],
+            'part2_topic': {'topic': 'Describe something interesting.', 'points': ['What it was', 'When it happened', 'Why it mattered', 'How you felt']},
+            'part3': ["Why is this important?", "How has this changed?", "What will happen in the future?"],
+        }
+
+    themes = bank['themes']
+    random.shuffle(themes)
+    theme = None
+    for t in themes:
+        p1 = t.get('part1', {}).get(band, [])
+        p2 = t.get('part2', {}).get(band, [])
+        p3 = t.get('part3', {}).get(band, [])
+        if len(p1) >= 4 and len(p2) >= 1 and len(p3) >= 3:
+            theme = t
+            break
+    if not theme:
+        theme = themes[0]
+
+    p1 = list(theme.get('part1', {}).get(band, []))
+    p2 = list(theme.get('part2', {}).get(band, []))
+    p3 = list(theme.get('part3', {}).get(band, []))
+    random.shuffle(p1)
+    random.shuffle(p2)
+    random.shuffle(p3)
+
+    p2_text = p2[0] if p2 else "Describe something interesting."
+    return {
+        'part1': p1[:4],
+        'part2_topic': {
+            'topic': p2_text,
+            'points': ['What it was', 'When it happened', 'Why it was important', 'How you felt about it'],
+        },
+        'part3': p3[:3],
+    }
+
+
 async def run_game_loop(room: Room):
     try:
-        part1_pool = [
-            "Let's talk about your hometown. What do you like most about it?",
-            "Do you work or are you a student? Tell me about it.",
-            "What do you usually do in your free time?",
-            "How often do you use the internet? What for?",
-            "Do you like cooking? Why or why not?",
-            "Tell me about a festival that is important in your country.",
-            "What kind of music do you enjoy listening to?",
-            "Do you prefer reading books or watching movies?",
-        ]
-        random.shuffle(part1_pool)
-        room.questions_part1 = part1_pool[:4]
-
-        part2_topics = [
-            {'topic': 'Describe a time when you had to speak in front of a group of people.',
-             'points': ['When it was', 'Who you were speaking to', 'What you spoke about', 'How you felt about it']},
-            {'topic': 'Describe a place you have visited that you found particularly beautiful.',
-             'points': ['Where it was', 'When you went there', 'What it looked like', 'Why you found it beautiful']},
-            {'topic': 'Describe a person who has had a significant influence on your life.',
-             'points': ['Who this person is', 'How you know them', 'What they have done', 'Why they have influenced you']},
-        ]
-        room.part2_topic = random.choice(part2_topics)
-
-        room.part3_questions = [
-            "Why do you think this topic is important to society?",
-            "How has this changed compared to the past?",
-            "What do you think will happen in the future regarding this?",
-        ]
+        # Pick questions from bank (default band7 for multiplayer)
+        picked = _pick_server_questions("band7")
+        room.questions_part1 = picked['part1']
+        room.part2_topic = picked['part2_topic']
+        room.part3_questions = picked['part3']
 
         room.status = 'playing'
 

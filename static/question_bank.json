@@ -1,0 +1,983 @@
+{
+  "themes": [
+    {
+      "name": "Education",
+      "part1": {
+        "band6": [
+          "Do you like going to school?",
+          "Do you prefer studying alone or with friends?",
+          "What subjects do you find easy?",
+          "Do you enjoy doing homework?",
+          "Do you like your teachers?",
+          "Do you often talk about school with your family?",
+          "Do you think your school is big or small?",
+          "Do you like reading books at school?",
+          "Do you have a favourite classroom?",
+          "Do you like wearing a school uniform?",
+          "What subjects are you studying?",
+          "Do you like your subject?",
+          "Why did you choose that subject?",
+          "Do you prefer studying in the morning or afternoon?",
+          "What technology do you use when you study?",
+          "What room do you usually study in?"
+        ],
+        "band7": [
+          "What subjects are most important in your country?",
+          "Do you think boys and girls should study the same subjects?",
+          "How has technology changed education?",
+          "Do you think students should do more group work?",
+          "What is the role of teachers in modern education?",
+          "Do you think schools should teach life skills?",
+          "How do exams affect students?",
+          "What makes a good student?",
+          "Do you think online learning is effective?",
+          "Should schools encourage creativity more?",
+          "Do you think exams are a good way to measure ability?",
+          "Is it important for people to continue learning as adults?"
+        ],
+        "band8": [
+          "Do you think education is the most important factor for success?",
+          "How can governments improve education systems?",
+          "Should universities be free for everyone?",
+          "How can schools prepare students for future jobs?",
+          "What role does education play in reducing inequality?",
+          "Are academic subjects more important than practical skills?",
+          "Should students have the right to choose what they study?",
+          "What is the impact of globalization on education?",
+          "How should schools balance tradition and innovation?",
+          "Is education equal for rich and poor students?",
+          "How has education changed in recent years?",
+          "Do you think education should focus more on practical skills?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe your favourite subject at school.",
+          "Describe a teacher you like.",
+          "Describe your first day at school.",
+          "Describe a classroom you remember.",
+          "Describe a school trip you enjoyed.",
+          "Describe a time you studied with a friend.",
+          "Describe a time you prepared for an exam.",
+          "Describe a lesson you enjoyed.",
+          "Describe a time you helped a classmate.",
+          "Describe a book you liked at school."
+        ],
+        "band7": [
+          "Describe a subject that is useful in life.",
+          "Describe a teacher who influenced you.",
+          "Describe a time you worked in a group.",
+          "Describe a presentation you gave in class.",
+          "Describe something you learned outside school.",
+          "Describe a student you admired.",
+          "Describe a piece of homework that was difficult.",
+          "Describe a school event you joined.",
+          "Describe a subject you disliked but still studied."
+        ],
+        "band8": [
+          "Describe an education system you would like to improve.",
+          "Describe an education policy in your country.",
+          "Describe a subject that should be added to the curriculum.",
+          "Describe an education challenge in your society.",
+          "Describe a teacher who changed your way of thinking.",
+          "Describe learning through technology.",
+          "Describe an education trend you think is important.",
+          "Describe a future change you expect in education."
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Should students wear school uniforms?",
+          "Should students do a lot of homework?",
+          "Are exams important?",
+          "Should children study foreign languages at school?",
+          "Are school rules necessary?",
+          "Are sports important at school?",
+          "Should students learn art and music?",
+          "Should schools use computers in class?"
+        ],
+        "band7": [
+          "What are the advantages of studying abroad?",
+          "Are private schools better than public schools?",
+          "Should schools focus more on creativity or discipline?",
+          "What role do parents play in education?",
+          "Should all students go to university?",
+          "How can schools prepare students for work?",
+          "What are the challenges of online learning?",
+          "Should students have more freedom in choosing subjects?"
+        ],
+        "band8": [
+          "Should education be free for everyone?",
+          "Are exams a fair way to judge students?",
+          "What role does education play in society?",
+          "How can education reduce social inequality?",
+          "How should schools adapt to future needs?",
+          "Should governments invest more in higher education or basic education?"
+        ]
+      }
+    },
+    {
+      "name": "Work / Study",
+      "part1": {
+        "band6": [
+          "What subject are you studying?",
+          "Do you like your job or your studies?",
+          "Do you work or study full-time or part-time?",
+          "Do you find your work or studies stressful?",
+          "What do you usually do in a working or studying day?",
+          "Do you prefer working or studying in the morning or evening?",
+          "Do you get along well with your colleagues or classmates?",
+          "What skills do you need for your job or studies?"
+        ],
+        "band7": [
+          "What qualities are important for a good worker or student?",
+          "Do you think it is better to work for a big company or a small one?",
+          "Do you think students should have part-time jobs?",
+          "How important is teamwork in the workplace?",
+          "Do you think people should change jobs frequently?",
+          "Is it important to enjoy your job?",
+          "What are the advantages of working while studying?",
+          "How has technology changed the way people work?",
+          "Do you think practical skills are more important than academic knowledge?"
+        ],
+        "band8": [
+          "How can governments reduce unemployment?",
+          "Do you think job satisfaction is more important than salary?",
+          "How should education systems prepare students for the job market?",
+          "Is lifelong learning necessary in modern society?",
+          "Do you think automation will replace human workers?",
+          "Should governments support people who want to change careers?",
+          "How can societies balance work efficiency and work-life balance?",
+          "What impact does globalization have on employment?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe a subject you enjoy studying.",
+          "Describe a time when you worked or studied hard.",
+          "Describe your first day at work or university.",
+          "Describe a part-time job you had or would like to have.",
+          "Describe a class you found interesting."
+        ],
+        "band7": [
+          "Describe a job you would not like to do.",
+          "Describe a person who is successful in their job.",
+          "Describe a time when you worked in a team.",
+          "Describe a time when you were under pressure at work or study.",
+          "Describe something useful you learned at work or university.",
+          "Describe a time when you had to solve a problem at work or study."
+        ],
+        "band8": [
+          "Describe a job that is important to society.",
+          "Describe a future career you think will be popular.",
+          "Describe a change in the way people work in recent years.",
+          "Describe how work affects people’s identity.",
+          "Describe a job that requires creativity.",
+          "Describe the advantages and disadvantages of working from home."
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Why do people work?",
+          "Do people like changing jobs?",
+          "Is it important to choose the right subject at school?",
+          "Should students study something they like or something practical?",
+          "Do people work better alone or with others?"
+        ],
+        "band7": [
+          "What are the advantages and disadvantages of changing jobs often?",
+          "How are working conditions different now compared with the past?",
+          "Should students be encouraged to work part-time?",
+          "What skills are most important for young people entering the workforce?",
+          "How does stress affect work performance?"
+        ],
+        "band8": [
+          "How can societies ensure equal job opportunities?",
+          "Should governments regulate working hours more strictly?",
+          "How will future work patterns affect family life?",
+          "Do you think work defines a person’s social status?",
+          "How can societies deal with job losses caused by technology?"
+        ]
+      }
+    },
+    {
+      "name": "Travel / Transport",
+      "part1": {
+        "band6": [
+          "Do you like travelling?",
+          "How often do you travel?",
+          "Do you usually travel alone or with others?",
+          "What kind of transport do you use most often?",
+          "Do you like taking buses or trains?",
+          "Do you prefer travelling by car or public transport?",
+          "Do you enjoy long journeys?",
+          "Have you ever travelled to another city?",
+          "Do you like travelling during holidays?",
+          "Do you usually plan your trips in advance?",
+          "Do you like visiting new places?"
+        ],
+        "band7": [
+          "What are the benefits of travelling?",
+          "Do you think travelling is important for young people?",
+          "What are the differences between travelling now and in the past?",
+          "Why do some people like travelling abroad?",
+          "Do you think public transport is convenient in your city?",
+          "What problems do people face when travelling?",
+          "How does tourism affect local people?",
+          "Do you think travelling helps people learn about other cultures?"
+        ],
+        "band8": [
+          "How does tourism influence a country’s economy?",
+          "What are the negative effects of mass tourism?",
+          "How can governments improve public transport systems?",
+          "Should governments encourage people to use public transport instead of cars?",
+          "How does transportation affect the environment?",
+          "Is international travel necessary in a globalized world?",
+          "How can countries balance tourism development and environmental protection?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe a trip you enjoyed.",
+          "Describe a place you visited on holiday.",
+          "Describe a journey you remember well.",
+          "Describe a city you have visited.",
+          "Describe a means of transport you often use.",
+          "Describe a place you would like to visit in the future.",
+          "Describe a holiday you spent with family or friends.",
+          "Describe a time when you travelled by public transport."
+        ],
+        "band7": [
+          "Describe a trip that was well planned.",
+          "Describe a journey that was longer than expected.",
+          "Describe a travel experience that taught you something.",
+          "Describe a place you visited that was crowded.",
+          "Describe a time when travel plans changed suddenly.",
+          "Describe a foreign country you would like to visit.",
+          "Describe a journey that was uncomfortable."
+        ],
+        "band8": [
+          "Describe how travel has changed compared with the past.",
+          "Describe a place affected by tourism.",
+          "Describe a future change in the way people travel.",
+          "Describe how transportation affects people’s lifestyles.",
+          "Describe a travel experience that changed your attitude.",
+          "Describe a transport problem in your city and how it could be solved."
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Why do people like travelling?",
+          "Is travelling expensive?",
+          "Do people travel more now than before?",
+          "Do young people enjoy travelling?",
+          "Is public transport important?"
+        ],
+        "band7": [
+          "What are the advantages and disadvantages of travelling abroad?",
+          "How does tourism affect local culture?",
+          "What are the benefits of public transport?",
+          "Why do some people prefer private cars?",
+          "How does travelling influence people’s views of the world?"
+        ],
+        "band8": [
+          "Should governments limit the number of tourists in popular places?",
+          "How can countries develop sustainable tourism?",
+          "What role should transport play in reducing environmental problems?",
+          "Should public transport be free in large cities?",
+          "How will future transport systems change people’s lives?"
+        ]
+      }
+    },
+    {
+      "name": "Media / Advertising",
+      "part1": {
+        "band6": [
+          "Do you like watching TV?",
+          "Do you read the news every day?",
+          "Where do you usually get news from?",
+          "Do you use social media?",
+          "Do you like advertisements?",
+          "Do you often see advertisements on your phone?",
+          "Do you prefer watching TV or using the Internet?",
+          "Do you listen to the radio?",
+          "Do you like following celebrities on social media?",
+          "Do you often share news with others?"
+        ],
+        "band7": [
+          "What kinds of media are popular among young people?",
+          "Do you think people trust the news today?",
+          "How has social media changed the way people get information?",
+          "Do you think advertisements influence people’s buying decisions?",
+          "What makes an advertisement successful?",
+          "Do you think people spend too much time on social media?",
+          "How do people choose which news to believe?",
+          "Is it important to have media literacy?"
+        ],
+        "band8": [
+          "How does the media influence public opinion?",
+          "Do you think social media does more harm than good?",
+          "Should governments control the media?",
+          "What impact does advertising have on consumer behaviour?",
+          "How can fake news affect society?",
+          "Should advertising aimed at children be restricted?",
+          "How does media shape cultural values?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe a TV programme you like.",
+          "Describe a video you watched online.",
+          "Describe an advertisement you remember.",
+          "Describe a website you often visit.",
+          "Describe a news story you recently read or heard.",
+          "Describe a social media app you use.",
+          "Describe a celebrity you follow on social media."
+        ],
+        "band7": [
+          "Describe an advertisement that influenced you.",
+          "Describe a news story that interested you.",
+          "Describe a TV programme that taught you something.",
+          "Describe a time when you got information from social media.",
+          "Describe a website or app that is useful for getting information.",
+          "Describe a media report you disagreed with."
+        ],
+        "band8": [
+          "Describe a time when media changed people’s behaviour.",
+          "Describe the influence of social media on young people.",
+          "Describe a media trend that worries you.",
+          "Describe how advertising affects people’s lifestyles.",
+          "Describe a media event that had a big social impact."
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Why do people watch TV or use social media?",
+          "Do people trust advertisements?",
+          "Is it easy to get information nowadays?",
+          "Do young people follow the news?",
+          "Is social media important in daily life?"
+        ],
+        "band7": [
+          "What are the advantages and disadvantages of social media?",
+          "How is news reporting different now compared with the past?",
+          "Why do companies spend so much money on advertising?",
+          "How does advertising influence children?",
+          "Should people limit their time on social media?"
+        ],
+        "band8": [
+          "How should governments deal with fake news?",
+          "Should there be stricter rules on advertising?",
+          "How can people learn to evaluate media information critically?",
+          "What role does media play in modern democracy?",
+          "How might media influence society in the future?"
+        ]
+      }
+    },
+    {
+      "name": "Money / Shopping",
+      "part1": {
+        "band6": [
+          "Do you like shopping?",
+          "How often do you go shopping?",
+          "Do you usually shop online or in shops?",
+          "What kind of things do you usually buy?",
+          "Do you like buying clothes?",
+          "Do you often buy things on sale?",
+          "Do you prefer paying by cash or card?",
+          "Do you save money?",
+          "Do you think money is important?",
+          "Do you often compare prices before buying something?",
+          "Do you like going to shopping centres?"
+        ],
+        "band7": [
+          "Why do some people enjoy shopping?",
+          "Do you think people spend too much money nowadays?",
+          "What are the advantages of online shopping?",
+          "How do people’s spending habits change as they get older?",
+          "Do you think young people should learn how to manage money?",
+          "Why do some people save money while others don’t?",
+          "Do advertisements influence people’s spending?"
+        ],
+        "band8": [
+          "How does consumerism affect society?",
+          "Do you think people judge others by how much money they have?",
+          "Should schools teach financial education?",
+          "How does income inequality affect people’s lives?",
+          "Is it better to save money or spend money to enjoy life?",
+          "How do economic conditions influence people’s spending behaviour?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe something you bought recently.",
+          "Describe a shop you like.",
+          "Describe a gift you bought for someone.",
+          "Describe something you bought that was cheap.",
+          "Describe something you bought online.",
+          "Describe a time when you went shopping with friends or family.",
+          "Describe a time when you saved money."
+        ],
+        "band7": [
+          "Describe something expensive you bought.",
+          "Describe a time when you regretted buying something.",
+          "Describe a shopping experience you enjoyed.",
+          "Describe a time when you compared prices before buying something.",
+          "Describe a gift that was special to you.",
+          "Describe a time when you managed your money well."
+        ],
+        "band8": [
+          "Describe a change in people’s spending habits.",
+          "Describe a time when money influenced an important decision.",
+          "Describe how advertising affects people’s spending behaviour.",
+          "Describe a financial problem many people face.",
+          "Describe how technology has changed the way people shop."
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Why do people need money?",
+          "Do people like saving money?",
+          "Is shopping important in people’s lives?",
+          "Do young people spend more money than older people?"
+        ],
+        "band7": [
+          "What are the advantages and disadvantages of spending money online?",
+          "How are people’s spending habits different now compared with the past?",
+          "Should parents teach children how to manage money?",
+          "Why do some people spend more money than they earn?"
+        ],
+        "band8": [
+          "Should governments control consumer spending?",
+          "How can people achieve financial security?",
+          "What role does money play in happiness?",
+          "How can societies reduce the gap between rich and poor?"
+        ]
+      }
+    },
+    {
+      "name": "Society / Social Issues",
+      "part1": {
+        "band6": [
+          "Do you like living in a big city?",
+          "Do you think life is busy nowadays?",
+          "Do people help each other in your city?",
+          "Do you feel safe where you live?",
+          "Do people in your area help each other?",
+          "Do you often talk to your neighbours?",
+          "Do you think people are friendlier now than in the past?"
+        ],
+        "band7": [
+          "What problems do people face in modern society?",
+          "Do you think people today feel more lonely than before?",
+          "What makes a good community?",
+          "Why do some people choose to live alone?",
+          "Describe a time when people worked together to help others.",
+          "Describe a social activity you took part in.",
+          "Do you think people are becoming less social?",
+          "Do people trust each other more or less than before?"
+        ],
+        "band8": [
+          "How does urbanisation affect society?",
+          "Do you think social inequality is increasing?",
+          "What causes social problems in large cities?",
+          "How important is social responsibility in modern society?",
+          "What role should governments play in solving social problems?",
+          "How does urbanisation affect social relationships?",
+          "How does modern life affect relationships?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe a place in your community where people often meet",
+          "Describe a time when someone helped you"
+        ],
+        "band7": [
+          "Describe a social problem in your city",
+          "Describe a community event you attended"
+        ],
+        "band8": [
+          "Describe a social issue that concerns you",
+          "Describe a social change that has had a big impact"
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Why do people live in communities?",
+          "Is it important to help others?"
+        ],
+        "band7": [
+          "Why do some people feel lonely in modern society?",
+          "How can communities become safer?"
+        ],
+        "band8": [
+          "What responsibilities do individuals have toward society?",
+          "Should governments play a bigger role in solving social problems?"
+        ]
+      }
+    },
+    {
+      "name": "Leisure / Free Time",
+      "part1": {
+        "band6": [
+          "What do you usually do in your free time?",
+          "Do you have any hobbies?",
+          "Do you like watching TV or listening to music?",
+          "Do you often go out with friends?",
+          "What do you usually do at weekends?",
+          "Do you prefer spending your free time alone or with others?",
+          "Has the way you spend your free time changed?"
+        ],
+        "band7": [
+          "Why is free time important?",
+          "Do people have enough free time nowadays?",
+          "How do leisure activities change as people get older?"
+        ],
+        "band8": [
+          "How does modern lifestyle affect people’s leisure time?",
+          "Do people today know how to relax properly?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe a hobby you enjoy",
+          "Describe a free-time activity you often do"
+        ],
+        "band7": [
+          "Describe a hobby you started recently",
+          "Describe an activity you do with friends",
+          "Describe an activity you enjoy doing in your free time."
+        ],
+        "band8": [
+          "Describe how people’s leisure habits have changed",
+          "Describe a leisure activity that became popular recently"
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Why do people need free time?",
+          "Is it important to have hobbies?"
+        ],
+        "band7": [
+          "Why do some people find it difficult to relax?",
+          "Should people spend more time on hobbies or work?"
+        ],
+        "band8": [
+          "How does lack of free time affect people’s health?",
+          "Should employers help employees achieve work–life balance?",
+          "Should people try to balance work and leisure?"
+        ]
+      }
+    },
+    {
+      "name": "Culture / Traditions",
+      "part1": {
+        "band6": [
+          "Do you like traditional festivals?",
+          "What kind of music do you like?",
+          "Do you enjoy watching films?",
+          "Do you often listen to music?"
+        ],
+        "band7": [
+          "What traditions are important in your country?",
+          "Do young people still care about traditional culture?",
+          "How do festivals bring people together?"
+        ],
+        "band8": [
+          "How important is cultural diversity today?",
+          "Does globalisation threaten local culture?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe a festival you enjoyed",
+          "Describe a traditional food or celebration"
+        ],
+        "band7": [
+          "Describe a cultural activity you joined",
+          "Describe a museum you visited",
+          "Describe a cultural activity you took part in."
+        ],
+        "band8": [
+          "Describe a cultural tradition that is disappearing",
+          "Describe a cultural exchange experience"
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Are festivals important for society?",
+          "Should children learn about culture at school?"
+        ],
+        "band7": [
+          "How can governments protect cultural heritage?",
+          "Are traditions still relevant today?"
+        ],
+        "band8": [
+          "How does culture influence national identity?",
+          "What role will culture play in the future?",
+          "Does globalisation have an influence on local culture?",
+          "Why do some traditions disappear over time?"
+        ]
+      }
+    },
+    {
+      "name": "People / Family",
+      "part1": {
+        "band6": [
+          "Do you like spending time with your family?",
+          "Are you close to your friends?",
+          "Who do you usually talk to when you have problems?"
+        ],
+        "band7": [
+          "What qualities are important in a good friend?",
+          "How do relationships change as people get older?",
+          "Describe a person who helped you.",
+          "Describe a family member you admire.",
+          "Describe a person who encouraged you."
+        ],
+        "band8": [
+          "How does technology affect relationships?",
+          "What role does family play in shaping a person?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe a family member you like",
+          "Describe a good friend"
+        ],
+        "band7": [
+          "Describe a person who influenced you",
+          "Describe someone who helped you"
+        ],
+        "band8": [
+          "Describe a person who changed your way of thinking",
+          "Describe someone who contributed to society"
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Is family important?",
+          "Do people need friends?"
+        ],
+        "band7": [
+          "Is it better to have many friends or a few close ones?",
+          "Do people today communicate less face to face?"
+        ],
+        "band8": [
+          "How do family structures change in modern society?",
+          "Are people becoming more independent or isolated?",
+          "How have family relationships changed in recent years?",
+          "How has technology influenced personal relationships?"
+        ]
+      }
+    },
+    {
+      "name": "Places / Cities",
+      "part1": {
+        "band6": [
+          "Do you like your hometown?",
+          "Do you live in a big city or a small town?",
+          "Are there many parks near where you live?",
+          "Are there many public places where you live?",
+          "Do you enjoy spending time in parks?"
+        ],
+        "band7": [
+          "Why do people prefer cities or the countryside?",
+          "How has your city changed recently?",
+          "Why do people prefer living in cities?",
+          "Do you think city life is stressful?"
+        ],
+        "band8": [
+          "What makes a city livable?",
+          "Are modern cities designed for people or cars?",
+          "How has city life changed in recent years?",
+          "Do large cities create more problems than benefits?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe your hometown",
+          "Describe a place where you like to relax"
+        ],
+        "band7": [
+          "Describe a crowded place in your city",
+          "Describe a place that has changed",
+          "Describe a public place in your city.",
+          "Describe a place where you like to relax.",
+          "Describe a crowded place you have been to."
+        ],
+        "band8": [
+          "Describe a city problem and how it could be solved",
+          "Describe a place important to your country"
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Why do people move to cities?"
+        ],
+        "band7": [
+          "What are the advantages and disadvantages of city life?"
+        ],
+        "band8": [
+          "How should cities balance development and environment?",
+          "How can cities become more sustainable?",
+          "What problems do large cities face?",
+          "How can cities improve residents’ quality of life?"
+        ]
+      }
+    },
+    {
+      "name": "Food",
+      "part1": {
+        "band6": [
+          "What kind of food do you like?",
+          "Do you like cooking?",
+          "Do you often eat at home or outside?",
+          "Do you like cooking at home?",
+          "Do you often eat fast food?",
+          "Do you enjoy trying food from other countries?"
+        ],
+        "band7": [
+          "Do people eat more healthily now?",
+          "Why do people like eating out?",
+          "Why do people prefer eating out these days?",
+          "Do you think people spend too much money on food?"
+        ],
+        "band8": [
+          "How do eating habits reflect lifestyle changes?",
+          "Should governments regulate fast food?",
+          "Why do people prefer eating out these days?",
+          "Do people eat more healthily now than before?",
+          "How have eating habits changed?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe a meal you enjoyed",
+          "Describe a food you like"
+        ],
+        "band7": [
+          "Describe a traditional food",
+          "Describe a restaurant you like",
+          "Describe a meal you enjoyed.",
+          "Describe a restaurant you like."
+        ],
+        "band8": [
+          "Describe a change in eating habits",
+          "Describe a food trend that worries you"
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Is food important in daily life?"
+        ],
+        "band7": [
+          "How are eating habits different now compared with the past?"
+        ],
+        "band8": [
+          "How does diet affect society and health?",
+          "Should food education be taught in schools?",
+          "How do eating habits affect people’s health?",
+          "Should governments control fast food?"
+        ]
+      }
+    },
+    {
+      "name": "Technology",
+      "part1": {
+        "band6": [
+          "Do you use a computer every day?",
+          "Do you often use your mobile phone?",
+          "What do you usually use your phone for?",
+          "Do you use technology for studying or working?",
+          "Do you prefer typing or writing by hand?"
+        ],
+        "band7": [
+          "How has technology changed the way people communicate?",
+          "Do you think technology makes life easier?",
+          "Do people rely too much on technology?"
+        ],
+        "band8": [
+          "How has technology influenced modern society?",
+          "Do you think technology creates more problems than it solves?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe a piece of technology you use every day",
+          "Describe an app you often use"
+        ],
+        "band7": [
+          "Describe a piece of technology that is important in your life",
+          "Describe a time when technology helped you"
+        ],
+        "band8": [
+          "Describe a technological change that affected society",
+          "Describe a future technology you are looking forward to"
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Why do people like using technology?"
+        ],
+        "band7": [
+          "What are the advantages and disadvantages of new technology?"
+        ],
+        "band8": [
+          "How should governments control the use of technology?",
+          "How will technology affect people’s lives in the future?"
+        ]
+      }
+    },
+    {
+      "name": "Health",
+      "part1": {
+        "band6": [
+          "Do you exercise regularly?",
+          "Do you think you have a healthy lifestyle?",
+          "How many hours do you usually sleep?",
+          "Do you often feel stressed?"
+        ],
+        "band7": [
+          "Why do some people find it difficult to stay healthy?",
+          "Do you think people care more about health now than before?",
+          "Why do some people find it difficult to keep healthy?",
+          "Do people pay enough attention to mental health?",
+          "Do you think people have unhealthy lifestyles nowadays?"
+        ],
+        "band8": [
+          "What are the main health problems in modern society?",
+          "Is mental health as important as physical health?",
+          "Do you think people are healthier now than in the past?",
+          "How does modern lifestyle affect people’s health?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe a healthy activity you enjoy",
+          "Describe a time when you were ill"
+        ],
+        "band7": [
+          "Describe a change you made to improve your health",
+          "Describe a piece of advice you received about health"
+        ],
+        "band8": [
+          "Describe a health problem that affects many people",
+          "Describe a change in people’s health habits"
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Why do people want to stay healthy?"
+        ],
+        "band7": [
+          "How does stress affect people’s health?"
+        ],
+        "band8": [
+          "Should governments spend more money on healthcare?",
+          "Should governments focus more on prevention than treatment?"
+        ]
+      }
+    },
+    {
+      "name": "Work / Career",
+      "part1": {
+        "band6": [
+          "Do you work or are you a student?",
+          "What kind of work do you do?",
+          "Do you like your job?",
+          "Do you find your work stressful?"
+        ],
+        "band7": [
+          "What qualities are important for a good worker?",
+          "Is it important to enjoy your job?",
+          "Do you think work-life balance is important?",
+          "Do you think job satisfaction is more important than salary?",
+          "Do you think people should change jobs during their careers?"
+        ],
+        "band8": [
+          "Is job satisfaction more important than salary?",
+          "How can people achieve a good work–life balance?",
+          "How has technology changed the way people work?",
+          "Why do people change jobs more frequently nowadays?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe a job you would like to do",
+          "Describe a job you find interesting"
+        ],
+        "band7": [
+          "Describe a time when you worked in a team",
+          "Describe a skill you learned at work"
+        ],
+        "band8": [
+          "Describe a job that is important to society",
+          "Describe a change in the way people work"
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Why do people work?"
+        ],
+        "band7": [
+          "Should people change jobs often?"
+        ],
+        "band8": [
+          "How will future jobs be different from today’s?",
+          "How does technology affect employment?"
+        ]
+      }
+    },
+    {
+      "name": "Environment",
+      "part1": {
+        "band6": [
+          "Do you care about the environment?",
+          "Do you recycle things at home?",
+          "Do you try to save water or electricity?",
+          "Do you like spending time in nature?"
+        ],
+        "band7": [
+          "Why is it important to protect the environment?",
+          "What environmental problems are common in your country?",
+          "What can individuals do to protect the environment?",
+          "Do you think small actions can make a difference?",
+          "Do you try to live in an environmentally friendly way?"
+        ],
+        "band8": [
+          "How serious is climate change compared with other global issues?",
+          "Should economic development be limited to protect the environment?",
+          "Do you think people care more about the environment now?",
+          "How do environmental problems affect daily life?"
+        ]
+      },
+      "part2": {
+        "band6": [
+          "Describe a natural place you like",
+          "Describe a time when you enjoyed being outdoors"
+        ],
+        "band7": [
+          "Describe an environmental problem in your area",
+          "Describe a change in the environment"
+        ],
+        "band8": [
+          "Describe a serious environmental problem in the world",
+          "Describe an environmental campaign you think is effective"
+        ]
+      },
+      "part3": {
+        "band6": [
+          "Why should people protect the environment?"
+        ],
+        "band7": [
+          "How can people reduce environmental pollution?"
+        ],
+        "band8": [
+          "What role should governments play in environmental protection?",
+          "How can international cooperation help solve environmental problems?"
+        ]
+      }
+    }
+  ]
+}

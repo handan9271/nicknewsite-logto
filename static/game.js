@@ -12,7 +12,12 @@
   const PART2_SPEAK = 120;
   const PART3_TIME = 60;
 
-  const PART1_QUESTIONS = [
+  // Question bank (loaded from JSON)
+  let QUESTION_BANK = null;
+  let selectedBand = 'band7'; // default
+
+  // Fallback questions (used if bank not loaded)
+  const FALLBACK_PART1 = [
     "Let's talk about your hometown. What do you like most about it?",
     "Do you work or are you a student? Tell me about it.",
     "What do you usually do in your free time?",
@@ -22,27 +27,75 @@
     "What kind of music do you enjoy listening to?",
     "Do you prefer reading books or watching movies?",
   ];
-
-  const PART2_TOPICS = [
-    {
-      topic: 'Describe a time when you had to speak in front of a group of people.',
-      points: ['When it was', 'Who you were speaking to', 'What you spoke about', 'How you felt about it'],
-    },
-    {
-      topic: 'Describe a place you have visited that you found particularly beautiful.',
-      points: ['Where it was', 'When you went there', 'What it looked like', 'Why you found it beautiful'],
-    },
-    {
-      topic: 'Describe a person who has had a significant influence on your life.',
-      points: ['Who this person is', 'How you know them', 'What they have done', 'Why they have influenced you'],
-    },
+  const FALLBACK_PART2 = [
+    { topic: 'Describe a time when you had to speak in front of a group of people.', points: ['When it was', 'Who you were speaking to', 'What you spoke about', 'How you felt about it'] },
+    { topic: 'Describe a place you have visited that you found particularly beautiful.', points: ['Where it was', 'When you went there', 'What it looked like', 'Why you found it beautiful'] },
   ];
-
-  const PART3_QUESTIONS = [
+  const FALLBACK_PART3 = [
     "Why do you think this topic is important to society?",
     "How has this changed compared to the past?",
     "What do you think will happen in the future regarding this?",
   ];
+
+  // Load question bank
+  async function loadQuestionBank() {
+    try {
+      const res = await fetch('/static/question_bank.json');
+      if (res.ok) {
+        QUESTION_BANK = await res.json();
+        console.log('Question bank loaded:', QUESTION_BANK.themes.length, 'themes');
+      }
+    } catch (e) {
+      console.warn('Failed to load question bank, using fallback:', e);
+    }
+  }
+
+  // Pick questions from bank for a solo game
+  function pickQuestionsFromBank() {
+    if (!QUESTION_BANK || !QUESTION_BANK.themes.length) {
+      return {
+        themeName: 'General',
+        part1: [...FALLBACK_PART1].sort(() => Math.random() - 0.5).slice(0, 4),
+        part2Topic: FALLBACK_PART2[Math.floor(Math.random() * FALLBACK_PART2.length)],
+        part3: [...FALLBACK_PART3],
+      };
+    }
+
+    // Shuffle themes and find one with enough questions
+    const shuffled = [...QUESTION_BANK.themes].sort(() => Math.random() - 0.5);
+    let theme = null;
+    for (const t of shuffled) {
+      const p1 = t.part1[selectedBand] || [];
+      const p2 = t.part2[selectedBand] || [];
+      const p3 = t.part3[selectedBand] || [];
+      if (p1.length >= 4 && p2.length >= 1 && p3.length >= 3) {
+        theme = t;
+        break;
+      }
+    }
+    // Fallback: use first theme with any questions
+    if (!theme) {
+      theme = shuffled[0];
+    }
+
+    const p1Pool = [...(theme.part1[selectedBand] || [])].sort(() => Math.random() - 0.5);
+    const p2Pool = [...(theme.part2[selectedBand] || [])].sort(() => Math.random() - 0.5);
+    const p3Pool = [...(theme.part3[selectedBand] || [])].sort(() => Math.random() - 0.5);
+
+    // Part 2: convert string to topic object
+    const p2Text = p2Pool[0] || 'Describe something interesting.';
+    const p2Topic = {
+      topic: p2Text,
+      points: ['What it was', 'When it happened', 'Why it was important', 'How you felt about it'],
+    };
+
+    return {
+      themeName: theme.name,
+      part1: p1Pool.slice(0, 4),
+      part2Topic: p2Topic,
+      part3: p3Pool.slice(0, 3),
+    };
+  }
 
   // ─── STATE ──────────────────────────────────────────────────────
   const S = {
@@ -661,7 +714,7 @@ Respond ONLY with this JSON (no markdown):
   function askPart3() {
     if (S.qIndex >= 3) { stopRandomNick(); hideQuestion(); goVerdict(); return; }
     updateHUD();
-    const q = PART3_QUESTIONS[S.qIndex];
+    const q = (S.part3Questions || FALLBACK_PART3)[S.qIndex];
     showQuestion(q);
     setNick('frown');
     showDialogue('NICK', q, () => {
@@ -799,9 +852,11 @@ Respond ONLY with this JSON (no markdown):
   // ── Start game ──
   function startGame() {
     S.phase = 'intro'; S.qIndex = 0; S.answers = []; S.currentPart = 1;
-    const shuffled = [...PART1_QUESTIONS].sort(() => Math.random() - 0.5);
-    S.questions = shuffled.slice(0, 4);
-    S.part2Topic = PART2_TOPICS[Math.floor(Math.random() * PART2_TOPICS.length)];
+    const picked = pickQuestionsFromBank();
+    S.questions = picked.part1;
+    S.part2Topic = picked.part2Topic;
+    S.part3Questions = picked.part3;
+    S.themeName = picked.themeName;
 
     showScreen('game');
     updateHUD();
@@ -1246,12 +1301,22 @@ Respond ONLY with this JSON (no markdown):
   document.addEventListener('DOMContentLoaded', () => {
     cacheDom();
     initSpeech();
+    loadQuestionBank();
 
     // Fetch username immediately (needed for multiplayer host detection)
     fetch('/api/me', { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) { S._myUsername = d.username; S._myDisplayName = d.display_name; } })
       .catch(() => {});
+
+    // Band selection
+    document.querySelectorAll('.band-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.band-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedBand = btn.dataset.band;
+      });
+    });
 
     // Solo mode
     $('btn-solo').addEventListener('click', () => {
