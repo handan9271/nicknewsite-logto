@@ -2524,6 +2524,309 @@ async def save_game_session(body: SaveGameSessionRequest, user: User = Depends(g
     return {"ok": True}
 
 
+class GenerateMockReportRequest(BaseModel):
+    answers: list = []
+    verdict: dict = {}
+    theme: str = ""
+    band: str = ""
+
+
+@app.post("/api/generate-mock-report")
+async def generate_mock_report(body: GenerateMockReportRequest, user: User = Depends(get_current_user)):
+    """Generate a detailed PDF report for a mock test using AI analysis."""
+    import io
+    from fpdf import FPDF
+
+    answers = body.answers
+    verdict = body.verdict
+    scores = verdict.get("scores", {})
+    overall = verdict.get("overall", "--")
+    theme = body.theme or "General"
+    band = body.band or "Band 7"
+
+    # 1. Call AI to generate detailed analysis
+    answers_text = "\n\n".join(
+        f'[Part {a.get("part","")}] Q: {a.get("question","")}\nA: {a.get("answer","")}'
+        for a in answers
+    )
+
+    analysis_prompt = f"""You are a senior IELTS examiner. Analyze this mock test and produce a detailed report.
+
+Scores: FC={scores.get("FC","?")}, LR={scores.get("LR","?")}, GRA={scores.get("GRA","?")}, Pron={scores.get("Pron","?")}, Overall={overall}
+
+Student's answers:
+{answers_text}
+
+Generate a JSON response with this EXACT structure (no markdown, no extra text):
+{{
+  "analyses": [
+    {{"title": "1. Fluency and Coherence (Score: {scores.get('FC','?')})", "en": "2-3 sentence English analysis", "cn": "2-3 sentence Chinese analysis"}},
+    {{"title": "2. Lexical Resource (Score: {scores.get('LR','?')})", "en": "analysis", "cn": "Chinese analysis"}},
+    {{"title": "3. Grammatical Range and Accuracy (Score: {scores.get('GRA','?')})", "en": "analysis", "cn": "Chinese analysis"}},
+    {{"title": "4. Pronunciation (Score: {scores.get('Pron','?')})", "en": "analysis", "cn": "Chinese analysis"}},
+    {{"title": "5. Overall Band: {overall}", "en": "summary", "cn": "Chinese summary"}}
+  ],
+  "upgrades": [
+    {{"orig": "exact quote from student", "issue": "problem in English", "comment": "examiner comment in English", "cn_comment": "Chinese comment", "enhance": "upgraded version"}}
+  ],
+  "enhanced_answer": "Full enhanced version of all answers combined as a coherent response (+1 band)",
+  "improvements": {{
+    "grammar": "Grammar improvements summary",
+    "vocabulary": "Vocabulary upgrades summary",
+    "coherence": "Coherence improvements summary",
+    "fluency": "Fluency improvements summary"
+  }}
+}}
+
+Rules:
+- Pick 5-7 most impactful upgrades for the "upgrades" array
+- Each upgrade must quote the EXACT original text
+- Chinese analysis should be natural Chinese, not machine translation
+- Enhanced answer should flow naturally as one connected response
+- Be specific, cite actual words/phrases from the student's answers"""
+
+    report_data = None
+    try:
+        raw = await call_deepseek([
+            {"role": "system", "content": "You are a senior IELTS examiner producing detailed mock test reports. Output valid JSON only."},
+            {"role": "user", "content": analysis_prompt},
+        ], max_tokens=3500, temperature=0.4)
+        report_data = parse_json_response(raw)
+    except Exception as e:
+        logger.error(f"Failed to generate report analysis: {e}")
+
+    # Fallback
+    if not report_data:
+        report_data = {
+            "analyses": [
+                {"title": f"1. Fluency and Coherence (Score: {scores.get('FC','?')})", "en": "Analysis unavailable.", "cn": "分析暂不可用。"},
+                {"title": f"2. Lexical Resource (Score: {scores.get('LR','?')})", "en": "Analysis unavailable.", "cn": "分析暂不可用。"},
+                {"title": f"3. Grammar (Score: {scores.get('GRA','?')})", "en": "Analysis unavailable.", "cn": "分析暂不可用。"},
+                {"title": f"4. Pronunciation (Score: {scores.get('Pron','?')})", "en": "Analysis unavailable.", "cn": "分析暂不可用。"},
+                {"title": f"5. Overall: {overall}", "en": verdict.get("comment", ""), "cn": ""},
+            ],
+            "upgrades": [],
+            "enhanced_answer": "",
+            "improvements": {"grammar": "N/A", "vocabulary": "N/A", "coherence": "N/A", "fluency": "N/A"},
+        }
+
+    # 2. Generate PDF
+    # Find Chinese font
+    cn_font_path = None
+    import glob
+    for p in ['/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+              '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc',
+              '/Library/Fonts/Arial Unicode.ttf',
+              '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc']:
+        if Path(p).exists():
+            cn_font_path = p
+            break
+    # Also check glob patterns
+    if not cn_font_path:
+        matches = glob.glob('/usr/share/fonts/**/Noto*CJK*.ttc', recursive=True)
+        if matches:
+            cn_font_path = matches[0]
+
+    class MockReportPDF(FPDF):
+        def __init__(self):
+            super().__init__()
+            self._has_cn = False
+            if cn_font_path:
+                try:
+                    self.add_font('CN', '', cn_font_path)
+                    self._has_cn = True
+                except Exception:
+                    pass
+
+        def header(self):
+            self.set_font('Helvetica', 'B', 11)
+            self.set_text_color(10, 90, 69)
+            self.cell(0, 8, 'Nick Speaking Platform - IELTS Mock Test Report', new_x="LMARGIN", new_y="NEXT", align='C')
+            self.set_draw_color(201, 150, 58)
+            self.set_line_width(0.8)
+            self.line(10, self.get_y(), 200, self.get_y())
+            self.ln(5)
+
+        def footer(self):
+            self.set_y(-15)
+            self.set_font('Helvetica', 'I', 7)
+            self.set_text_color(150)
+            self.cell(0, 10, 'Generated by Nick Speaking Platform | AI-generated assessment for reference only.', align='C')
+
+        def section(self, t):
+            self.set_font('Helvetica', 'B', 13)
+            self.set_text_color(10, 90, 69)
+            self.cell(0, 10, t, new_x="LMARGIN", new_y="NEXT")
+            self.ln(2)
+
+        def sub(self, t):
+            self.set_font('Helvetica', 'B', 10)
+            self.set_text_color(50)
+            self.cell(0, 7, t, new_x="LMARGIN", new_y="NEXT")
+
+        def en(self, t):
+            self.set_font('Helvetica', '', 9)
+            self.set_text_color(60)
+            self.multi_cell(0, 5, t)
+            self.ln(1)
+
+        def cn(self, t):
+            if self._has_cn and t:
+                self.set_font('CN', '', 8)
+                self.set_text_color(100)
+                self.multi_cell(0, 5, t)
+                self.ln(2)
+
+        def cp(self, h=40):
+            if self.get_y() > 260 - h:
+                self.add_page()
+
+    pdf = MockReportPDF()
+    pdf.add_page()
+
+    # Info
+    pdf.set_font('Helvetica', '', 9)
+    pdf.set_text_color(100)
+    now_str = datetime.utcnow().strftime("%Y-%m-%d")
+    pdf.cell(0, 6, f'Theme: {theme}  |  Difficulty: {band}  |  Date: {now_str}', new_x="LMARGIN", new_y="NEXT", align='C')
+    pdf.ln(5)
+
+    # Answers
+    pdf.section('Your Spoken Answers')
+    for a in answers:
+        pdf.cp(25)
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_text_color(10, 90, 69)
+        pdf.cell(0, 6, f'[Part {a.get("part","")}] {a.get("question","")}', new_x="LMARGIN", new_y="NEXT")
+        pdf.en(a.get("answer", "(No answer)"))
+        pdf.ln(1)
+
+    # Score card
+    pdf.add_page()
+    pdf.section('Nick AI Score Report')
+    pdf.ln(3)
+    sc_list = [("Fluency &\nCoherence", scores.get("FC", "?")), ("Lexical\nResource", scores.get("LR", "?")),
+               ("Grammar", scores.get("GRA", "?")), ("Pronunciation", scores.get("Pron", "?"))]
+    w = 43
+    x_start = (210 - w * 4 - 6) / 2
+    y_start = pdf.get_y()
+    for i, (label, sc) in enumerate(sc_list):
+        x = x_start + i * (w + 2)
+        pdf.set_fill_color(26, 42, 74)
+        pdf.rect(x, y_start, w, 30, 'F')
+        parts = label.split('\n')
+        pdf.set_xy(x, y_start + 3)
+        pdf.set_font('Helvetica', '', 8)
+        pdf.set_text_color(200, 200, 200)
+        pdf.cell(w, 5, parts[0], align='C')
+        if len(parts) > 1:
+            pdf.set_xy(x, y_start + 7)
+            pdf.cell(w, 5, parts[1], align='C')
+        pdf.set_xy(x, y_start + 14)
+        pdf.set_font('Helvetica', 'B', 20)
+        pdf.set_text_color(201, 150, 58)
+        pdf.cell(w, 12, str(sc), align='C')
+
+    pdf.set_y(y_start + 35)
+    pdf.set_font('Helvetica', '', 10)
+    pdf.set_text_color(100)
+    pdf.cell(0, 8, 'OVERALL BAND', new_x="LMARGIN", new_y="NEXT", align='C')
+    pdf.set_font('Helvetica', 'B', 30)
+    pdf.set_text_color(201, 150, 58)
+    pdf.cell(0, 18, str(overall), new_x="LMARGIN", new_y="NEXT", align='C')
+    pdf.ln(8)
+
+    # Analysis
+    pdf.section('Detailed Analysis')
+    for item in report_data.get("analyses", []):
+        pdf.cp(35)
+        pdf.sub(item.get("title", ""))
+        pdf.en(item.get("en", ""))
+        pdf.cn(item.get("cn", ""))
+
+    # Upgrades
+    ups = report_data.get("upgrades", [])
+    if ups:
+        pdf.add_page()
+        pdf.section('Nick AI Detail Upgrades')
+        for i, u in enumerate(ups, 1):
+            pdf.cp(50)
+            pdf.set_font('Helvetica', 'B', 9)
+            pdf.set_text_color(50)
+            pdf.cell(0, 6, f'{i}. Original:', new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font('Helvetica', '', 9)
+            pdf.set_text_color(180, 50, 40)
+            pdf.multi_cell(0, 5, f'  "{u.get("orig","")}"')
+            pdf.ln(1)
+            pdf.set_font('Helvetica', 'B', 8)
+            pdf.set_text_color(180, 100, 30)
+            pdf.cell(0, 5, f'  Issue: {u.get("issue","")}', new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font('Helvetica', '', 8)
+            pdf.set_text_color(80)
+            pdf.cell(0, 5, f'  Comment: {u.get("comment","")}', new_x="LMARGIN", new_y="NEXT")
+            if pdf._has_cn and u.get("cn_comment"):
+                pdf.set_font('CN', '', 8)
+                pdf.set_text_color(100)
+                pdf.multi_cell(0, 5, f'  {u["cn_comment"]}')
+            pdf.ln(1)
+            pdf.set_font('Helvetica', '', 9)
+            pdf.set_text_color(26, 107, 53)
+            pdf.multi_cell(0, 5, f'  Enhance: "{u.get("enhance","")}"')
+            pdf.ln(4)
+
+    # Enhanced answer
+    ea = report_data.get("enhanced_answer", "")
+    if ea:
+        pdf.add_page()
+        pdf.section('Enhanced Answer (+1 Band Score)')
+        pdf.en(ea)
+        pdf.ln(5)
+
+    # Improvements
+    impr = report_data.get("improvements", {})
+    if impr:
+        pdf.section('Comprehensive Improvements Summary')
+        for label, key in [("Grammar:", "grammar"), ("Vocabulary:", "vocabulary"), ("Coherence:", "coherence"), ("Fluency:", "fluency")]:
+            text = impr.get(key, "")
+            if text:
+                pdf.cp(15)
+                pdf.set_font('Helvetica', 'B', 9)
+                pdf.set_text_color(10, 90, 69)
+                pdf.cell(25, 5, label)
+                pdf.set_font('Helvetica', '', 9)
+                pdf.set_text_color(60)
+                pdf.multi_cell(0, 5, text)
+                pdf.ln(2)
+
+    # Disclaimer
+    pdf.ln(5)
+    pdf.cp(25)
+    pdf.set_draw_color(200)
+    pdf.set_line_width(0.3)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(3)
+    if pdf._has_cn:
+        pdf.set_font('CN', '', 8)
+        pdf.set_text_color(130)
+        pdf.multi_cell(0, 4.5, '免责声明：本评分报告基于您提供的样本通过人工智能生成。由于真实考场环境和评分标准可能与本系统的分析方法存在差异，本报告中的分数仅供参考。建议将本报告作为学习和练习的工具，辅助您的雅思备考。')
+        pdf.ln(2)
+    pdf.set_font('Helvetica', 'I', 8)
+    pdf.set_text_color(130)
+    pdf.multi_cell(0, 4.5, 'Disclaimer: This report is AI-generated based on your mock test responses. Scores are for reference only. Please use this report as a learning tool to support your preparation.')
+
+    # Output
+    buf = io.BytesIO()
+    pdf.output(buf)
+    buf.seek(0)
+
+    from fastapi.responses import Response
+    return Response(
+        content=buf.read(),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="IELTS-Mock-Report-{now_str}.pdf"'},
+    )
+
+
 @app.get("/api/game-history")
 async def get_game_history(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get user's game mock test history."""
