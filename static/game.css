@@ -77,6 +77,7 @@ html, body {
 }
 
 .mode-selector { display: flex; gap: 12px; justify-content: center; margin-bottom: 30px; }
+.band-selector { display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap; }
 
 .mode-btn {
   font-family: var(--font-pixel); font-size: 10px;
