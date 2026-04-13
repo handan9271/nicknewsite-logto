@@ -873,7 +873,7 @@ function detectPart() {
     hint='🔍 检测到 <strong>Part 2</strong> · 使用 <strong>IPDOF 框架</strong>（Introduction · Past · Description · Opinion · Future）· 目标 2 分钟独白';
   }
   // Part 3: deeper discussion questions (check BEFORE Part 1 to avoid false positives)
-  else if(/^(why do|how do|how has|how can|how does|how should|what are the|what is the|what role|what impact|what effect|in what ways|to what extent|should governments|should society|should education|should countries|do you think .*(important|necessary|better|affect|influence|change|impact)|is it (important|necessary|better|fair)|are .*(important|necessary|better|fair))|has.*changed|how will|how would/.test(q)){
+  else if(/^(why do|why is|why are|how do|how has|how can|how does|how should|how will|how would|what are the|what is the|what role|what impact|what effect|in what ways|to what extent|should gov|should soc|should edu|should coun|should people|should school|should public|do you think|is it important|is it necessary|is it better|is it fair|are .*(important|necessary|better|fair)|has .* changed|what challenges|what problems|what benefits|what advantages|what disadvantages)/.test(q)){
     part='P3';
     hint='🔍 检测到 <strong>Part 3</strong> · 深度讨论 · <strong>TEEL 结构</strong>（Topic · Explain · Evidence · Link）· 逻辑严谨，层层递进';
   }
@@ -1467,11 +1467,23 @@ function selectQBQuestion(q) {
   const partSel = document.getElementById('qb-part').value;
   const partMap = { part1: 'P1', part2: 'P2', part3: 'P3' };
   if (partMap[partSel]) {
-    setPart(partMap[partSel], true);
+    setPartWithHint(partMap[partSel]);
   } else {
     detectPart();
   }
   toast('已选择题目','ok');
+}
+
+function setPartWithHint(p) {
+  setPart(p, true);
+  const el = document.getElementById('detect-hint');
+  const hints = {
+    P1: '🔍 <strong>Part 1</strong> · 对话类 · 自然聊天 + <strong>Fillers / Connectors</strong> · 轻量 TEEL 逻辑展开',
+    P2: '🔍 <strong>Part 2</strong> · <strong>IPDOF 框架</strong>（Introduction · Past · Description · Opinion · Future）· 2 分钟独白',
+    P3: '🔍 <strong>Part 3</strong> · <strong>TEEL 结构</strong>（Topic · Explain · Evidence · Link）· 逻辑严谨，层层递进',
+  };
+  el.innerHTML = hints[p] || '';
+  el.classList.add('on');
 }
 
 function pickRandomQB() {
@@ -1490,9 +1502,9 @@ function pickRandomQB() {
   const pick = allQ[Math.floor(Math.random() * allQ.length)];
   document.getElementById('qb-theme').value = pick.theme;
   document.getElementById('inp-q').value = pick.question;
-  // Set Part from dropdown
-  const partMap = { part1: 'P1', part2: 'P2', part3: 'P3' };
-  setPart(partMap[part] || 'P1', true);
+  // Set Part from dropdown with correct hint
+  const partMap2 = { part1: 'P1', part2: 'P2', part3: 'P3' };
+  setPartWithHint(partMap2[part] || 'P1');
   renderQBQuestions();
   toast('随机选题: ' + pick.theme, 'ok');
 }
