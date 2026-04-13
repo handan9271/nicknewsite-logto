@@ -15,6 +15,8 @@
   // Question bank (loaded from JSON)
   let QUESTION_BANK = null;
   let selectedBand = 'band7'; // default
+  let _qbLoaded = false;
+  let _qbPromise = null;
 
   // Fallback questions (used if bank not loaded)
   const FALLBACK_PART1 = [
@@ -43,10 +45,12 @@
       const res = await fetch('/static/question_bank.json');
       if (res.ok) {
         QUESTION_BANK = await res.json();
+        _qbLoaded = true;
         console.log('Question bank loaded:', QUESTION_BANK.themes.length, 'themes');
       }
     } catch (e) {
       console.warn('Failed to load question bank, using fallback:', e);
+      _qbLoaded = true; // mark as done even on failure
     }
   }
 
@@ -850,7 +854,11 @@ Respond ONLY with this JSON (no markdown):
   }
 
   // ── Start game ──
-  function startGame() {
+  async function startGame() {
+    // Wait for question bank to load if still in progress
+    if (_qbPromise && !_qbLoaded) {
+      await _qbPromise;
+    }
     S.phase = 'intro'; S.qIndex = 0; S.answers = []; S.currentPart = 1;
     const picked = pickQuestionsFromBank();
     S.questions = picked.part1;
@@ -1301,7 +1309,7 @@ Respond ONLY with this JSON (no markdown):
   document.addEventListener('DOMContentLoaded', () => {
     cacheDom();
     initSpeech();
-    loadQuestionBank();
+    _qbPromise = loadQuestionBank();
 
     // Fetch username immediately (needed for multiplayer host detection)
     fetch('/api/me', { credentials: 'include' })
