@@ -867,21 +867,20 @@ function detectPart() {
   if(!q) return;
   let part=null, hint='';
 
+  // Part 2: starts with "Describe"
   if(q.startsWith('describe')){
     part='P2';
     hint='🔍 检测到 <strong>Part 2</strong> · 使用 <strong>IPDOF 框架</strong>（Introduction · Past · Description · Opinion · Future）· 目标 2 分钟独白';
-  } else if(/why do|how has|what are the effects|in what ways|to what extent|has.*changed|should.*government|what impact/.test(q)){
+  }
+  // Part 3: deeper discussion questions (check BEFORE Part 1 to avoid false positives)
+  else if(/^(why do|how do|how has|how can|how does|how should|what are the|what is the|what role|what impact|what effect|in what ways|to what extent|should governments|should society|should education|should countries|do you think .*(important|necessary|better|affect|influence|change|impact)|is it (important|necessary|better|fair)|are .*(important|necessary|better|fair))|has.*changed|how will|how would/.test(q)){
     part='P3';
-    hint='🔍 检测到 <strong>Part 3</strong> · 学术讨论 · 使用 <strong>TEEL 结构</strong> · 学术 register';
-  } else {
-    const opinionKw = ['think','believe','important','should','better','agree','prefer'];
-    const isOpinion = opinionKw.some(w=>q.includes(w));
+    hint='🔍 检测到 <strong>Part 3</strong> · 深度讨论 · <strong>TEEL 结构</strong>（Topic · Explain · Evidence · Link）· 逻辑严谨，层层递进';
+  }
+  // Part 1: everything else (simple personal questions)
+  else {
     part='P1';
-    if(isOpinion){
-      hint='🔍 检测到 <strong>Part 1 后半段</strong> · 观点类 · 轻度 <strong>TEEL</strong> + Discourse Markers';
-    } else {
-      hint='🔍 检测到 <strong>Part 1 前半段</strong> · 对话类 · 自然聊天风格 + <strong>Fillers / Connectors</strong>';
-    }
+    hint='🔍 检测到 <strong>Part 1</strong> · 对话类 · 自然聊天 + <strong>Fillers / Connectors</strong> · 有逻辑地展开观点';
   }
 
   if(part){
@@ -917,10 +916,16 @@ function setInputMode(m){
 // ─── SYSTEM PROMPT ────────────────────────────────────────────────
 function buildSystemPrompt(part, isCN){
   const partGuide = part==='P2'
-    ? `这是 Part 2 题目，使用 IPDOF 框架（Introduction·Past·Description·Opinion·Future）展开，确保两个版本的答案都能撑满 2 分钟。`
+    ? `这是 Part 2 题目。使用 IPDOF 框架（Introduction · Past · Description · Opinion · Future）展开 2 分钟独白。
+要求：结构清晰，每个阶段自然过渡；Introduction 简洁开题（1-2 句），Past 提供背景，Description 详细描述细节和感受，Opinion 表达个人观点，Future 展望或总结。
+语言要求：使用 Lexical Chunks，句式有变化（简单句+复杂句交替），自然的停顿和衔接词。`
     : part==='P3'
-    ? `这是 Part 3 题目，使用 TEEL 结构，学术 register，识别题目考查的语言功能（evaluate/compare/speculate/explain）并针对性处理。`
-    : `这是 Part 1 题目，Band 9 版本要保持自然对话风格，加入自然的 Fillers（honestly / to be fair / I mean）和 Discourse Markers（actually / in fact / having said that）。`;
+    ? `这是 Part 3 深度讨论题。使用 TEEL 结构（Topic · Explain · Evidence · Link）展开论述。
+要求：逻辑严谨，层层递进。先提出观点（Topic sentence），然后解释原因（Explain why），接着举例或给证据（Evidence/Example），最后回扣或延伸（Link back/extend）。
+语言要求：学术 register，使用高级连接词（consequently / furthermore / having said that / on the other hand），识别题目考查的语言功能（evaluate/compare/speculate/explain）并针对性处理。论点要有深度，不要泛泛而谈。`
+    : `这是 Part 1 对话类题目。风格：自然聊天 + 有逻辑地展开观点。
+要求：保持对话感，加入自然的 Fillers（honestly / to be fair / I mean / well）和 Discourse Markers（actually / in fact / having said that），但不能只是聊天，要有逻辑支撑。
+建议用轻量版 TEEL：先说观点，简短解释原因，给一个具体例子或个人经历。答案不宜过长（4-6 句），但要言之有物。`;
 
   // 英文模式：诊断并升级学生已有的英文答案
   if(!isCN){
@@ -1050,7 +1055,7 @@ function parseJSON(raw){
 // ─── SYSTEM PROMPTS FOR PARALLEL REQUESTS ─────────────────────────
 // Request 1: meta info only (fast) — diagnosis + framework + takeaway, NO answer content
 function buildMetaPrompt(part, isCN){
-  const partTag = part==='P2'?'Part 2 (IPDOF框架)':part==='P3'?'Part 3 (TEEL结构)':'Part 1 (对话风格)';
+  const partTag = part==='P2'?'Part 2 · IPDOF 框架（Introduction·Past·Description·Opinion·Future）· 2分钟独白':part==='P3'?'Part 3 · TEEL 结构（Topic·Explain·Evidence·Link）· 逻辑严谨，层层递进':'Part 1 · 对话类 · 自然聊天 + Fillers/Connectors + 轻量 TEEL 逻辑';
   if(isCN){
     return '你是前雅思考官 Nick 的 AI 助手。根据学生的中文思路和题目，仅输出以下 JSON，不要生成任何英文答案内容：\n\n'
       +'{\n  "part": "'+part+'",\n  "part_framework": "'+partTag+' · 双版本对比生成中",\n  "mode": "cn",\n  "overall_comment": "整体学习建议（2-3句，说明如何从Band 6提升到Band 9）",\n  "takeaway": {\n    "expression": "本次最值得记住的Lexical Chunk",\n    "explanation": "为什么好，怎么用，举1个例子"\n  }\n}\n\n只输出JSON，不加任何其他内容。';
@@ -1064,6 +1069,7 @@ function buildQuestionPrompt(part, isCN, qLabel, questionText, answerText){
   if(isCN){
     return '你是前雅思考官 Nick 的 AI 助手。根据学生中文思路，为这一道题生成 Band 6 和 Band 9 两个版本。\n\n'
       +'题目：'+questionText+'\n\n学生中文思路：'+answerText+'\n\n'
+      +(part==='P2'?'使用 IPDOF 框架展开 2 分钟独白。':part==='P3'?'使用 TEEL 结构，逻辑严谨，层层递进。':'保持对话感，用轻量 TEEL 展开。')+'\n'
       +'【Band 6】语法正确意思完整，只用高中水平词汇和简单句式，不用 Lexical Chunks。\n'
       +'【Band 9】Nick 风格，优先 Lexical Chunks，有 Discourse Markers，有节奏有画面感。\n\n'
       +'严格输出以下 JSON，不加任何其他内容：\n'
@@ -1071,7 +1077,9 @@ function buildQuestionPrompt(part, isCN, qLabel, questionText, answerText){
   }
   return '你是前雅思考官 Nick 的 AI 助手。升级这一道题的英文答案到 Band 9。\n\n'
     +'题目：'+questionText+'\n\n学生答案：'+answerText+'\n\n'
-    +'优先用 Lexical Chunks 升级，保留所有真实经历和观点。Part: '+part+'。\n\n'
+    +'优先用 Lexical Chunks 升级，保留所有真实经历和观点。'
+    +(part==='P2'?' 使用 IPDOF 框架（Introduction·Past·Description·Opinion·Future）。':part==='P3'?' 使用 TEEL 结构（Topic·Explain·Evidence·Link），逻辑严谨层层递进。':' 自然对话感 + 轻量 TEEL 逻辑。')
+    +' Part: '+part+'。\n\n'
     +'严格输出以下 JSON，不加任何其他内容：\n'
     +'{\n  "label": "'+qLabel+'",\n  "question_text": "'+questionText+'",\n  "original": "原文照抄",\n  "upgraded": "Band 9升级版",\n  "pairs": [\n    {"id":"a","orig_text":"original精确子字符串","upg_text":"upgraded精确子字符串","reason":"中文解释+标注FC/LR/GRA"}\n  ]\n}\n包含3-5个pairs，orig_text必须是original精确子字符串，upg_text必须是upgraded精确子字符串。';
 }
@@ -1455,7 +1463,14 @@ function renderQBQuestions() {
 
 function selectQBQuestion(q) {
   document.getElementById('inp-q').value = q;
-  detectPart();
+  // Use the selected Part from dropdown instead of auto-detect
+  const partSel = document.getElementById('qb-part').value;
+  const partMap = { part1: 'P1', part2: 'P2', part3: 'P3' };
+  if (partMap[partSel]) {
+    setPart(partMap[partSel], true);
+  } else {
+    detectPart();
+  }
   toast('已选择题目','ok');
 }
 
@@ -1475,7 +1490,9 @@ function pickRandomQB() {
   const pick = allQ[Math.floor(Math.random() * allQ.length)];
   document.getElementById('qb-theme').value = pick.theme;
   document.getElementById('inp-q').value = pick.question;
-  detectPart();
+  // Set Part from dropdown
+  const partMap = { part1: 'P1', part2: 'P2', part3: 'P3' };
+  setPart(partMap[part] || 'P1', true);
   renderQBQuestions();
   toast('随机选题: ' + pick.theme, 'ok');
 }
