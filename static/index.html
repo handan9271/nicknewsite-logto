@@ -976,7 +976,7 @@ function buildSystemPrompt(part, isCN){
     const enSchema = '\n{\n  "part": "P1/P2/P3",\n  "part_framework": "使用的框架说明",\n  "scores": {"FC": 整数, "LR": 整数, "GRA": 整数},\n  "verdict": "一句话诊断，不超过50字",\n  "questions": [\n    {\n      "label": "Q1",\n      "question_text": "原题目",\n      "original": "学生原始答案（原文照抄）",\n      "upgraded": "' + tbLabel + '升级版答案",\n      "pairs": [\n        {\n          "id": "a",\n          "orig_text": "原文片段（必须是original精确子字符串）",\n          "upg_text": "升级后表达（必须是upgraded精确子字符串）",\n          "reason": "中文解释+标注FC/LR/GRA维度"\n        }\n      ]\n    }\n  ],\n  "overall_comment": "整体评价（中文2-3句）",\n  "estimated_original_band": 数字,\n  "takeaway": {\n    "expression": "本次最值得记住的表达",\n    "explanation": "为什么好，怎么用，举1个例子"\n  }\n}';
     return '你是前雅思考官 Nick 的 AI 助手，负责诊断并升级学生的英文口语答案到 ' + tbLabel + ' 水平。\n\n'
       + partGuide
-      + '\n\n目标分数：' + tbLabel + '。升级版答案的词汇和句式应该严格符合 ' + tbLabel + ' 标准，不要超出也不要低于。\n\n严格输出以下 JSON 格式，不要输出任何其他内容（包括 markdown 代码块）：'
+      + '\n\n目标分数：' + tbLabel + '。升级版答案的词汇和句式应该严格符合 ' + tbLabel + ' 标准，不要超出也不要低于。\n\n【重要】如果学生的原始答案已经达到或超过 ' + tbLabel + ' 水平，请在 verdict 中明确告知"你的回答已达到/超过目标分数"，upgraded 版本仍然给出，但侧重在当前水平上打磨细节（更自然的表达、更精准的用词），而不是降级。estimated_original_band 必须反映真实水平。\n\n严格输出以下 JSON 格式，不要输出任何其他内容（包括 markdown 代码块）：'
       + enSchema
       + '\n\n规则：\n- 多道题每道题单独一个 questions 数组元素\n- 每题 pairs 包含 3-5 个最重要升级点\n- orig_text 必须是 original 的精确子字符串\n- upg_text 必须是 upgraded 的精确子字符串\n- 优先升级 Lexical Chunks，不是逐词替换\n- 修复所有语法错误（时态/冠词/due to 误用等）\n- upgraded 答案必须符合 ' + tbLabel + ' 标准';
   }
