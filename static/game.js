@@ -7,10 +7,10 @@
   'use strict';
 
   // ─── CONFIG ──────────────────────────────────────────────────────
-  const PART1_TIME = 45;
-  const PART2_PREP = 60;
-  const PART2_SPEAK = 120;
-  const PART3_TIME = 60;
+  const PART1_TIME = 60;    // Part 1: 1 minute per question
+  const PART2_PREP = 60;    // Part 2: 1 minute prep
+  const PART2_SPEAK = 120;  // Part 2: 2 minutes speaking
+  const PART3_TIME = 90;    // Part 3: 1.5 minutes per question
 
   // Question bank (loaded from JSON)
   let QUESTION_BANK = null;
@@ -162,7 +162,7 @@
     const ids = [
       'title-screen', 'game-screen', 'verdict-screen', 'screen-flash',
       'lobby-screen', 'waiting-overlay',
-      'part-badge', 'question-counter', 'hud-timer-bar', 'player-count-badge',
+      'part-badge', 'question-counter', 'hud-timer-bar', 'hud-timer-text', 'player-count-badge',
       'courtroom', 'nick-sprite', 'nick-expression',
       'gavel-overlay', 'objection-banner', 'objection-reason',
       'evidence-card', 'evidence-topic', 'evidence-points', 'evidence-close-btn',
@@ -338,6 +338,7 @@
     const total = secs;
     barEl.style.width = '100%';
     barEl.classList.remove('urgent');
+    if (D.hud_timer_text) D.hud_timer_text.textContent = secs + 's';
 
     S.timerInterval = setInterval(() => {
       S.timerRemaining--;
@@ -345,8 +346,12 @@
       barEl.style.width = pct + '%';
       barEl.style.background = pct > 50 ? 'var(--green)' : pct > 20 ? 'var(--yellow)' : 'var(--red)';
       if (S.timerRemaining <= 10) barEl.classList.add('urgent');
+      if (D.hud_timer_text) {
+        D.hud_timer_text.textContent = S.timerRemaining + 's';
+        D.hud_timer_text.style.color = S.timerRemaining <= 10 ? 'var(--red,#e74c3c)' : 'var(--warm-white,#f5e6c8)';
+      }
       if (onTick) onTick(S.timerRemaining);
-      if (S.timerRemaining <= 0) { clearTimer(); if (onEnd) onEnd(); }
+      if (S.timerRemaining <= 0) { clearTimer(); if (D.hud_timer_text) D.hud_timer_text.textContent = '0s'; if (onEnd) onEnd(); }
     }, 1000);
   }
 
