@@ -982,7 +982,7 @@ function buildSystemPrompt(part, isCN){
   }
 
   // 中文模式：根据中文思路生成基础版和目标分数版两个版本
-  const lowerBand = Math.max(5, tb - 2);
+  const lowerBand = Math.max(4, tb - 2);
   const cnSchema = '\n{\n  "part": "P1/P2/P3",\n  "part_framework": "使用的框架说明",\n  "mode": "cn",\n  "questions": [\n    {\n      "label": "Q1",\n      "question_text": "题目",\n      "band6": "Band ' + lowerBand + '基础版英文答案（语法正确但用词简单）",\n      "upgraded": "' + tbLabel + ' Nick风格升级版",\n      "pairs": [\n        {\n          "id": "a",\n          "orig_text": "band6中的片段（必须是band6精确子字符串）",\n          "upg_text": "upgraded中对应片段（必须是upgraded精确子字符串）",\n          "reason": "中文解释+标注FC/LR/GRA维度"\n        }\n      ]\n    }\n  ],\n  "overall_comment": "整体学习建议（中文2-3句）",\n  "takeaway": {\n    "expression": "本次最值得记住的Lexical Chunk",\n    "explanation": "为什么好，怎么用，举1个例子"\n  }\n}';
   return '你是前雅思考官 Nick 的 AI 助手。学生提供了中文思路，你需要生成两个英文版本供对比学习。\n\n'
     + partGuide
@@ -1113,7 +1113,7 @@ function buildMetaPrompt(part, isCN){
 function buildQuestionPrompt(part, isCN, qLabel, questionText, answerText){
   const tb = targetBand || 7;
   const tbLabel = 'Band ' + tb;
-  const lowerBand = Math.max(5, tb - 2);
+  const lowerBand = Math.max(4, tb - 2);
   if(isCN){
     return '你是前雅思考官 Nick 的 AI 助手。根据学生中文思路，为这一道题生成 Band '+lowerBand+' 和 '+tbLabel+' 两个版本。\n\n'
       +'题目：'+questionText+'\n\n学生中文思路：'+answerText+'\n\n'
