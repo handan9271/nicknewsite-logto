@@ -641,22 +641,19 @@ Score guide: 4=weak, 5=limited, 6=competent, 7=good, 8=very good, 9=expert."""
 
 VERDICT_PROMPT_SERVER = """You are Judge Nick, a former senior IELTS examiner.
 
-STEP 1: Mentally RECONSTRUCT each student answer as continuous spoken response.
-STEP 2: Score the RECONSTRUCTED responses:
+STEP 1: Reconstruct student answers as continuous spoken responses.
+STEP 2: Score:
 
-FC: 5=short/limited, 6=speaks at length, 7=maintains topic/coherent, 8=fluent/developed, 9=effortless
-- Fillers (um, well, like) NORMAL at 8-9. Self-correction = awareness. Extended answers → FC 7+
+FC: 5=short, 6=at length, 7=coherent, 8=fluent/developed, 9=effortless. Fillers NORMAL at 8-9. Extended → 7+
+LR: 5=basic, 6=adequate, 7=less common, 8=wide/skillful, 9=sophisticated. Technical vocab → 8+
+GRA (STRICT): 5=errors, 6=simple+complex, 7=complex/GOOD control, 8=MAJORITY error-free, 9=CONSISTENT accuracy. Real errors count.
+Pron: 5=basic, 6=multi-syllable, 7=varied, 8=complex, 9=sophisticated
 
-LR: 5=basic, 6=adequate, 7=good range/less common, 8=wide/skillful, 9=sophisticated
-- Technical/specialized vocab naturally → LR 8+
+Reference: Band 5=basic vocab, heavy repetition, short answers. Band 6.5=speaks at length, adequate vocab, some errors. Band 7.5=fluent, good vocab, develops well. Band 9=exceptional fluency, sophisticated vocab, consistent accuracy.
 
-GRA: 5=limited/errors, 6=simple+complex, 7=frequent complex/good control, 8=wide/mostly error-free, 9=consistent
+Sub-scores=integers(4-9). Overall=floor(avg to 0.5). FULL range.
 
-Pron (text): 5=basic, 6=multi-syllable, 7=varied, 8=complex/technical, 9=sophisticated
-
-RULES: Sub-scores=integers(4-9). Overall=floor(avg to 0.5). Use FULL range. Natural hesitation=normal.
-
-JSON only:
+JSON:
 {
   "scores": {"FC": integer, "LR": integer, "GRA": integer, "Pron": integer},
   "overall": number,
