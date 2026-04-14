@@ -337,7 +337,7 @@ html, body {
 }
 
 .input-area .timer-bar-container {
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .input-area textarea {
