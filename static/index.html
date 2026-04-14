@@ -406,8 +406,29 @@ mark.ins.lit { filter:brightness(.87); box-shadow:0 0 0 2px var(--grn); }
     <!-- ── HISTORY ── -->
     <div id="v-history" class="view" style="padding:36px 44px;background:var(--warm);flex:1;">
       <div class="ph">历史记录</div>
-      <div class="ps">点击任意卡片重新查看报告</div>
-      <div class="hg" id="hg"></div>
+      <div class="ps">查看练习报告和模考记录</div>
+
+      <div style="display:flex;gap:4px;margin-bottom:16px;">
+        <button class="hist-tab on" data-htab="practice" onclick="switchHistTab('practice')" style="padding:8px 18px;border-radius:8px 8px 0 0;border:1.5px solid var(--rule);border-bottom:none;background:var(--paper);color:var(--teal-dk);cursor:pointer;font-size:13px;font-weight:600;">📝 口语练习</button>
+        <button class="hist-tab" data-htab="mock" onclick="switchHistTab('mock')" style="padding:8px 18px;border-radius:8px 8px 0 0;border:1.5px solid var(--rule);border-bottom:none;background:var(--warm);color:var(--ink-dim);cursor:pointer;font-size:13px;">⚖️ 口语模考</button>
+      </div>
+
+      <div id="hist-practice" class="card" style="margin-top:0;border-top-left-radius:0;">
+        <div class="hg" id="hg"></div>
+      </div>
+
+      <div id="hist-mock" style="display:none;">
+        <div class="card" style="margin-top:0;border-top-left-radius:0;">
+          <div id="mock-history-list">加载中...</div>
+        </div>
+        <div id="mock-report-detail" style="display:none;margin-top:20px;" class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div class="ph" style="margin:0;font-size:18px;">模考详细报告</div>
+            <button onclick="closeMockReport()" style="background:none;border:1px solid var(--rule);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;color:var(--ink-dim);">关闭</button>
+          </div>
+          <div id="mock-report-content"></div>
+        </div>
+      </div>
     </div>
 
     <!-- ── TIMELINE ── -->
@@ -1363,6 +1384,135 @@ function wireConnectors(qs, isCNMode){
 }
 
 // ─── HISTORY ──────────────────────────────────────────────────────
+function switchHistTab(name) {
+  document.querySelectorAll('.hist-tab').forEach(t => {
+    const on = t.dataset.htab === name;
+    t.classList.toggle('on', on);
+    t.style.background = on ? 'var(--paper)' : 'var(--warm)';
+    t.style.color = on ? 'var(--teal-dk)' : 'var(--ink-dim)';
+    t.style.fontWeight = on ? '600' : 'normal';
+  });
+  document.getElementById('hist-practice').style.display = name === 'practice' ? '' : 'none';
+  document.getElementById('hist-mock').style.display = name === 'mock' ? '' : 'none';
+  if (name === 'mock') loadMockHistory();
+}
+
+let _mockHistoryCache = [];
+
+async function loadMockHistory() {
+  const el = document.getElementById('mock-history-list');
+  el.innerHTML = '<div style="text-align:center;color:var(--ink-dim);padding:40px;">加载中...</div>';
+  try {
+    const res = await fetch('/api/game-history', { credentials:'include' });
+    if (!res.ok) throw new Error('加载失败');
+    const data = await res.json();
+    _mockHistoryCache = data;
+    if (!data.length) {
+      el.innerHTML = '<div style="text-align:center;color:var(--ink-dim);padding:40px;">暂无模考记录，去口语模考试试吧！</div>';
+      return;
+    }
+    el.innerHTML = data.map((g, i) => {
+      const v = g.verdict || {};
+      const scores = v.scores || {};
+      return `
+        <div onclick="showMockReport(${i})" style="padding:16px;background:var(--warm);border-radius:8px;margin-bottom:10px;cursor:pointer;border-left:3px solid var(--teal);transition:all .15s;" onmouseover="this.style.borderLeftColor='var(--gold)'" onmouseout="this.style.borderLeftColor='var(--teal)'">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:12px;color:var(--ink-dim);">${esc(g.created_at)} · ${g.mode === 'multiplayer' ? '多人' : '单人'}</div>
+              <div style="font-size:14px;font-weight:600;color:var(--teal-dk);margin-top:4px;">
+                FC ${scores.FC||'?'} · LR ${scores.LR||'?'} · GRA ${scores.GRA||'?'} · Pron ${scores.Pron||'?'}
+              </div>
+            </div>
+            <div style="font-family:'EB Garamond',serif;font-size:28px;color:var(--gold);">${g.overall_score || '--'}</div>
+          </div>
+          ${v.report ? '<div style="font-size:11px;color:var(--teal);margin-top:6px;">📋 详细报告可查看</div>' : ''}
+        </div>
+      `;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;color:var(--red);padding:40px;">加载失败</div>';
+  }
+}
+
+function showMockReport(idx) {
+  const g = _mockHistoryCache[idx];
+  if (!g) return;
+  const v = g.verdict || {};
+  const report = v.report;
+  const scores = v.scores || {};
+  const answers = g.answers || [];
+  const el = document.getElementById('mock-report-content');
+
+  let html = '';
+
+  // 1. Your spoken answer
+  html += '<h3 style="font-family:\'EB Garamond\',serif;font-size:18px;color:var(--teal-dk);margin-bottom:12px;border-bottom:2px solid var(--gold);padding-bottom:6px;">Your Spoken Answer</h3>';
+  answers.forEach(a => {
+    html += `<div style="margin-bottom:14px;">`;
+    html += `<div style="font-size:12px;font-weight:600;color:var(--teal);">[Part ${a.part}] ${esc(a.question)}</div>`;
+    html += `<div style="font-size:13px;color:var(--ink);line-height:1.7;margin-top:4px;padding:10px 14px;background:#fff;border-radius:6px;border:1px solid var(--rule);">${esc(a.answer || '(No answer)')}</div>`;
+    html += '</div>';
+  });
+
+  // 2. Nick AI 评分
+  html += '<h3 style="font-family:\'EB Garamond\',serif;font-size:18px;color:var(--teal-dk);margin:24px 0 12px;border-bottom:2px solid var(--gold);padding-bottom:6px;">Nick AI 评分</h3>';
+
+  if (report && report.analyses) {
+    report.analyses.forEach(a => {
+      html += `<div style="margin-bottom:16px;padding:14px;background:#fff;border-radius:8px;border-left:3px solid var(--gold);">`;
+      html += `<div style="font-weight:600;font-size:14px;color:var(--teal-dk);margin-bottom:8px;">${esc(a.title)}</div>`;
+      html += `<div style="font-size:13px;color:var(--ink);line-height:1.7;margin-bottom:6px;"><strong>Analysis:</strong> ${esc(a.en)}</div>`;
+      if (a.cn) html += `<div style="font-size:12px;color:var(--ink-mid);line-height:1.6;"><strong>中文分析：</strong>${esc(a.cn)}</div>`;
+      html += '</div>';
+    });
+  } else {
+    html += `<div style="padding:14px;background:#fff;border-radius:8px;font-size:13px;color:var(--ink-mid);">${esc(v.comment || 'No detailed analysis available.')}</div>`;
+  }
+
+  // 3. Nick AI 考官细节升级
+  if (report && report.upgrades && report.upgrades.length) {
+    html += '<h3 style="font-family:\'EB Garamond\',serif;font-size:18px;color:var(--teal-dk);margin:24px 0 12px;border-bottom:2px solid var(--gold);padding-bottom:6px;">Nick AI 考官细节升级</h3>';
+    report.upgrades.forEach((u, i) => {
+      html += `<div style="margin-bottom:16px;padding:14px;background:#fff;border-radius:8px;">`;
+      html += `<div style="font-size:13px;margin-bottom:6px;"><strong>${i+1}. Original:</strong> <span style="color:var(--red);">"${esc(u.orig)}"</span></div>`;
+      html += `<div style="font-size:12px;color:var(--gold);margin-bottom:4px;"><strong>Issue:</strong> ${esc(u.issue)}</div>`;
+      html += `<div style="font-size:12px;color:var(--ink-mid);margin-bottom:4px;"><strong>Comment:</strong> ${esc(u.comment)}</div>`;
+      if (u.cn_comment) html += `<div style="font-size:12px;color:var(--ink-dim);margin-bottom:6px;">${esc(u.cn_comment)}</div>`;
+      html += `<div style="font-size:13px;color:var(--teal);"><strong>Enhance:</strong> "${esc(u.enhance)}"</div>`;
+      html += '</div>';
+    });
+  }
+
+  // 4. Nick AI 考官进阶版答案
+  if (report && report.enhanced_answer) {
+    html += '<h3 style="font-family:\'EB Garamond\',serif;font-size:18px;color:var(--teal-dk);margin:24px 0 12px;border-bottom:2px solid var(--gold);padding-bottom:6px;">Nick AI 考官进阶版答案（提升1分）</h3>';
+    html += `<div style="padding:16px;background:#fff;border-radius:8px;border-left:3px solid var(--teal);font-size:13px;color:var(--ink);line-height:1.8;white-space:pre-wrap;">${esc(report.enhanced_answer)}</div>`;
+  }
+
+  // 5. 全面改进总结
+  if (report && report.improvements) {
+    html += '<h3 style="font-family:\'EB Garamond\',serif;font-size:18px;color:var(--teal-dk);margin:24px 0 12px;border-bottom:2px solid var(--gold);padding-bottom:6px;">全面改进总结</h3>';
+    const imp = report.improvements;
+    html += '<div style="padding:14px;background:#fff;border-radius:8px;font-size:13px;line-height:1.8;">';
+    if (imp.grammar) html += `<div style="margin-bottom:6px;"><strong style="color:var(--teal);">语法改进:</strong> ${esc(imp.grammar)}</div>`;
+    if (imp.vocabulary) html += `<div style="margin-bottom:6px;"><strong style="color:var(--teal);">词汇提升:</strong> ${esc(imp.vocabulary)}</div>`;
+    if (imp.coherence) html += `<div style="margin-bottom:6px;"><strong style="color:var(--teal);">连贯性提升:</strong> ${esc(imp.coherence)}</div>`;
+    if (imp.fluency) html += `<div style="margin-bottom:6px;"><strong style="color:var(--teal);">流利度提升:</strong> ${esc(imp.fluency)}</div>`;
+    html += '</div>';
+  }
+
+  // 6. 免责声明
+  html += '<div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--rule);font-size:11px;color:var(--ink-dim);line-height:1.6;">免责声明：本评分报告基于您提供的样本通过人工智能生成。由于真实考场环境和评分标准可能与本系统的分析方法存在差异，本报告中的分数仅供参考。建议将本报告作为学习和练习的工具，辅助您的雅思备考。</div>';
+
+  el.innerHTML = html;
+  document.getElementById('mock-report-detail').style.display = '';
+  document.getElementById('mock-report-detail').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function closeMockReport() {
+  document.getElementById('mock-report-detail').style.display = 'none';
+}
+
 let _historyCache = [];
 
 async function renderHistory(){
