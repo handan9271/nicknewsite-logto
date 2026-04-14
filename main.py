@@ -1883,7 +1883,7 @@ async def teacher_generate_report(student_id: int, user: User = Depends(require_
         f"- 模考总分: {g.overall_score}, 模式: {g.mode}, 排名: {g.rank}/{g.player_count}" for g in games
     ]) or "暂无模考记录"
 
-    # Get detailed game answers for analysis
+    # Get detailed game answers + report analysis for deeper insight
     game_details = ""
     for g in games[:3]:  # Last 3 games
         answers = json.loads(g.answers_json) if g.answers_json else []
@@ -1893,6 +1893,22 @@ async def teacher_generate_report(student_id: int, user: User = Depends(require_
             game_details += f"  Q: {a.get('question','')}\n  A: {a.get('answer','')}\n  Scores: {a.get('scores','')}\n"
         if verdict:
             game_details += f"  Verdict: {verdict.get('comment','')}\n"
+            # Include detailed report analysis if available
+            report = verdict.get('report', {})
+            if report:
+                analyses = report.get('analyses', [])
+                for ana in analyses:
+                    game_details += f"  分析 - {ana.get('title','')}: {ana.get('en','')}\n"
+                upgrades = report.get('upgrades', [])
+                if upgrades:
+                    game_details += "  主要问题:\n"
+                    for u in upgrades[:3]:
+                        game_details += f"    原文: \"{u.get('orig','')}\" → 问题: {u.get('issue','')} → 升级: \"{u.get('enhance','')}\"\n"
+                improvements = report.get('improvements', {})
+                if improvements:
+                    for k, v in improvements.items():
+                        if v:
+                            game_details += f"  {k}: {v}\n"
 
     prompt = f"""你是一位资深雅思口语教师，请根据以下学生的练习和模考数据，生成一份详细的学习报告和改进计划。
 
