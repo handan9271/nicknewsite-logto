@@ -2627,6 +2627,22 @@ Rules:
         if matches:
             cn_font_path = matches[0]
 
+    def _safe_text(text):
+        """Replace special Unicode chars that Helvetica can't handle."""
+        if not text:
+            return ""
+        return (str(text)
+            .replace('\u2014', '-')   # em dash
+            .replace('\u2013', '-')   # en dash
+            .replace('\u2018', "'")   # left single quote
+            .replace('\u2019', "'")   # right single quote
+            .replace('\u201c', '"')   # left double quote
+            .replace('\u201d', '"')   # right double quote
+            .replace('\u2026', '...')  # ellipsis
+            .replace('\u2022', '-')   # bullet
+            .replace('\u00a0', ' ')   # non-breaking space
+        )
+
     class MockReportPDF(FPDF):
         def __init__(self):
             super().__init__()
@@ -2662,12 +2678,12 @@ Rules:
         def sub(self, t):
             self.set_font('Helvetica', 'B', 10)
             self.set_text_color(50)
-            self.cell(0, 7, t, new_x="LMARGIN", new_y="NEXT")
+            self.cell(0, 7, _safe_text(t), new_x="LMARGIN", new_y="NEXT")
 
         def en(self, t):
             self.set_font('Helvetica', '', 9)
             self.set_text_color(60)
-            self.multi_cell(0, 5, t)
+            self.multi_cell(0, 5, _safe_text(t))
             self.ln(1)
 
         def cn(self, t):
@@ -2697,7 +2713,7 @@ Rules:
         pdf.cp(25)
         pdf.set_font('Helvetica', 'B', 9)
         pdf.set_text_color(10, 90, 69)
-        pdf.cell(0, 6, f'[Part {a.get("part","")}] {a.get("question","")}', new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 6, _safe_text(f'[Part {a.get("part","")}] {a.get("question","")}'), new_x="LMARGIN", new_y="NEXT")
         pdf.en(a.get("answer", "(No answer)"))
         pdf.ln(1)
 
@@ -2756,14 +2772,14 @@ Rules:
             pdf.cell(0, 6, f'{i}. Original:', new_x="LMARGIN", new_y="NEXT")
             pdf.set_font('Helvetica', '', 9)
             pdf.set_text_color(180, 50, 40)
-            pdf.multi_cell(0, 5, f'  "{u.get("orig","")}"')
+            pdf.multi_cell(0, 5, _safe_text(f'  "{u.get("orig","")}"'))
             pdf.ln(1)
             pdf.set_font('Helvetica', 'B', 8)
             pdf.set_text_color(180, 100, 30)
-            pdf.cell(0, 5, f'  Issue: {u.get("issue","")}', new_x="LMARGIN", new_y="NEXT")
+            pdf.cell(0, 5, _safe_text(f'  Issue: {u.get("issue","")}'), new_x="LMARGIN", new_y="NEXT")
             pdf.set_font('Helvetica', '', 8)
             pdf.set_text_color(80)
-            pdf.cell(0, 5, f'  Comment: {u.get("comment","")}', new_x="LMARGIN", new_y="NEXT")
+            pdf.cell(0, 5, _safe_text(f'  Comment: {u.get("comment","")}'), new_x="LMARGIN", new_y="NEXT")
             if pdf._has_cn and u.get("cn_comment"):
                 pdf.set_font('CN', '', 8)
                 pdf.set_text_color(100)
@@ -2771,7 +2787,7 @@ Rules:
             pdf.ln(1)
             pdf.set_font('Helvetica', '', 9)
             pdf.set_text_color(26, 107, 53)
-            pdf.multi_cell(0, 5, f'  Enhance: "{u.get("enhance","")}"')
+            pdf.multi_cell(0, 5, _safe_text(f'  Enhance: "{u.get("enhance","")}"'))
             pdf.ln(4)
 
     # Enhanced answer
@@ -2795,7 +2811,7 @@ Rules:
                 pdf.cell(25, 5, label)
                 pdf.set_font('Helvetica', '', 9)
                 pdf.set_text_color(60)
-                pdf.multi_cell(0, 5, text)
+                pdf.multi_cell(0, 5, _safe_text(text))
                 pdf.ln(2)
 
     # Disclaimer
