@@ -51,7 +51,6 @@
       <div class="timer-bar-container">
         <div class="timer-bar" id="hud-timer-bar"></div>
       </div>
-      <span id="hud-timer-text" style="font-family:'Press Start 2P',monospace;font-size:12px;color:var(--warm-white,#f5e6c8);min-width:45px;text-align:right;">--s</span>
       <span id="player-count-badge" class="player-count-badge hidden"></span>
     </div>
 
@@ -476,8 +475,11 @@
 
       <!-- Input area -->
       <div id="input-area" class="input-area hidden">
-        <div class="timer-bar-container">
-          <div class="timer-bar" id="input-timer-bar"></div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="timer-bar-container" style="flex:1;">
+            <div class="timer-bar" id="input-timer-bar"></div>
+          </div>
+          <span id="hud-timer-text" style="font-family:'Press Start 2P',monospace;font-size:14px;color:var(--gold,#C9963A);min-width:50px;text-align:right;">--s</span>
         </div>
         <textarea id="user-input" rows="5" placeholder="Type your answer..."></textarea>
         <div class="input-btn-row">
