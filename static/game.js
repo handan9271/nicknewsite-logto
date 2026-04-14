@@ -363,10 +363,12 @@
     S.paused = !S.paused;
     if (D.pause_btn) {
       D.pause_btn.textContent = S.paused ? '▶ RESUME' : '⏸ PAUSE';
-      D.pause_btn.style.borderColor = S.paused ? 'var(--gold,#C9963A)' : '#666';
+      D.pause_btn.style.background = S.paused ? '#e74c3c' : 'var(--deep-blue,#1a2a4a)';
+      D.pause_btn.style.borderColor = S.paused ? '#e74c3c' : '#666';
+      D.pause_btn.style.color = '#fff';
     }
     if (D.hud_timer_text && S.paused) {
-      D.hud_timer_text.style.color = 'var(--gold,#C9963A)';
+      D.hud_timer_text.style.color = '#e74c3c';
     }
   }
 
