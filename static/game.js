@@ -144,7 +144,8 @@
     isRecording: false,
     recognition: null,
     dialogueCb: null,
-    currentQuestion: '', // track current question for display
+    currentQuestion: '',
+    paused: false,
     // Multiplayer state
     multiplayer: false,
     roomCode: '',
@@ -167,7 +168,7 @@
       'gavel-overlay', 'objection-banner', 'objection-reason',
       'evidence-card', 'evidence-topic', 'evidence-points', 'evidence-close-btn',
       'dialogue-box', 'speaker-name', 'dialogue-text', 'continue-indicator',
-      'input-area', 'input-timer-bar', 'user-input', 'mic-btn', 'submit-btn', 'input-hint',
+      'input-area', 'input-timer-bar', 'user-input', 'mic-btn', 'pause-btn', 'submit-btn', 'input-hint',
       'current-question',
       'score-fc', 'score-lr', 'score-gra', 'score-pron',
       'overall-value', 'verdict-text', 'verdict-comment',
@@ -335,12 +336,15 @@
   function startTimer(secs, barEl, onTick, onEnd) {
     clearTimer();
     S.timerRemaining = secs;
+    S.paused = false;
     const total = secs;
     barEl.style.width = '100%';
     barEl.classList.remove('urgent');
     if (D.hud_timer_text) D.hud_timer_text.textContent = secs + 's';
+    if (D.pause_btn) { D.pause_btn.textContent = '⏸ PAUSE'; D.pause_btn.style.borderColor = '#666'; }
 
     S.timerInterval = setInterval(() => {
+      if (S.paused) return; // skip tick when paused
       S.timerRemaining--;
       const pct = (S.timerRemaining / total) * 100;
       barEl.style.width = pct + '%';
@@ -353,6 +357,17 @@
       if (onTick) onTick(S.timerRemaining);
       if (S.timerRemaining <= 0) { clearTimer(); if (D.hud_timer_text) D.hud_timer_text.textContent = '0s'; if (onEnd) onEnd(); }
     }, 1000);
+  }
+
+  function togglePause() {
+    S.paused = !S.paused;
+    if (D.pause_btn) {
+      D.pause_btn.textContent = S.paused ? '▶ RESUME' : '⏸ PAUSE';
+      D.pause_btn.style.borderColor = S.paused ? 'var(--gold,#C9963A)' : '#666';
+    }
+    if (D.hud_timer_text && S.paused) {
+      D.hud_timer_text.style.color = 'var(--gold,#C9963A)';
+    }
   }
 
   function clearTimer() {
@@ -1461,6 +1476,8 @@ JSON only (no markdown):
       $('btn-voice-mode').classList.remove('selected');
     });
     $('btn-type-mode').classList.add('selected');
+
+    D.pause_btn.addEventListener('click', togglePause);
 
     D.mic_btn.addEventListener('click', () => {
       if (S.isRecording) stopRecording(); else startRecording();
