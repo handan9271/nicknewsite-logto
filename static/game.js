@@ -401,6 +401,8 @@
     D.user_input.value = '';
     D.user_input.focus();
 
+    // Show pause button only in solo mode
+    D.pause_btn.classList.toggle('hidden', S.multiplayer);
     D.mic_btn.classList.toggle('hidden', S.inputMode !== 'voice');
     D.user_input.placeholder = S.inputMode === 'voice'
       ? 'Your speech will appear here... or type manually.'
@@ -1311,6 +1313,7 @@ JSON only (no markdown):
     D.user_input.value = '';
     D.user_input.focus();
 
+    D.pause_btn.classList.add('hidden'); // No pause in multiplayer
     D.mic_btn.classList.toggle('hidden', S.inputMode !== 'voice');
     D.user_input.placeholder = S.inputMode === 'voice'
       ? 'Your speech will appear here... or type manually.'
