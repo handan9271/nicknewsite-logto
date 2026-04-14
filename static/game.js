@@ -502,25 +502,41 @@ Or if there's a grammar/vocabulary issue:
 
 Score guide: 4=weak, 5=limited, 6=competent, 7=good, 8=very good, 9=expert. Most students score 5-7. Do NOT give 8-9 unless the answer is genuinely exceptional.`;
 
-  const VERDICT_PROMPT = `You are Judge Nick delivering the final verdict of an IELTS courtroom trial.
+  const VERDICT_PROMPT = `You are Judge Nick, a former senior IELTS examiner delivering the final verdict.
 
-CRITICAL: Base scores strictly on the actual quality of ALL answers below. Evaluate:
-- FC (Fluency & Coherence): Did they develop answers fully? Were ideas connected? Or were answers short/disjointed?
-- LR (Lexical Resource): Did they use varied, precise vocabulary? Or just basic words?
-- GRA (Grammatical Range & Accuracy): Did they use complex sentences correctly? Any errors?
-- Pron (Pronunciation): Infer from their WRITTEN text. Consider: Do they use multi-syllable advanced words (suggesting comfort with complex pronunciation)? Do they use natural contractions (I'd, won't, gonna)? Do they use phonetically complex expressions? Score 4-8 range. If vocabulary is very basic/simple → 5. If varied and complex → 7. Do NOT give 9.
+STEP 1: From the student's answers below, mentally RECONSTRUCT each answer as a continuous spoken response. Ignore your own questions and backchannels.
 
-Score guide: 4=weak, 5=limited, 6=competent, 7=good, 8=very good. Pron range 4-8 only.
-Overall = average of FC+LR+GRA+Pron, rounded to nearest 0.5.
+STEP 2: Score based on the RECONSTRUCTED spoken responses:
 
-Your verdict and comment MUST reference specific things the student said across their answers.
+FC (Fluency & Coherence) - DO NOT penalize natural speech:
+- Fillers (um, well, like, you know, so) are NORMAL even at Band 8-9
+- Self-correction shows awareness, not weakness
+- 5=short/limited, 6=speaks at length with some issues, 7=maintains topic well with good coherence, 8=fluent/fully developed, 9=effortless
+- If student gives extended, topic-relevant answers with logical flow → FC 7+
 
-Respond ONLY with this JSON (no markdown):
+LR (Lexical Resource) - REWARD advanced vocabulary generously:
+- 5=basic vocab, 6=adequate for familiar topics, 7=good range with less common items, 8=wide range/skillful use, 9=full/sophisticated
+- Technical/specialized vocabulary used naturally → LR 8+
+
+GRA (Grammatical Range & Accuracy):
+- 5=limited/frequent errors, 6=mix of simple+complex, 7=frequent complex/good control, 8=wide range/mostly error-free, 9=consistent accuracy
+- Minor speech errors (missing articles in fast speech) less serious than in writing
+
+Pron (Pronunciation) - inferred from text:
+- 5=basic words, 6=some multi-syllable, 7=varied vocab, 8=complex/technical naturally, 9=sophisticated throughout
+
+RULES:
+- Sub-scores MUST be whole integers (4-9)
+- Overall = floor(average to nearest 0.5). E.g. 7.75→7.5, 7.25→7.0
+- Use FULL range 4-9. Students who speak fluently with advanced vocab deserve 8+.
+- Natural hesitation/self-correction = normal, not a deficiency.
+
+Respond ONLY with JSON (no markdown):
 {
-  "scores": {"FC": number, "LR": number, "GRA": number, "Pron": number},
+  "scores": {"FC": integer, "LR": integer, "GRA": integer, "Pron": integer},
   "overall": number,
-  "verdict": "Dramatic 1-2 sentence verdict in courtroom style, referencing the student's actual performance",
-  "comment": "Detailed feedback (3-4 sentences) citing specific examples from their answers, with concrete advice",
+  "verdict": "Dramatic 1-2 sentence verdict in courtroom style",
+  "comment": "Detailed feedback (3-4 sentences) citing specific examples with concrete advice",
   "reaction": "merciful|harsh|impressed|disappointed"
 }`;
 
@@ -816,7 +832,7 @@ Respond ONLY with this JSON (no markdown):
       if (allScores.length > 0) {
         const avg = (key) => Math.round(allScores.reduce((s, sc) => s + (sc[key] || 5), 0) / allScores.length);
         const fc = avg('FC'), lr = avg('LR'), gra = avg('GRA'), pron = avg('Pron') || Math.round((fc + lr) / 2);
-        const overall = Math.round(((fc + lr + gra + pron) / 4) * 2) / 2;
+        const overall = Math.floor(((fc + lr + gra + pron) / 4) * 2) / 2; // IELTS: round DOWN
 
         let verdictText, comment, reaction;
         if (overall >= 7) {

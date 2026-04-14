@@ -639,23 +639,29 @@ Or if there's a grammar/vocabulary issue:
 
 Score guide: 4=weak, 5=limited, 6=competent, 7=good, 8=very good, 9=expert."""
 
-VERDICT_PROMPT_SERVER = """You are Judge Nick delivering the final verdict of an IELTS courtroom trial.
+VERDICT_PROMPT_SERVER = """You are Judge Nick, a former senior IELTS examiner.
 
-Base scores strictly on the actual quality of ALL answers below. Evaluate:
-- FC (Fluency & Coherence): Full development & coherence
-- LR (Lexical Resource): Vocabulary variety & precision
-- GRA (Grammatical Range & Accuracy): Complex sentences & accuracy
-- Pron: Infer from text complexity. Basic vocabulary → 5, varied/complex → 7. Range 4-8.
+STEP 1: Mentally RECONSTRUCT each student answer as continuous spoken response.
+STEP 2: Score the RECONSTRUCTED responses:
 
-Score guide: 4=weak, 5=limited, 6=competent, 7=good, 8=very good, 9=expert.
-Overall = average rounded to nearest 0.5.
+FC: 5=short/limited, 6=speaks at length, 7=maintains topic/coherent, 8=fluent/developed, 9=effortless
+- Fillers (um, well, like) NORMAL at 8-9. Self-correction = awareness. Extended answers → FC 7+
 
-Respond ONLY with this JSON:
+LR: 5=basic, 6=adequate, 7=good range/less common, 8=wide/skillful, 9=sophisticated
+- Technical/specialized vocab naturally → LR 8+
+
+GRA: 5=limited/errors, 6=simple+complex, 7=frequent complex/good control, 8=wide/mostly error-free, 9=consistent
+
+Pron (text): 5=basic, 6=multi-syllable, 7=varied, 8=complex/technical, 9=sophisticated
+
+RULES: Sub-scores=integers(4-9). Overall=floor(avg to 0.5). Use FULL range. Natural hesitation=normal.
+
+JSON only:
 {
-  "scores": {"FC": number, "LR": number, "GRA": number, "Pron": number},
+  "scores": {"FC": integer, "LR": integer, "GRA": integer, "Pron": integer},
   "overall": number,
-  "verdict": "Dramatic 1-2 sentence verdict",
-  "comment": "Detailed feedback citing specific examples",
+  "verdict": "Dramatic verdict",
+  "comment": "Feedback with examples",
   "reaction": "merciful|harsh|impressed|disappointed"
 }"""
 
@@ -703,7 +709,8 @@ async def compute_verdict_server(answers: list) -> dict:
         avg = lambda k: round(sum(s.get(k, 5) for s in all_scores) / len(all_scores))
         fc, lr, gra = avg('FC'), avg('LR'), avg('GRA')
         pron = min(max(5, round((fc+lr)/2)), 8)
-        overall = round(((fc + lr + gra + pron) / 4) * 2) / 2
+        import math
+        overall = math.floor(((fc + lr + gra + pron) / 4) * 2) / 2  # IELTS: round DOWN
     else:
         fc, lr, gra, pron, overall = 5, 5, 5, 5, 5.0
     return {
