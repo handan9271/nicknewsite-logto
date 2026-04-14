@@ -878,14 +878,128 @@ Respond ONLY with this JSON (no markdown):
       D.verdict_comment.textContent = v.comment || '';
     }, 800 + cards.length * 1000 + 500);
 
-    // Save solo game session to database
+    // Save solo game session and auto-generate report
     if (!S.multiplayer) {
-      saveGameSession(v);
+      saveGameSessionAndReport(v);
     }
   }
 
-  // ─── PDF REPORT ─────────────────────────────────────────────────
+  async function saveGameSessionAndReport(verdict) {
+    // 1. Save game session
+    let sessionId = 0;
+    try {
+      const res = await fetch('/api/save-game-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ mode: 'solo', answers: S.answers, verdict }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        sessionId = d.session_id || 0;
+      }
+    } catch (e) { console.warn('Failed to save session:', e); }
+
+    // 2. Auto-generate detailed report
+    showInlineReport(null); // show loading state
+    try {
+      const res = await fetch('/api/generate-mock-report-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          answers: S.answers,
+          verdict,
+          theme: S.themeName || 'General',
+          band: selectedBand || 'band7',
+          session_id: sessionId,
+        }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        if (d.report) {
+          _lastReportData = d.report;
+          showInlineReport(d.report);
+        }
+      }
+    } catch (e) { console.warn('Failed to generate report:', e); }
+  }
+
+  // ─── INLINE REPORT (shown on verdict page) ─────────────────────
   let _lastVerdict = null;
+  let _lastReportData = null;
+
+  function showInlineReport(report) {
+    let el = document.getElementById('inline-report');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'inline-report';
+      el.style.cssText = 'max-width:700px;margin:30px auto 0;text-align:left;';
+      // Insert before the buttons
+      const btns = document.querySelector('#verdict-screen .press-start')?.parentElement;
+      if (btns) btns.parentElement.insertBefore(el, btns);
+      else document.getElementById('verdict-screen').appendChild(el);
+    }
+
+    if (!report) {
+      el.innerHTML = '<p style="text-align:center;color:#aaa;font-family:\'Press Start 2P\',monospace;font-size:9px;margin:20px 0;">GENERATING DETAILED REPORT...</p>';
+      return;
+    }
+
+    let html = '';
+
+    // Analyses
+    if (report.analyses && report.analyses.length) {
+      html += '<div style="margin-bottom:20px;">';
+      html += '<h3 style="color:var(--gold,#C9963A);font-family:\'Press Start 2P\',monospace;font-size:10px;margin-bottom:14px;">DETAILED ANALYSIS</h3>';
+      report.analyses.forEach(a => {
+        html += `<div style="margin-bottom:14px;padding:10px 14px;background:rgba(0,0,0,0.3);border-left:3px solid var(--gold,#C9963A);border-radius:4px;">`;
+        html += `<div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--gold,#C9963A);margin-bottom:6px;">${esc(a.title)}</div>`;
+        html += `<div style="font-size:12px;color:#ccc;line-height:1.7;margin-bottom:4px;">${esc(a.en)}</div>`;
+        if (a.cn) html += `<div style="font-size:11px;color:#888;line-height:1.6;">${esc(a.cn)}</div>`;
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Upgrades
+    if (report.upgrades && report.upgrades.length) {
+      html += '<div style="margin-bottom:20px;">';
+      html += '<h3 style="color:var(--gold,#C9963A);font-family:\'Press Start 2P\',monospace;font-size:10px;margin-bottom:14px;">DETAIL UPGRADES</h3>';
+      report.upgrades.forEach((u, i) => {
+        html += `<div style="margin-bottom:16px;padding:10px 14px;background:rgba(0,0,0,0.3);border-radius:4px;">`;
+        html += `<div style="font-size:11px;color:#e57373;margin-bottom:4px;">${i+1}. "${esc(u.orig)}"</div>`;
+        html += `<div style="font-size:10px;color:#ffb74d;margin-bottom:4px;">Issue: ${esc(u.issue)}</div>`;
+        if (u.comment) html += `<div style="font-size:10px;color:#aaa;margin-bottom:4px;">Comment: ${esc(u.comment)}</div>`;
+        if (u.cn_comment) html += `<div style="font-size:10px;color:#777;margin-bottom:4px;">${esc(u.cn_comment)}</div>`;
+        html += `<div style="font-size:11px;color:#81c784;">Enhance: "${esc(u.enhance)}"</div>`;
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Enhanced answer
+    if (report.enhanced_answer) {
+      html += '<div style="margin-bottom:20px;">';
+      html += '<h3 style="color:var(--gold,#C9963A);font-family:\'Press Start 2P\',monospace;font-size:10px;margin-bottom:14px;">ENHANCED ANSWER (+1 BAND)</h3>';
+      html += `<div style="padding:14px;background:rgba(0,0,0,0.3);border-left:3px solid #81c784;border-radius:4px;font-size:12px;color:#ccc;line-height:1.8;white-space:pre-wrap;">${esc(report.enhanced_answer)}</div>`;
+      html += '</div>';
+    }
+
+    // Improvements
+    if (report.improvements) {
+      html += '<div style="margin-bottom:20px;">';
+      html += '<h3 style="color:var(--gold,#C9963A);font-family:\'Press Start 2P\',monospace;font-size:10px;margin-bottom:14px;">IMPROVEMENTS SUMMARY</h3>';
+      for (const [key, val] of Object.entries(report.improvements)) {
+        if (val) html += `<div style="font-size:11px;color:#aaa;margin-bottom:6px;"><span style="color:var(--gold,#C9963A);font-weight:bold;">${key}:</span> ${esc(val)}</div>`;
+      }
+      html += '</div>';
+    }
+
+    el.innerHTML = html;
+  }
+
+  function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
 
   async function downloadPDFReport() {
     if (!_lastVerdict) return;
@@ -923,23 +1037,6 @@ Respond ONLY with this JSON (no markdown):
     } finally {
       btn.textContent = '📄 DOWNLOAD PDF REPORT';
       btn.disabled = false;
-    }
-  }
-
-  async function saveGameSession(verdict) {
-    try {
-      await fetch('/api/save-game-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          mode: 'solo',
-          answers: S.answers,
-          verdict: verdict,
-        }),
-      });
-    } catch (e) {
-      console.warn('Failed to save game session:', e);
     }
   }
 

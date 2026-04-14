@@ -2521,7 +2521,8 @@ async def save_game_session(body: SaveGameSessionRequest, user: User = Depends(g
     )
     db.add(game_session)
     db.commit()
-    return {"ok": True}
+    db.refresh(game_session)
+    return {"ok": True, "session_id": game_session.id}
 
 
 class GenerateMockReportRequest(BaseModel):
@@ -2529,6 +2530,85 @@ class GenerateMockReportRequest(BaseModel):
     verdict: dict = {}
     theme: str = ""
     band: str = ""
+    session_id: int = 0  # game_session id to attach report to
+
+
+@app.post("/api/generate-mock-report-data")
+async def generate_mock_report_data(body: GenerateMockReportRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Generate detailed AI analysis and return as JSON (for inline display). Also saves to game session."""
+    answers = body.answers
+    verdict = body.verdict
+    scores = verdict.get("scores", {})
+    overall = verdict.get("overall", "--")
+
+    answers_text = "\n\n".join(
+        f'[Part {a.get("part","")}] Q: {a.get("question","")}\nA: {a.get("answer","")}'
+        for a in answers
+    )
+
+    analysis_prompt = f"""You are a senior IELTS examiner. Analyze this mock test and produce a detailed report.
+
+Scores: FC={scores.get("FC","?")}, LR={scores.get("LR","?")}, GRA={scores.get("GRA","?")}, Pron={scores.get("Pron","?")}, Overall={overall}
+
+Student's answers:
+{answers_text}
+
+Generate a JSON response with this EXACT structure (no markdown, no extra text):
+{{
+  "analyses": [
+    {{"title": "1. Fluency and Coherence (Score: {scores.get('FC','?')})", "en": "2-3 sentence English analysis", "cn": "2-3 sentence Chinese analysis"}},
+    {{"title": "2. Lexical Resource (Score: {scores.get('LR','?')})", "en": "analysis", "cn": "Chinese analysis"}},
+    {{"title": "3. Grammatical Range and Accuracy (Score: {scores.get('GRA','?')})", "en": "analysis", "cn": "Chinese analysis"}},
+    {{"title": "4. Pronunciation (Score: {scores.get('Pron','?')})", "en": "analysis", "cn": "Chinese analysis"}},
+    {{"title": "5. Overall Band: {overall}", "en": "summary", "cn": "Chinese summary"}}
+  ],
+  "upgrades": [
+    {{"orig": "exact quote from student", "issue": "problem", "comment": "examiner comment", "cn_comment": "Chinese comment", "enhance": "upgraded version"}}
+  ],
+  "enhanced_answer": "Full enhanced version of all answers (+1 band)",
+  "improvements": {{
+    "grammar": "Grammar improvements summary",
+    "vocabulary": "Vocabulary upgrades summary",
+    "coherence": "Coherence improvements summary",
+    "fluency": "Fluency improvements summary"
+  }}
+}}
+
+Rules:
+- Pick 5-7 most impactful upgrades
+- Each upgrade must quote EXACT original text
+- Chinese should be natural, not machine translation
+- Be specific, cite actual words from answers"""
+
+    report_data = None
+    try:
+        raw = await call_deepseek([
+            {"role": "system", "content": "You are a senior IELTS examiner producing detailed reports. Output valid JSON only."},
+            {"role": "user", "content": analysis_prompt},
+        ], max_tokens=3500, temperature=0.4)
+        report_data = parse_json_response(raw)
+    except Exception as e:
+        logger.error(f"Failed to generate report data: {e}")
+
+    if not report_data:
+        report_data = {
+            "analyses": [{"title": f"Overall: {overall}", "en": verdict.get("comment", "Analysis unavailable."), "cn": ""}],
+            "upgrades": [],
+            "enhanced_answer": "",
+            "improvements": {},
+        }
+
+    # Save report data to game session if session_id provided
+    if body.session_id:
+        gs = db.query(GameSession).filter(GameSession.id == body.session_id, GameSession.user_id == user.id).first()
+        if gs:
+            # Store report in verdict_json (merge with existing verdict)
+            existing = json.loads(gs.verdict_json) if gs.verdict_json else {}
+            existing["report"] = report_data
+            gs.verdict_json = json.dumps(existing, ensure_ascii=False)
+            db.commit()
+
+    return {"ok": True, "report": report_data}
 
 
 @app.post("/api/generate-mock-report")
