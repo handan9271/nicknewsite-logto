@@ -745,7 +745,7 @@ html, body {
 
   /* ── Input area ── */
   .input-area { padding: 10px 14px 14px; }
-  .input-area textarea { min-height: 80px; font-size: 16px; padding: 8px 10px; line-height: 1.7; }
+  .input-area textarea { min-height: 80px; font-size: 16px; font-family: var(--font-ark); padding: 8px 10px; line-height: 1.7; }
   .input-area textarea::placeholder { font-size: 12px; }
   .input-btn-row { gap: 6px; margin-top: 8px; flex-wrap: wrap; justify-content: center; }
   .mic-btn { font-size: 9px; padding: 8px 12px; }
