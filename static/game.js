@@ -431,6 +431,7 @@
     D.dialogue_box.classList.add('hidden');
     D.input_area.classList.remove('hidden');
     D.user_input.value = '';
+    S.savedTranscript = '';
     D.user_input.focus();
 
     // Show pause button only in solo mode
@@ -478,7 +479,7 @@
     S.recognition.onresult = (e) => {
       let t = '';
       for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
-      D.user_input.value = t;
+      D.user_input.value = (S.savedTranscript || '') + t;
       updateWordCount();
     };
     S.recognition.onerror = () => stopRecording();
@@ -487,6 +488,7 @@
 
   function startRecording() {
     if (!S.recognition) return;
+    S.savedTranscript = D.user_input.value.trim() ? D.user_input.value.trim() + ' ' : '';
     S.isRecording = true;
     D.mic_btn.classList.add('recording');
     D.mic_btn.textContent = '⏹ 停止';
@@ -495,6 +497,7 @@
 
   function stopRecording() {
     S.isRecording = false;
+    S.savedTranscript = D.user_input.value.trim() ? D.user_input.value.trim() + ' ' : '';
     D.mic_btn.classList.remove('recording');
     D.mic_btn.textContent = '🎤 开麦';
     if (S.recognition) try { S.recognition.stop(); } catch (e) {}
@@ -1352,6 +1355,7 @@ JSON only (no markdown):
     D.dialogue_box.classList.add('hidden');
     D.input_area.classList.remove('hidden');
     D.user_input.value = '';
+    S.savedTranscript = '';
     D.user_input.focus();
 
     D.pause_btn.classList.add('hidden'); // No pause in multiplayer
