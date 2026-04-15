@@ -601,12 +601,22 @@ EXAMPLE 4 (Overall 9.0): Student exceptional fluency, sophisticated vocabulary (
 
 Match these standards precisely.
 
+IMPORTANT: verdict and comment MUST be written in Chinese (中文). Use a mean, sarcastic courtroom tone (毒舌法官风格).
+
+Verdict style examples by band:
+- Band 7+: "无罪释放。被告勉强证明了自己不是英语文盲。" (reluctantly acquit, still mock them)
+- Band 6-6.5: "有罪！被告的口语水平仅够在菜市场砍价。" (guilty, compare to something mundane)
+- Band 5-5.5: "有罪！被告对英语口语犯下了不可原谅的罪行。" (guilty, dramatic condemnation)
+- Band 4-: "重罪！被告的英语水平对听者造成了严重的精神伤害。" (severe, exaggerated damage)
+
+Comment style: 3-4 sentences in Chinese, cite specific quotes from student's answers, mock their weaknesses, give concrete but harsh advice. Example: "你的回答像一碗没放盐的面——能吃，但毫无味道。'I think it's good' 出现了三次，法庭已经听腻了。语法错误此起彼伏，建议你先把基础句型练熟再来。"
+
 JSON only (no markdown):
 {
   "scores": {"FC": integer, "LR": integer, "GRA": integer, "Pron": integer},
   "overall": number,
-  "verdict": "Dramatic 1-2 sentence verdict in courtroom style",
-  "comment": "Detailed feedback (3-4 sentences) citing specific examples with concrete advice",
+  "verdict": "中文毒舌判决词 1-2 句",
+  "comment": "中文毒舌详细点评 3-4 句，引用学生原话，给出具体建议",
   "reaction": "merciful|harsh|impressed|disappointed"
 }`;
 
@@ -667,32 +677,32 @@ JSON only (no markdown):
 
     if (words < 10) {
       reaction = 'disappointed';
-      comment = 'Is that ALL you have to say? The court expected far more substance. A few words do not constitute testimony.';
+      comment = '就这？法庭期待的是一段陈述，不是一条短信。几个词就想蒙混过关，未免太天真了。';
     } else if (words < 25) {
       reaction = 'concerned';
-      comment = 'The court notes the brevity of your response. You must elaborate more — short answers will not help your case.';
+      comment = '法庭注意到你的回答短得可怜。这不是填空题，是口语考试——你需要展开论述，而不是惜字如金。';
     } else if (avg < 5.5) {
       reaction = 'disappointed';
-      comment = 'The court is not impressed. Your vocabulary is limited and your ideas lack development. You must do better.';
+      comment = '法庭对你的表现深感失望。词汇量捉襟见肘，观点毫无深度，这样的回答连及格线都够不着。';
     } else if (avg < 6.5) {
       reaction = 'concerned';
-      comment = 'Adequate, but the court expects more sophisticated language. You are treading the line between competent and limited.';
+      comment = '勉强过得去，但法庭期待的是更高水平的表达。你正在"能用"和"凑合"之间的危险边缘徘徊。';
     } else if (avg < 7.5) {
       reaction = 'satisfied';
-      comment = 'The court acknowledges a reasonably well-constructed response. There is substance here, though room for refinement remains.';
+      comment = '法庭承认这是一个还算像样的回答。有内容，有结构，但离精彩还有距离，继续打磨。';
     } else {
       reaction = 'impressed';
-      comment = 'The court is... pleasantly surprised. Your vocabulary and coherence suggest genuine competence. Well argued.';
+      comment = '法庭......有些意外。你的词汇和逻辑都展现了一定的水准，算你过关。别骄傲，下次法庭会更严格。';
     }
 
     // Check for common grammar issues for objections
     let objection = null;
     if (/\bi\b/.test(answer) && !/\bI\b/.test(answer)) {
-      objection = { reason: "Capitalize 'I' — basic grammar rule violated." };
+      objection = { reason: "'I' 必须大写——这是最基本的语法规则！" };
     } else if (/\b(he|she) (don't|have)\b/i.test(answer)) {
-      objection = { reason: "Subject-verb agreement error detected." };
+      objection = { reason: "主谓一致错误！这种低级错误不应该出现。" };
     } else if (/\bmore better\b|\bmost biggest\b/i.test(answer)) {
-      objection = { reason: "Double comparative detected — 'more better' is not valid English." };
+      objection = { reason: "双重比较级！'more better' 不是英语！" };
     }
 
     return { reaction, comment, objection, scores };
@@ -962,6 +972,16 @@ JSON only (no markdown):
       D.overall_value.textContent = v.overall || '—';
       D.verdict_text.textContent = v.verdict || '';
       D.verdict_comment.textContent = v.comment || '';
+
+      // Dynamic history hint based on score
+      const hintEl = document.getElementById('verdict-history-hint');
+      if (hintEl) {
+        const o = parseFloat(v.overall) || 0;
+        if (o >= 7) hintEl.textContent = '侥幸过关的记录已归档至历史记录，里面有逐句点评和升级建议，别嫌烦，去看';
+        else if (o >= 6) hintEl.textContent = '这份勉强及格的答卷已存入历史记录，里面有详细诊断和句子升级，强烈建议去看';
+        else if (o >= 5) hintEl.textContent = '令人失望的表现已记录在案，历史记录里有逐句分析和改进方案，去好好看吧';
+        else hintEl.textContent = '犯罪证据已保存至历史记录，里面有详细的抢救方案和句子重写，你非常需要去看';
+      }
     }, 800 + cards.length * 1000 + 500);
 
     // Save solo game session and generate report in background
