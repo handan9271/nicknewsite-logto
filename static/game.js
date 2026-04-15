@@ -496,7 +496,7 @@
   function stopRecording() {
     S.isRecording = false;
     D.mic_btn.classList.remove('recording');
-    D.mic_btn.textContent = '🎤 录音';
+    D.mic_btn.textContent = '🎤 开麦';
     if (S.recognition) try { S.recognition.stop(); } catch (e) {}
   }
 
