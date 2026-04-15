@@ -78,6 +78,13 @@ BASE_URL=https://nicknewsitelogtohk.zeabur.app
 3. **WebSocket 认证**: 通过 Logto session storage 认证，不再用 `nick_token` cookie。
 4. **`/api/me` 兼容性**: 返回 `username`（logto_user_id）和 `display_name`，兼容游戏前端的身份识别。
 
+## Git 规则
+
+**每次 commit + push 时，必须同步更新 `GIT_LOG.md`：**
+1. 在对应阶段分组下新增 commit 记录（如无合适分组则新建）
+2. 更新底部"关键里程碑速查"表（如有新里程碑）
+3. 将 `GIT_LOG.md` 的更新包含在同一次 commit 中，或紧跟一个 docs commit 推送
+
 ## 本地开发
 
 ```bash
