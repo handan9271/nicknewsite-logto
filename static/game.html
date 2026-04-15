@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IELTS COURT — Examiner Nick Presiding</title>
+  <title>雅思法庭 — 考官尼克主审</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/game.css">
 </head>
@@ -16,27 +16,28 @@
   <div id="title-screen" class="screen">
     <div class="title-content">
       <h1 class="game-title">IELTS COURT</h1>
-      <p class="subtitle">Examiner Nick Presiding</p>
+      <p class="game-title-cn">雅 思 法 庭</p>
+      <p class="subtitle">考官尼克 · 主审</p>
 
       <p class="flavor-text">
-        The court is now in session. You stand accused of speaking below Band 7. How do you plead?
+        法庭现已开庭。你被指控口语低于 Band 7，你要如何为自己辩护？
       </p>
 
       <div class="mode-selector">
-        <button id="btn-voice-mode" class="mode-btn">🎤 VOICE MODE</button>
-        <button id="btn-type-mode" class="mode-btn">⌨️ TYPE MODE</button>
+        <button id="btn-voice-mode" class="mode-btn">语音模式</button>
+        <button id="btn-type-mode" class="mode-btn">打字模式</button>
       </div>
 
-      <div class="band-selector" style="margin:20px 0;">
-        <p style="font-family:'Press Start 2P',monospace;font-size:10px;color:#aaa;margin-bottom:12px;">SELECT DIFFICULTY</p>
+      <div class="band-selector" style="margin:0 0 36px 0;">
+        <p style="font-family:'Ark Pixel','Zpix','Press Start 2P',monospace;font-size:12px;color:#f5f0e0;margin-bottom:12px;letter-spacing:3px;text-shadow:2px 2px 0 #000;">选择难度</p>
         <button class="mode-btn band-btn" data-band="band6">目标分数 6</button>
         <button class="mode-btn band-btn selected" data-band="band7">目标分数 7</button>
         <button class="mode-btn band-btn" data-band="band8">目标分数 8</button>
       </div>
 
       <div class="game-mode-selector">
-        <button id="btn-solo" class="press-start">SOLO TRIAL</button>
-        <button id="btn-multi" class="press-start">MULTIPLAYER</button>
+        <button id="btn-solo" class="press-start">单人模考</button>
+        <button id="btn-multi" class="press-start">多人对战</button>
       </div>
     </div>
   </div>
@@ -427,14 +428,14 @@
             <rect x="15" y="21" width="2" height="1" fill="#888078"/>
           </svg>
 
-          <span class="expression-label" id="nick-expression">NEUTRAL</span>
+          <span class="expression-label" id="nick-expression">平静</span>
         </div>
-        <div class="name-plate">EXAMINER NICK</div>
+        <div class="name-plate">考官尼克</div>
       </div>
 
       <!-- Witness stand -->
       <div id="witness-stand" class="witness-stand">
-        <span class="stand-label">WITNESS STAND</span>
+        <span class="stand-label">被告席</span>
       </div>
     </div>
 
@@ -445,19 +446,19 @@
 
     <!-- Objection banner -->
     <div id="objection-banner" class="objection-banner hidden">
-      <span class="objection-text">OBJECTION!</span>
+      <span class="objection-text">异议！</span>
       <span class="objection-reason" id="objection-reason"></span>
     </div>
 
     <!-- Evidence card overlay (Part 2 cue card) -->
     <div id="evidence-card" class="evidence-card hidden">
-      <div class="evidence-header">EVIDENCE</div>
+      <div class="evidence-header">考题卡</div>
       <div class="evidence-body">
         <p class="evidence-topic" id="evidence-topic"></p>
         <ul class="evidence-points" id="evidence-points"></ul>
-        <p class="evidence-prep">You have 1 minute to prepare.</p>
+        <p class="evidence-prep">你有 1 分钟准备时间。</p>
       </div>
-      <button id="evidence-close-btn" class="evidence-close-btn">CONTINUE</button>
+      <button id="evidence-close-btn" class="evidence-close-btn">继续</button>
     </div>
 
     <!-- Bottom stack: question + dialogue/input stacked vertically, no overlap -->
@@ -468,7 +469,7 @@
 
       <!-- Dialogue box -->
       <div id="dialogue-box" class="dialogue-box">
-        <span class="speaker-name" id="speaker-name">NICK</span>
+        <span class="speaker-name" id="speaker-name">尼克</span>
         <div class="dialogue-text" id="dialogue-text"></div>
         <span class="continue-indicator blink" id="continue-indicator">▼</span>
       </div>
@@ -481,13 +482,13 @@
           </div>
           <span id="hud-timer-text" style="font-family:'Press Start 2P',monospace;font-size:11px;color:var(--gold,#C9963A);min-width:40px;text-align:right;">--s</span>
         </div>
-        <textarea id="user-input" rows="5" placeholder="Type your answer..."></textarea>
+        <textarea id="user-input" rows="5" placeholder="请输入你的回答..."></textarea>
         <div class="input-btn-row">
-          <button id="mic-btn" class="mic-btn">🎤 REC</button>
-          <button id="pause-btn" class="submit-btn" style="background:#e74c3c;border-color:#e74c3c;color:#fff;">⏸ PAUSE</button>
-          <button id="submit-btn" class="submit-btn">SUBMIT</button>
+          <button id="mic-btn" class="mic-btn">🎤 录音</button>
+          <button id="pause-btn" class="submit-btn" style="background:#e74c3c;border-color:#e74c3c;color:#fff;">⏸ 暂停</button>
+          <button id="submit-btn" class="submit-btn">提交</button>
         </div>
-        <p class="input-hint" id="input-hint">Speak clearly or type your response.</p>
+        <p class="input-hint" id="input-hint">请清晰作答，可语音或打字。</p>
       </div>
 
     </div>
@@ -497,35 +498,35 @@
   <!-- ======================== LOBBY SCREEN ======================== -->
   <div id="lobby-screen" class="screen hidden">
     <div class="lobby-content">
-      <h2 class="lobby-title">COURTROOM LOBBY</h2>
+      <h2 class="lobby-title">法庭大厅</h2>
 
       <div id="lobby-join-panel" class="lobby-panel">
         <div class="lobby-create">
-          <button id="btn-create-room" class="mode-btn lobby-btn">CREATE ROOM</button>
+          <button id="btn-create-room" class="mode-btn lobby-btn">创建房间</button>
         </div>
-        <div class="lobby-divider">OR</div>
+        <div class="lobby-divider">或</div>
         <div class="lobby-join">
-          <input id="room-code-input" class="lobby-input" type="text" maxlength="4" placeholder="ROOM CODE" autocomplete="off">
-          <button id="btn-join-room" class="mode-btn lobby-btn">JOIN</button>
+          <input id="room-code-input" class="lobby-input" type="text" maxlength="4" placeholder="房间号" autocomplete="off">
+          <button id="btn-join-room" class="mode-btn lobby-btn">加入</button>
         </div>
       </div>
 
       <div id="lobby-room-panel" class="lobby-panel hidden">
-        <div class="room-code-display">ROOM: <span id="lobby-room-code"></span></div>
-        <div class="lobby-players-label">DEFENDANTS:</div>
+        <div class="room-code-display">房间: <span id="lobby-room-code"></span></div>
+        <div class="lobby-players-label">被告人:</div>
         <ul id="lobby-player-list" class="lobby-player-list"></ul>
-        <button id="btn-start-game" class="press-start hidden">START TRIAL</button>
-        <p id="lobby-wait-msg" class="lobby-wait-msg">Waiting for the judge to start...</p>
+        <button id="btn-start-game" class="press-start hidden">开始审判</button>
+        <p id="lobby-wait-msg" class="lobby-wait-msg">等待法官开始审判...</p>
       </div>
 
-      <button id="btn-lobby-back" class="mode-btn lobby-back-btn">BACK</button>
+      <button id="btn-lobby-back" class="mode-btn lobby-back-btn">返回</button>
     </div>
   </div>
 
   <!-- Waiting overlay (shown during multiplayer when waiting for others) -->
   <div id="waiting-overlay" class="waiting-overlay hidden">
     <div class="waiting-content">
-      <p class="waiting-text" id="waiting-text">Waiting for other defendants...</p>
+      <p class="waiting-text" id="waiting-text">等待其他被告...</p>
       <div class="waiting-dots"><span>.</span><span>.</span><span>.</span></div>
     </div>
   </div>
@@ -534,29 +535,29 @@
 
   <!-- ======================== VERDICT SCREEN ======================== -->
   <div id="verdict-screen" class="screen hidden">
-    <h2 class="verdict-header">THE COURT HAS REACHED A VERDICT</h2>
+    <h2 class="verdict-header">法庭宣判</h2>
 
     <div id="score-cards" class="score-cards">
       <div class="score-card">
-        <span class="score-label">Fluency &amp; Coherence</span>
+        <span class="score-label">流利度与连贯性</span>
         <span class="score-value" id="score-fc">—</span>
       </div>
       <div class="score-card">
-        <span class="score-label">Lexical Resource</span>
+        <span class="score-label">词汇量</span>
         <span class="score-value" id="score-lr">—</span>
       </div>
       <div class="score-card">
-        <span class="score-label">Grammar</span>
+        <span class="score-label">语法</span>
         <span class="score-value" id="score-gra">—</span>
       </div>
       <div class="score-card">
-        <span class="score-label">Pronunciation</span>
+        <span class="score-label">发音</span>
         <span class="score-value" id="score-pron">—</span>
       </div>
     </div>
 
     <div class="overall-band" id="overall-band">
-      <span class="overall-label">OVERALL BAND</span>
+      <span class="overall-label">总分</span>
       <span class="overall-value" id="overall-value">—</span>
     </div>
 
@@ -565,13 +566,13 @@
 
     <!-- Multiplayer leaderboard (hidden in solo mode) -->
     <div id="leaderboard" class="leaderboard hidden">
-      <h3 class="leaderboard-title">FINAL RANKINGS</h3>
+      <h3 class="leaderboard-title">最终排名</h3>
       <div id="leaderboard-entries" class="leaderboard-entries"></div>
     </div>
 
     <div style="margin-top:30px;text-align:center;">
-      <p style="font-family:'Press Start 2P',monospace;font-size:8px;color:#666;margin-bottom:16px;">DETAILED REPORT SAVED TO HISTORY</p>
-      <button id="btn-new-trial" class="press-start blink" style="font-size:10px;padding:10px 24px;">NEW TRIAL</button>
+      <p style="font-family:'Ark Pixel','Zpix',monospace;font-size:24px;color:var(--gold);letter-spacing:6px;margin-bottom:16px;text-shadow:3px 3px 0 #000;">详细报告已保存至历史记录</p>
+      <button id="btn-new-trial" class="press-start blink" style="font-size:10px;padding:10px 24px;">再来一局</button>
     </div>
   </div>
 

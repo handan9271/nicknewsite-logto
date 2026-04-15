@@ -227,9 +227,10 @@
   }
 
   // ─── NICK EXPRESSIONS ──────────────────────────────────────────
+  const EXPR_CN = { neutral: '平静', smile: '微笑', frown: '不悦', shocked: '震惊', gavel: '判决' };
   function setNick(expr) {
     D.nick_sprite.className = 'nick-sprite nick-' + expr;
-    D.nick_expression.textContent = expr.toUpperCase();
+    D.nick_expression.textContent = EXPR_CN[expr] || expr.toUpperCase();
   }
 
   // ─── QUESTION DISPLAY ────────────────────────────────────────────
@@ -249,7 +250,7 @@
     D.input_area.classList.add('hidden');
     D.speaker_name.textContent = speaker;
     D.speaker_name.className = 'speaker-name ' +
-      (speaker === 'NICK' ? 'speaker-judge' : 'speaker-witness');
+      (speaker === '尼克' ? 'speaker-judge' : 'speaker-witness');
     D.dialogue_text.textContent = '';
     D.continue_indicator.classList.add('hidden');
     S.dialogueCb = cb || null;
@@ -341,7 +342,7 @@
     barEl.style.width = '100%';
     barEl.classList.remove('urgent');
     if (D.hud_timer_text) D.hud_timer_text.textContent = secs + 's';
-    if (D.pause_btn) { D.pause_btn.textContent = '⏸ PAUSE'; D.pause_btn.style.borderColor = '#666'; }
+    if (D.pause_btn) { D.pause_btn.textContent = '⏸ 暂停'; D.pause_btn.style.borderColor = '#666'; }
 
     S.timerInterval = setInterval(() => {
       if (S.paused) return; // skip tick when paused
@@ -362,7 +363,7 @@
   function togglePause() {
     S.paused = !S.paused;
     if (D.pause_btn) {
-      D.pause_btn.textContent = S.paused ? '▶ RESUME' : '⏸ PAUSE';
+      D.pause_btn.textContent = S.paused ? '▶ 继续' : '⏸ 暂停';
       D.pause_btn.style.background = '#e74c3c';
       D.pause_btn.style.borderColor = '#e74c3c';
       D.pause_btn.style.color = '#fff';
@@ -405,15 +406,15 @@
     D.pause_btn.classList.toggle('hidden', S.multiplayer);
     D.mic_btn.classList.toggle('hidden', S.inputMode !== 'voice');
     D.user_input.placeholder = S.inputMode === 'voice'
-      ? 'Your speech will appear here... or type manually.'
-      : 'Type your answer...';
+      ? '语音识别内容会显示在这里...也可以手动输入。'
+      : '请输入你的回答...';
 
     startTimer(timeLimit, D.input_timer_bar, null, () => {
       gavelStrike(3, () => {
         const text = D.user_input.value.trim();
         stopRecording();
         D.input_area.classList.add('hidden');
-        onSubmit(text || '(No answer provided)');
+        onSubmit(text || '（未作答）');
       });
     });
 
@@ -448,14 +449,14 @@
     if (!S.recognition) return;
     S.isRecording = true;
     D.mic_btn.classList.add('recording');
-    D.mic_btn.textContent = '⏹ STOP';
+    D.mic_btn.textContent = '⏹ 停止';
     try { S.recognition.start(); } catch (e) {}
   }
 
   function stopRecording() {
     S.isRecording = false;
     D.mic_btn.classList.remove('recording');
-    D.mic_btn.textContent = '🎤 REC';
+    D.mic_btn.textContent = '🎤 录音';
     if (S.recognition) try { S.recognition.stop(); } catch (e) {}
   }
 
@@ -660,9 +661,9 @@ JSON only (no markdown):
     D.dialogue_box.classList.remove('hidden');
     D.input_area.classList.add('hidden');
     hideQuestion();
-    D.speaker_name.textContent = 'NICK';
+    D.speaker_name.textContent = '尼克';
     D.speaker_name.className = 'speaker-name speaker-judge';
-    D.dialogue_text.textContent = part === 3 ? 'The court deliberates...' : 'Hmm... let me consider your testimony...';
+    D.dialogue_text.textContent = part === 3 ? '法庭正在审议...' : '嗯...让我考虑一下你的陈述...';
     D.continue_indicator.classList.add('hidden');
 
     let p = null;
@@ -693,20 +694,20 @@ JSON only (no markdown):
     if (p.objection) {
       showObjection(p.objection.reason, () => {
         setNick(expr);
-        showDialogue('NICK', p.comment || 'The court notes your error.', advanceFn);
+        showDialogue('尼克', p.comment || '法庭记录了你的错误。', advanceFn);
       });
     } else {
       setNick(expr);
-      showDialogue('NICK', p.comment || 'The court acknowledges.', advanceFn);
+      showDialogue('尼克', p.comment || '法庭已记录。', advanceFn);
     }
   }
 
   // ─── GAME FLOW ──────────────────────────────────────────────────
   function updateHUD() {
-    D.part_badge.textContent = 'PART ' + S.currentPart;
+    D.part_badge.textContent = '第 ' + S.currentPart + ' 部分';
     D.part_badge.className = 'part-badge part-' + S.currentPart;
     const totals = { 1: S.questions.length, 2: 1, 3: 3 };
-    D.question_counter.textContent = 'Q ' + Math.min(S.qIndex + 1, totals[S.currentPart]) + '/' + totals[S.currentPart];
+    D.question_counter.textContent = Math.min(S.qIndex + 1, totals[S.currentPart]) + '/' + totals[S.currentPart];
   }
 
   // ── Part 1 ──
@@ -716,7 +717,7 @@ JSON only (no markdown):
     const q = S.questions[S.qIndex];
     showQuestion(q);
     setNick('neutral');
-    showDialogue('NICK', q, () => {
+    showDialogue('尼克', q, () => {
       showInput(PART1_TIME, (answer) => {
         S.answers.push({ part: 1, question: q, answer });
         hideQuestion();
@@ -733,9 +734,9 @@ JSON only (no markdown):
     S.currentPart = 2; S.qIndex = 0; updateHUD();
     gavelStrike(2, () => {
       dialogueSequence([
-        { speaker: 'NICK', text: 'Part 1 is concluded.', expression: 'neutral' },
-        { speaker: 'NICK', text: 'The court now moves to Part 2. A more... serious matter.', expression: 'frown' },
-        { speaker: 'NICK', text: 'The prosecution presents the following evidence!', expression: 'shocked' },
+        { speaker: '尼克', text: '第一部分结束。', expression: 'neutral' },
+        { speaker: '尼克', text: '法庭现在进入第二部分。事情变得更加...严肃了。', expression: 'frown' },
+        { speaker: '尼克', text: '法庭出示以下考题！', expression: 'shocked' },
       ], showEvidence);
     });
   }
@@ -759,16 +760,16 @@ JSON only (no markdown):
 
   function startPart2Prep() {
     S.phase = 'part2-prep';
-    showDialogue('NICK', 'You have 60 seconds to prepare your testimony. The clock starts NOW. Click when ready.', () => {
+    showDialogue('尼克', '你有 60 秒准备陈述。计时开始！准备好后点击继续。', () => {
       D.dialogue_box.classList.remove('hidden');
-      D.dialogue_text.textContent = 'Preparing... (60 seconds) — click here or press SPACE when ready';
+      D.dialogue_text.textContent = '准备中... (60秒) — 点击此处或按空格键开始';
       D.continue_indicator.classList.remove('hidden');
       S.dialogueCb = () => {
         clearTimer();
         gavelStrike(1, startPart2Speak);
       };
       startTimer(PART2_PREP, D.hud_timer_bar, (rem) => {
-        D.dialogue_text.textContent = 'Preparing... ' + rem + 's — click here or press SPACE when ready';
+        D.dialogue_text.textContent = '准备中... ' + rem + '秒 — 点击此处或按空格键开始';
       }, () => gavelStrike(1, startPart2Speak));
     });
   }
@@ -779,7 +780,7 @@ JSON only (no markdown):
     startRandomNick();
     const q = S.part2Topic.topic;
     showQuestion(q);
-    showDialogue('NICK', 'Time is up! Present your testimony to the court. You have 2 minutes. Speak!', () => {
+    showDialogue('尼克', '时间到！向法庭陈述你的证词。你有 2 分钟，开始！', () => {
       showInput(PART2_SPEAK, (answer) => {
         stopRandomNick();
         hideQuestion();
@@ -794,9 +795,9 @@ JSON only (no markdown):
     S.phase = 'part3'; S.currentPart = 3; S.qIndex = 0; updateHUD();
     gavelStrike(2, () => {
       dialogueSequence([
-        { speaker: 'NICK', text: 'The court is not yet satisfied.', expression: 'frown' },
-        { speaker: 'NICK', text: 'Part 3. Cross-examination begins now.', expression: 'neutral' },
-        { speaker: 'NICK', text: 'I will challenge your claims. Think carefully before you speak.', expression: 'frown' },
+        { speaker: '尼克', text: '法庭尚未满意。', expression: 'frown' },
+        { speaker: '尼克', text: '第三部分。交叉质询现在开始。', expression: 'neutral' },
+        { speaker: '尼克', text: '我会质疑你的论点。三思而后答。', expression: 'frown' },
       ], () => { startRandomNick(); askPart3(); });
     });
   }
@@ -807,7 +808,7 @@ JSON only (no markdown):
     const q = (S.part3Questions || FALLBACK_PART3)[S.qIndex];
     showQuestion(q);
     setNick('frown');
-    showDialogue('NICK', q, () => {
+    showDialogue('尼克', q, () => {
       showInput(PART3_TIME, (answer) => {
         S.answers.push({ part: 3, question: q, answer });
         hideQuestion();
@@ -824,16 +825,16 @@ JSON only (no markdown):
     S.phase = 'verdict'; stopRandomNick(); clearTimer();
     gavelStrike(3, () => {
       dialogueSequence([
-        { speaker: 'NICK', text: 'SILENCE IN THE COURT!', expression: 'shocked' },
-        { speaker: 'NICK', text: 'The examination is complete. The court will now deliver its verdict.', expression: 'neutral' },
+        { speaker: '尼克', text: '肃静！', expression: 'shocked' },
+        { speaker: '尼克', text: '审讯结束。法庭即将宣布判决。', expression: 'neutral' },
       ], deliverVerdict);
     });
   }
 
   async function deliverVerdict() {
     D.dialogue_box.classList.remove('hidden');
-    D.speaker_name.textContent = 'NICK';
-    D.dialogue_text.textContent = 'The court is deliberating... All rise.';
+    D.speaker_name.textContent = '尼克';
+    D.dialogue_text.textContent = '法庭正在审议...全体起立。';
     D.continue_indicator.classList.add('hidden');
 
     const answersText = S.answers.map((a) =>
@@ -979,11 +980,11 @@ JSON only (no markdown):
     updateHUD();
 
     dialogueSequence([
-      { speaker: 'NICK', text: '...', expression: 'neutral', action: () => gavelStrike(3) },
-      { speaker: 'NICK', text: 'Court is now in session!', expression: 'neutral' },
-      { speaker: 'NICK', text: 'All rise for Examiner Nick!', expression: 'smile' },
-      { speaker: 'NICK', text: 'The defendant stands accused of crimes against the English language.', expression: 'frown' },
-      { speaker: 'NICK', text: 'Part 1 — general questions. Answer clearly. The court is watching.', expression: 'neutral' },
+      { speaker: '尼克', text: '...', expression: 'neutral', action: () => gavelStrike(3) },
+      { speaker: '尼克', text: '现在开庭！', expression: 'neutral' },
+      { speaker: '尼克', text: '全体起立！考官尼克到庭！', expression: 'smile' },
+      { speaker: '尼克', text: '被告被指控犯有"英语口语不达标"之罪。', expression: 'frown' },
+      { speaker: '尼克', text: '第一部分 — 常规提问。请清晰作答。法庭正在注视你。', expression: 'neutral' },
     ], () => {
       S.phase = 'part1'; S.currentPart = 1; S.qIndex = 0;
       startRandomNick();
@@ -1007,7 +1008,7 @@ JSON only (no markdown):
     ws.onclose = () => {
       S.wsReady = false;
       if (S.multiplayer && S.phase !== 'title') {
-        showDialogue('NICK', 'Connection lost. The court is adjourned.', () => {
+        showDialogue('尼克', '连接中断。法庭休庭。', () => {
           resetToTitle();
         });
       }
@@ -1131,9 +1132,9 @@ JSON only (no markdown):
 
         // Multiplayer intro — shorter, auto-advance
         dialogueSequenceAutoAdvance([
-          { speaker: 'NICK', text: '...', expression: 'neutral', action: () => gavelStrike(3) },
-          { speaker: 'NICK', text: 'Court is now in session! Multiple defendants stand trial today.', expression: 'neutral' },
-          { speaker: 'NICK', text: 'All accused will answer the same questions. The court will judge you all.', expression: 'frown' },
+          { speaker: '尼克', text: '...', expression: 'neutral', action: () => gavelStrike(3) },
+          { speaker: '尼克', text: 'Court is now in session! Multiple defendants stand trial today.', expression: 'neutral' },
+          { speaker: '尼克', text: 'All accused will answer the same questions. The court will judge you all.', expression: 'frown' },
         ], () => {
           sendWS({ type: 'ready' });
         });
@@ -1155,14 +1156,14 @@ JSON only (no markdown):
           const text = D.user_input.value.trim();
           clearTimer(); stopRecording();
           D.input_area.classList.add('hidden');
-          sendWS({ type: 'submit_answer', answer: text || '(No answer provided)' });
-          showWaiting('Time is up! Waiting for the court...');
+          sendWS({ type: 'submit_answer', answer: text || '（未作答）' });
+          showWaiting('时间到！等待法庭审议...');
         }
         break;
 
       case 'player_submitted':
         if (D.waiting_overlay && !D.waiting_overlay.classList.contains('hidden')) {
-          D.waiting_text.textContent = msg.count + '/' + msg.total + ' defendants have testified...';
+          D.waiting_text.textContent = msg.count + '/' + msg.total + ' 位被告已完成陈述...';
         }
         break;
 
@@ -1190,7 +1191,7 @@ JSON only (no markdown):
         break;
 
       case 'error':
-        showDialogue('NICK', 'A disturbance in the court! ' + (msg.message || ''), null);
+        showDialogue('尼克', 'A disturbance in the court! ' + (msg.message || ''), null);
         break;
     }
   }
@@ -1231,8 +1232,8 @@ JSON only (no markdown):
       const t = msg.part2_topic || S.part2Topic;
       gavelStrike(2, () => {
         dialogueSequenceAutoAdvance([
-          { speaker: 'NICK', text: 'Part 1 is concluded.', expression: 'neutral' },
-          { speaker: 'NICK', text: 'Part 2. The prosecution presents evidence!', expression: 'shocked' },
+          { speaker: '尼克', text: 'Part 1 is concluded.', expression: 'neutral' },
+          { speaker: '尼克', text: 'Part 2. The prosecution presents evidence!', expression: 'shocked' },
         ], () => {
           D.evidence_topic.textContent = t.topic;
           D.evidence_points.innerHTML = '';
@@ -1242,7 +1243,7 @@ JSON only (no markdown):
 
           // Start a local countdown display for prep
           S.phase = 'part2-prep';
-          showDialogue('NICK', 'You have 60 seconds to prepare. The clock starts NOW.', null);
+          showDialogue('尼克', 'You have 60 seconds to prepare. The clock starts NOW.', null);
           startTimer(msg.time_limit, D.hud_timer_bar, null, null);
           D.evidence_close_btn.onclick = () => { D.evidence_card.classList.add('hidden'); };
         });
@@ -1274,7 +1275,7 @@ JSON only (no markdown):
       if (msg.q_index === 0) {
         gavelStrike(2, () => {
           dialogueSequenceAutoAdvance([
-            { speaker: 'NICK', text: 'Part 3. Cross-examination!', expression: 'frown' },
+            { speaker: '尼克', text: '第三部分。交叉质询！', expression: 'frown' },
           ], () => {
             startRandomNick();
             showPart3Question(msg);
@@ -1290,8 +1291,8 @@ JSON only (no markdown):
       stopRandomNick();
       hideQuestion();
       gavelStrike(3, () => {
-        showDialogue('NICK', 'SILENCE! The court deliberates... All rise.', null);
-        showWaiting('The judges are deliberating...');
+        showDialogue('尼克', 'SILENCE! The court deliberates... All rise.', null);
+        showWaiting('法官正在审议...');
       });
       return;
     }
@@ -1316,8 +1317,8 @@ JSON only (no markdown):
     D.pause_btn.classList.add('hidden'); // No pause in multiplayer
     D.mic_btn.classList.toggle('hidden', S.inputMode !== 'voice');
     D.user_input.placeholder = S.inputMode === 'voice'
-      ? 'Your speech will appear here... or type manually.'
-      : 'Type your answer...';
+      ? '语音识别内容会显示在这里...也可以手动输入。'
+      : '请输入你的回答...';
 
     startTimer(timeLimit, D.input_timer_bar, null, () => {
       // Timer end is handled by server's timer_end message
@@ -1329,7 +1330,7 @@ JSON only (no markdown):
       clearTimer(); stopRecording();
       D.input_area.classList.add('hidden');
       sendWS({ type: 'submit_answer', answer: text });
-      showWaiting('Testimony submitted. Waiting for other defendants...');
+      showWaiting('陈述已提交。等待其他被告...');
     };
   }
 
@@ -1386,7 +1387,7 @@ JSON only (no markdown):
       setTimeout(() => {
         playDrum();
         D.overall_value.textContent = myEntry.overall || '—';
-        D.verdict_text.textContent = myEntry.rank === 1 ? 'NOT GUILTY! You are the champion!' : 'GUILTY! You have been outperformed.';
+        D.verdict_text.textContent = myEntry.rank === 1 ? '无罪！你是冠军！' : '有罪！你被超越了。';
         D.verdict_comment.textContent = myEntry.comment || '';
       }, 800 + 4 * 1000 + 500);
     }
@@ -1403,7 +1404,7 @@ JSON only (no markdown):
           '<span class="lb-name">' + escapeHTML(entry.display_name) + '</span>' +
           '<span class="lb-score">' + (entry.overall || '—') + '</span>' +
           '<span class="lb-verdict-label ' + (entry.rank === 1 ? 'not-guilty' : 'guilty') + '">' +
-          (entry.rank === 1 ? 'NOT GUILTY' : 'GUILTY') + '</span>';
+          (entry.rank === 1 ? '无罪' : '有罪') + '</span>';
         D.leaderboard_entries.appendChild(div);
       });
     }, 800 + 4 * 1000 + 1500);

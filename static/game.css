@@ -4,6 +4,22 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
+@font-face {
+  font-family: 'Zpix';
+  src: url('/static/fonts/zpix.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Ark Pixel';
+  src: url('/static/fonts/ark-pixel-12px-zh_cn.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --wood-dark:    #5C3A1E;
   --wood-light:   #8B6914;
@@ -18,7 +34,9 @@
   --red:          #e74c3c;
   --paper:        #f0e6d0;
   --seal-red:     #8b0000;
-  --font-pixel:   'Press Start 2P', 'Courier New', monospace;
+  --font-pixel:   'Press Start 2P', 'Zpix', 'Courier New', monospace;
+  --font-zpix:    'Zpix', 'Press Start 2P', 'Courier New', monospace;
+  --font-ark:     'Ark Pixel', 'Zpix', 'Press Start 2P', monospace;
 }
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -59,39 +77,52 @@ html, body {
 .title-content { text-align: center; max-width: 600px; padding: 20px; }
 
 .game-title {
+  font-family: var(--font-pixel);
   font-size: 48px; color: var(--gold);
   text-shadow: 4px 4px 0 var(--wood-dark), -2px -2px 0 #000;
-  letter-spacing: 6px; margin-bottom: 12px;
+  letter-spacing: 6px; margin-bottom: 8px;
   animation: logo-pulse 2s ease-in-out infinite;
+}
+
+.game-title-cn {
+  font-family: var(--font-ark);
+  font-size: 16px; color: var(--warm-white);
+  letter-spacing: 6px; margin-bottom: 12px;
+  text-shadow: 2px 2px 0 #000;
 }
 @keyframes logo-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
 
 .subtitle {
-  font-size: 14px; color: var(--warm-white); letter-spacing: 4px;
+  font-family: var(--font-ark);
+  font-size: 16px; color: var(--warm-white); letter-spacing: 6px;
   margin-bottom: 30px; text-shadow: 2px 2px 0 #000;
 }
 
 .flavor-text {
-  font-size: 10px; color: #a09888; line-height: 2;
-  margin-bottom: 30px; padding: 0 20px;
+  font-family: var(--font-ark);
+  font-size: 12px; color: #f5f0e0; line-height: 2.2;
+  letter-spacing: 3px; text-shadow: 2px 2px 0 #000;
+  margin-bottom: 36px; padding: 0 20px;
 }
 
-.mode-selector { display: flex; gap: 12px; justify-content: center; margin-bottom: 30px; }
+.mode-selector { display: flex; gap: 16px; justify-content: center; margin-bottom: 36px; }
 .band-selector { display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap; }
 
 .mode-btn {
-  font-family: var(--font-pixel); font-size: 10px;
-  padding: 10px 18px; background: var(--deep-blue); color: var(--warm-white);
+  font-family: var(--font-ark); font-size: 12px;
+  padding: 10px 20px; background: var(--deep-blue); color: var(--warm-white);
   border: 3px solid var(--gold); cursor: pointer;
   box-shadow: 3px 3px 0 #000; transition: all 0.1s;
+  letter-spacing: 2px;
 }
 .mode-btn:hover { background: var(--wood-dark); }
 .mode-btn.selected { background: var(--gold); color: var(--bg-dark); }
 
 .press-start {
-  font-family: var(--font-pixel); font-size: 16px;
+  font-family: var(--font-ark); font-size: 16px;
   color: var(--warm-white); background: none; border: 4px solid var(--warm-white);
-  padding: 12px 24px; cursor: pointer;
+  padding: 14px 32px; cursor: pointer;
+  letter-spacing: 4px;
 }
 .press-start:hover { color: var(--gold); border-color: var(--gold); }
 
@@ -106,7 +137,7 @@ html, body {
 }
 
 .part-badge {
-  font-family: var(--font-pixel); font-size: 10px;
+  font-family: var(--font-ark); font-size: 10px;
   padding: 4px 12px; letter-spacing: 2px;
   border: 3px solid; box-shadow: 2px 2px 0 #000;
 }
@@ -182,9 +213,11 @@ html, body {
 .nick-gavel .nick-face-gavel { display: block; }
 
 .expression-label {
-  font-size: 8px; color: var(--warm-white);
+  font-family: var(--font-ark);
+  font-size: 10px; color: var(--warm-white);
   position: absolute; bottom: 4px; left: 0; right: 0;
-  text-align: center; letter-spacing: 1px;
+  text-align: center; letter-spacing: 3px;
+  text-shadow: 1px 1px 0 #000;
   z-index: 1;
 }
 
@@ -196,9 +229,10 @@ html, body {
 .nick-gavel { background: #3a1e4a; }
 
 .name-plate {
+  font-family: var(--font-ark);
   background: var(--deep-blue); border: 2px solid var(--gold);
-  padding: 4px 14px; font-size: 9px; color: var(--gold);
-  letter-spacing: 2px; margin-top: 6px;
+  padding: 4px 14px; font-size: 11px; color: var(--gold);
+  letter-spacing: 3px; margin-top: 6px;
   box-shadow: 2px 2px 0 #000;
 }
 
@@ -232,6 +266,7 @@ html, body {
     rgba(192,57,43,0.5) 0%, rgba(192,57,43,0.15) 40%, transparent 70%);
 }
 .objection-text {
+  font-family: var(--font-ark);
   font-size: 56px; color: var(--red-objection); letter-spacing: 8px;
   text-shadow: 4px 4px 0 #000, -2px -2px 0 #000, 0 0 30px rgba(192,57,43,0.8);
   animation: objection-burst 0.4s cubic-bezier(0.17, 0.67, 0.29, 1.3) forwards;
@@ -271,7 +306,7 @@ html, body {
 .evidence-prep { font-size: 10px; color: var(--seal-red); margin-top: 12px; letter-spacing: 1px; }
 
 .evidence-close-btn {
-  font-family: var(--font-pixel); font-size: 10px;
+  font-family: var(--font-ark); font-size: 10px;
   padding: 8px 20px; background: var(--wood-dark); color: var(--warm-white);
   border: 3px solid var(--gold); cursor: pointer;
   box-shadow: 2px 2px 0 #000; display: block; margin: 12px auto 0;
@@ -290,14 +325,16 @@ html, body {
 }
 
 .speaker-name {
+  font-family: var(--font-ark);
   display: inline-block; padding: 4px 14px; margin-bottom: 8px;
-  font-size: 10px; letter-spacing: 2px; align-self: flex-start;
+  font-size: 11px; letter-spacing: 3px; align-self: flex-start;
   box-shadow: 2px 2px 0 #000;
 }
 .speaker-judge { background: var(--gold); color: var(--bg-dark); border: 2px solid var(--wood-light); }
 .speaker-witness { background: var(--green); color: var(--bg-dark); border: 2px solid #1e8a50; }
 
 .dialogue-text {
+  font-family: var(--font-ark);
   font-size: 12px; line-height: 1.9; color: var(--warm-white);
   flex: 1; overflow: hidden;
 }
@@ -356,7 +393,7 @@ html, body {
 }
 
 .mic-btn {
-  font-family: var(--font-pixel); font-size: 10px;
+  font-family: var(--font-ark); font-size: 10px;
   padding: 10px 16px; background: var(--deep-blue); color: var(--warm-white);
   border: 3px solid var(--gold); cursor: pointer;
   box-shadow: 2px 2px 0 #000;
@@ -368,7 +405,7 @@ html, body {
 }
 
 .submit-btn {
-  font-family: var(--font-pixel); font-size: 12px;
+  font-family: var(--font-ark); font-size: 12px;
   padding: 10px 28px; background: var(--gold); color: var(--bg-dark);
   border: 3px solid var(--wood-light); cursor: pointer;
   box-shadow: 3px 3px 0 #000; letter-spacing: 1px;
@@ -481,7 +518,7 @@ html, body {
 .lobby-join { display: flex; gap: 10px; }
 
 .lobby-input {
-  flex: 1; font-family: var(--font-pixel); font-size: 16px;
+  flex: 1; font-family: var(--font-ark); font-size: 16px;
   padding: 10px 14px; background: var(--bg-panel); color: var(--gold);
   border: 3px solid var(--gold); outline: none; text-align: center;
   letter-spacing: 6px; text-transform: uppercase;
@@ -546,7 +583,7 @@ html, body {
    13. PLAYER COUNT BADGE
    ========================================================================== */
 .player-count-badge {
-  font-family: var(--font-pixel); font-size: 9px;
+  font-family: var(--font-ark); font-size: 9px;
   padding: 4px 10px; background: var(--green);
   color: var(--bg-dark); border: 2px solid #1e8a50;
   box-shadow: 2px 2px 0 #000; letter-spacing: 1px;
