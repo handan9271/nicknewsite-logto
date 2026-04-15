@@ -616,7 +616,7 @@ GRA (Grammatical Range & Accuracy) - score STRICTLY:
 
 Pron (from text): 5=basic, 6=multi-syllable, 7=varied, 8=complex/technical, 9=sophisticated
 
-RULES: Sub-scores=integers(4-9). Overall=floor(avg to 0.5). Use FULL range.
+RULES: Sub-scores=integers(4-9). Overall=ceil(avg to nearest 0.5), i.e. .25→.5 and .75→next whole. Use FULL range.
 
 Reference examples from a real IELTS examiner:
 
@@ -931,6 +931,12 @@ JSON only (no markdown):
         { role: 'user', content: `Here are ALL the student's answers from today's trial:\n\n${answersText}\n\nDeliver the verdict.` },
       ]);
       verdict = parseJSON(raw);
+      // Force correct IELTS rounding: .25 → up to .5, .75 → up to next whole
+      if (verdict && verdict.scores) {
+        const sc = verdict.scores;
+        const correctOverall = Math.ceil(((sc.FC + sc.LR + sc.GRA + sc.Pron) / 4) * 2) / 2;
+        verdict.overall = correctOverall;
+      }
     } catch (e) {
       console.warn('Verdict AI unavailable, computing offline:', e.message);
     }
@@ -941,30 +947,30 @@ JSON only (no markdown):
       if (allScores.length > 0) {
         const avg = (key) => Math.round(allScores.reduce((s, sc) => s + (sc[key] || 5), 0) / allScores.length);
         const fc = avg('FC'), lr = avg('LR'), gra = avg('GRA'), pron = avg('Pron') || Math.round((fc + lr) / 2);
-        const overall = Math.floor(((fc + lr + gra + pron) / 4) * 2) / 2; // IELTS: round DOWN
+        const overall = Math.ceil(((fc + lr + gra + pron) / 4) * 2) / 2; // IELTS: .25→.5, .75→next whole
 
         let verdictText, comment, reaction;
         if (overall >= 7) {
           reaction = 'impressed';
-          verdictText = 'The court finds the defendant to be a competent speaker. You have defended yourself well today.';
-          comment = 'Your answers showed good vocabulary range and coherent development. To reach higher bands, focus on using more sophisticated linking devices and less common vocabulary consistently.';
+          verdictText = '无罪释放。被告勉强证明了自己不是英语文盲。';
+          comment = '法庭承认你的表达尚可，词汇量没让人昏睡。但别得意——你的语法偶尔还是像一辆没上油的自行车。离真正的流利还差得远，回去继续练。';
         } else if (overall >= 6) {
           reaction = 'merciful';
-          verdictText = 'The court grants a moderate verdict. You have shown competence, but the court expects more.';
-          comment = 'Your performance was adequate but uneven. Some answers lacked depth while others showed promise. Work on developing your ideas more fully and using a wider range of grammatical structures.';
+          verdictText = '有罪！被告的口语水平仅够日常寒暄。';
+          comment = '你的表现时好时坏，有些回答还算像样，有些则让法庭昏昏欲睡。展开论述的能力严重不足，语法结构单一。法庭建议你多用复杂句型，少说废话。';
         } else {
           reaction = 'disappointed';
-          verdictText = 'The court is not satisfied. The defendant must significantly improve their command of English.';
-          comment = 'Many of your answers were too brief or relied on basic vocabulary. Practice extending your answers with examples and explanations. Study common collocations and discourse markers.';
+          verdictText = '有罪！被告的英语水平令法庭深感遗憾。';
+          comment = '你的回答大多过于简短，词汇量仿佛还停留在初中水平。法庭强烈建议你多背搭配、多练口语，学会用例子和解释来充实你的回答。';
         }
 
         verdict = { scores: { FC: fc, LR: lr, GRA: gra, Pron: pron }, overall, verdict: verdictText, comment, reaction };
       } else {
         verdict = {
           scores: { FC: 5, LR: 5, GRA: 5, Pron: 5 },
-          overall: 5.5,
-          verdict: 'The court was unable to fully assess the defendant. A provisional verdict is issued.',
-          comment: 'Insufficient evidence was presented. Practice giving longer, more detailed answers.',
+          overall: 5,
+          verdict: '法庭无法对被告作出充分评估，暂时从宽处理。',
+          comment: '你提供的证据严重不足，法庭几乎无从判断你的英语水平。下次请给出更完整的回答。',
           reaction: 'disappointed',
         };
       }
