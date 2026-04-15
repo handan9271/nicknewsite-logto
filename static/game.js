@@ -479,6 +479,7 @@
       let t = '';
       for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
       D.user_input.value = t;
+      updateWordCount();
     };
     S.recognition.onerror = () => stopRecording();
     S.recognition.onend = () => { if (S.isRecording) try { S.recognition.start(); } catch (e) {} };

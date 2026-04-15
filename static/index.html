@@ -958,12 +958,21 @@ function updatePracticeWordCount() {
   const underLimit = words > 0 && words < limit.min;
 
   if (words === 0) {
-    hint.textContent = '';
+    hint.textContent = '0/' + limit.max + ' 词（至少 ' + limit.min + ' 词）';
+    hint.style.color = '#e67e22';
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
     return;
   }
 
   hint.textContent = words + '/' + limit.max + ' 词' + (underLimit ? '（至少 ' + limit.min + ' 词）' : '');
   hint.style.color = overLimit ? '#e74c3c' : underLimit ? '#e67e22' : '#27ae60';
+
+  // Disable button when under minimum
+  btn.disabled = underLimit;
+  btn.style.opacity = underLimit ? '0.5' : '1';
+  btn.style.cursor = underLimit ? 'not-allowed' : 'pointer';
 
   if (overLimit) {
     const ta = document.getElementById('inp-a');
