@@ -391,6 +391,7 @@ mark.ins.lit { filter:brightness(.87); box-shadow:0 0 0 2px var(--grn); }
         <div class="fr">
           <div class="fl2" id="answer-label">你的英文回答（中文或英文均可）<em>*</em></div>
           <textarea class="fi2" id="inp-a" placeholder="用中文写下你的想法，或直接写英文答案……&#10;&#10;例如：我最喜欢吃面条，因为方便而且营养均衡……"></textarea>
+          <p id="word-count-hint" style="font-size:12px;color:var(--ink-dim);margin-top:6px;"></p>
         </div>
 
         <button class="btn-gen" id="btn-gen" onclick="generate()">
@@ -936,7 +937,46 @@ function setPart(p, auto=false){
   ['pb1','pb2','pb3'].forEach(id=>document.getElementById(id)?.classList.remove('on'));
   const map={P1:'pb1',P2:'pb2',P3:'pb3'};
   if(map[p]) document.getElementById(map[p]).classList.add('on');
+  updatePracticeWordCount();
 }
+
+// ─── WORD LIMITS ─────────────────────────────────────────────────
+const PRACTICE_WORD_LIMITS = { P1: { min: 10, max: 150 }, P2: { min: 10, max: 300 }, P3: { min: 10, max: 250 } };
+
+function countWordsP(text) {
+  return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+}
+
+function updatePracticeWordCount() {
+  const part = currentPart || 'P1';
+  const limit = PRACTICE_WORD_LIMITS[part] || PRACTICE_WORD_LIMITS['P1'];
+  const text = document.getElementById('inp-a').value;
+  const words = countWordsP(text);
+  const hint = document.getElementById('word-count-hint');
+  const btn = document.getElementById('btn-gen');
+  const overLimit = words > limit.max;
+  const underLimit = words > 0 && words < limit.min;
+
+  if (words === 0) {
+    hint.textContent = '';
+    return;
+  }
+
+  hint.textContent = words + '/' + limit.max + ' 词' + (underLimit ? '（至少 ' + limit.min + ' 词）' : '');
+  hint.style.color = overLimit ? '#e74c3c' : underLimit ? '#e67e22' : '#27ae60';
+
+  if (overLimit) {
+    const ta = document.getElementById('inp-a');
+    ta.value = ta.value.trim().split(/\s+/).slice(0, limit.max).join(' ');
+    hint.textContent = limit.max + '/' + limit.max + ' 词（已达上限）';
+    hint.style.color = '#e74c3c';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('inp-a');
+  if (ta) ta.addEventListener('input', updatePracticeWordCount);
+});
 
 // ─── INPUT MODE ───────────────────────────────────────────────────
 function setInputMode(m){
@@ -1154,6 +1194,10 @@ async function generate(){
   const q = document.getElementById('inp-q').value.trim();
   const a = document.getElementById('inp-a').value.trim();
   if(!q||!a){ toast('请填写题目和答案','err'); return; }
+  const wPart = currentPart || (q.toLowerCase().startsWith('describe') ? 'P2' : 'P1');
+  const wLimit = PRACTICE_WORD_LIMITS[wPart] || PRACTICE_WORD_LIMITS['P1'];
+  const wCount = countWordsP(a);
+  if(wCount < wLimit.min){ toast('回答至少需要 ' + wLimit.min + ' 个词（当前 ' + wCount + ' 词）','err'); return; }
 
   const btn = document.getElementById('btn-gen');
   btn.classList.add('loading'); btn.disabled=true;

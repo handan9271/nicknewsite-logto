@@ -395,6 +395,37 @@
     if (S.nickRandomTimer) { clearTimeout(S.nickRandomTimer); S.nickRandomTimer = null; }
   }
 
+  // ─── WORD LIMITS PER PART ─────────────────────────────────────────
+  const WORD_LIMITS = { 1: { min: 10, max: 150 }, 2: { min: 10, max: 300 }, 3: { min: 10, max: 250 } };
+
+  function countWords(text) {
+    return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+  }
+
+  function updateWordCount() {
+    const limit = WORD_LIMITS[S.currentPart] || WORD_LIMITS[1];
+    const words = countWords(D.user_input.value);
+    const hint = D.input_hint;
+    const overLimit = words > limit.max;
+    const underLimit = words < limit.min;
+
+    hint.textContent = words + '/' + limit.max + ' 词' + (underLimit ? '（至少 ' + limit.min + ' 词）' : '');
+    hint.style.color = overLimit ? 'var(--red, #e74c3c)' : underLimit ? 'var(--yellow, #f1c40f)' : 'var(--green, #27ae60)';
+
+    // Hard cap: prevent typing beyond max
+    if (overLimit) {
+      const trimmed = D.user_input.value.trim().split(/\s+/).slice(0, limit.max).join(' ');
+      D.user_input.value = trimmed;
+      hint.textContent = limit.max + '/' + limit.max + ' 词（已达上限）';
+      hint.style.color = 'var(--red, #e74c3c)';
+    }
+
+    // Disable submit if under min
+    D.submit_btn.disabled = underLimit;
+    D.submit_btn.style.opacity = underLimit ? '0.4' : '1';
+    D.submit_btn.style.cursor = underLimit ? 'not-allowed' : 'pointer';
+  }
+
   // ─── INPUT (mid-screen, question shown above by caller) ──────────
   function showInput(timeLimit, onSubmit) {
     D.dialogue_box.classList.add('hidden');
@@ -409,20 +440,28 @@
       ? '语音识别内容会显示在这里...也可以手动输入。'
       : '请输入你的回答...';
 
+    // Init word count
+    D.user_input.oninput = updateWordCount;
+    updateWordCount();
+
     startTimer(timeLimit, D.input_timer_bar, null, () => {
       gavelStrike(3, () => {
         const text = D.user_input.value.trim();
         stopRecording();
         D.input_area.classList.add('hidden');
+        D.user_input.oninput = null;
         onSubmit(text || '（未作答）');
       });
     });
 
     D.submit_btn.onclick = () => {
       const text = D.user_input.value.trim();
-      if (!text) return;
+      const words = countWords(text);
+      const limit = WORD_LIMITS[S.currentPart] || WORD_LIMITS[1];
+      if (!text || words < limit.min) return;
       clearTimer(); stopRecording();
       D.input_area.classList.add('hidden');
+      D.user_input.oninput = null;
       onSubmit(text);
     };
   }
