@@ -447,8 +447,8 @@
 
     startTimer(timeLimit, D.input_timer_bar, null, () => {
       gavelStrike(3, () => {
-        const text = D.user_input.value.trim();
         stopRecording();
+        const text = D.user_input.value.trim();
         D.input_area.classList.add('hidden');
         D.user_input.oninput = null;
         onSubmit(text || '（未作答）');
@@ -456,11 +456,12 @@
     });
 
     D.submit_btn.onclick = () => {
-      const text = D.user_input.value.trim();
-      const words = countWords(text);
+      const raw = D.user_input.value.trim();
+      const words = countWords(raw);
       const limit = WORD_LIMITS[S.currentPart] || WORD_LIMITS[1];
-      if (!text || words < limit.min) return;
+      if (!raw || words < limit.min) return;
       clearTimer(); stopRecording();
+      const text = D.user_input.value.trim(); // re-read after punctuation added
       D.input_area.classList.add('hidden');
       D.user_input.oninput = null;
       onSubmit(text);
@@ -486,20 +487,48 @@
     S.recognition.onend = () => { if (S.isRecording) try { S.recognition.start(); } catch (e) {} };
   }
 
+  function addPunctuation(text) {
+    if (!text || !text.trim()) return text;
+    // Split into sentences by common patterns (long pauses become spaces)
+    let s = text.trim();
+    // Capitalize first letter
+    s = s.charAt(0).toUpperCase() + s.slice(1);
+    // Add periods: split on patterns that look like sentence boundaries
+    // Pattern: lowercase letter + space + capital letter (or common sentence starters)
+    s = s.replace(/([a-z])(\s+)(I |So |But |And |Well |Actually |However |Because |The |This |That |It |My |We |They |He |She |You |In |On |For |Also |Then )/g,
+      (m, end, space, start) => end + '. ' + start);
+    // Add period at end if missing
+    if (!/[.!?]$/.test(s)) s += '.';
+    // Clean up double periods / spaces
+    s = s.replace(/\.\./g, '.').replace(/\s+/g, ' ');
+    return s;
+  }
+
   function startRecording() {
     if (!S.recognition) return;
     S.savedTranscript = D.user_input.value.trim() ? D.user_input.value.trim() + ' ' : '';
     S.isRecording = true;
     D.mic_btn.classList.add('recording');
     D.mic_btn.textContent = '⏹ 停止';
+    // Show recording hint
+    if (D.input_hint) {
+      D.input_hint.textContent = '🎙 录音中...标点将在停止后自动添加';
+      D.input_hint.style.color = 'var(--gold, #C9963A)';
+    }
     try { S.recognition.start(); } catch (e) {}
   }
 
   function stopRecording() {
     S.isRecording = false;
+    // Apply punctuation when stopping
+    const raw = D.user_input.value.trim();
+    if (raw) {
+      D.user_input.value = addPunctuation(raw);
+    }
     S.savedTranscript = D.user_input.value.trim() ? D.user_input.value.trim() + ' ' : '';
     D.mic_btn.classList.remove('recording');
     D.mic_btn.textContent = '🎤 开麦';
+    updateWordCount();
     if (S.recognition) try { S.recognition.stop(); } catch (e) {}
   }
 
