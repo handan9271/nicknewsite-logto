@@ -1815,7 +1815,7 @@ async def teacher_get_student_practice(student_id: int, user: User = Depends(req
 
     conversations = db.query(Conversation).filter(
         Conversation.user_id == student_id
-    ).order_by(Conversation.timestamp.desc()).limit(100).all()
+    ).order_by(Conversation.timestamp.desc()).all()
 
     beijing_tz = timezone(timedelta(hours=8))
     return [{
