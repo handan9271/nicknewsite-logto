@@ -425,6 +425,7 @@ html, body {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 24px;
   background: rgba(10,15,26,0.97); padding: 40px;
+  overflow-y: auto;
 }
 
 .verdict-header {
@@ -704,20 +705,107 @@ html, body {
 }
 
 @media (max-width: 600px) {
+  /* ── Title screen ── */
   .game-title { font-size: 22px; letter-spacing: 3px; }
-  .subtitle { font-size: 10px; }
-  .nick-sprite { width: 120px; height: 120px; }
-  .dialogue-box { padding: 10px 14px; min-height: 110px; }
-  .dialogue-text { font-size: 10px; }
-  .score-card { width: 75px; height: 100px; }
-  .score-label { font-size: 6px; }
-  .score-value { font-size: 20px; }
-  .overall-value { font-size: 36px; }
+  .game-title-cn { font-size: 12px; letter-spacing: 4px; }
+  .subtitle { font-size: 11px; letter-spacing: 3px; }
+  .flavor-text { font-size: 10px; letter-spacing: 1px; padding: 0 10px; margin-bottom: 24px; }
+  .title-content { padding: 16px 12px; }
+  .mode-selector { flex-direction: column; align-items: center; gap: 10px; margin-bottom: 24px; }
+  .mode-btn { font-size: 11px; padding: 10px 20px; width: 70%; text-align: center; }
+  .band-selector { gap: 8px; }
+  .band-selector .mode-btn { width: auto; padding: 8px 14px; font-size: 10px; }
+  .game-mode-selector { flex-direction: column; align-items: center; gap: 10px; }
+  .game-mode-selector .press-start { width: 80%; font-size: 14px; padding: 12px 20px; }
+
+  /* ── HUD ── */
+  .hud { padding: 8px 10px; gap: 8px; }
+  .part-badge { font-size: 8px; padding: 3px 8px; }
+  .question-counter { font-size: 8px; }
+
+  /* ── Courtroom / Nick ── */
+  .courtroom { padding-top: 38px; }
+  .nick-sprite { width: 90px; height: 90px; }
+  .nick-character { margin-top: -10px; }
+  .expression-label { font-size: 8px; letter-spacing: 2px; }
+  .name-plate { font-size: 9px; padding: 3px 10px; }
+  .judge-bench { min-height: 50px; }
+
+  /* ── Bottom stack (question + dialogue/input) ── */
+  .bottom-stack {
+    bottom: 0; left: 0; right: 0;
+    transform: none; width: 100%; max-width: 100%;
+    border-radius: 0;
+  }
+  .current-question { font-size: 10px; padding: 8px 12px; line-height: 1.8; }
+  .dialogue-box { padding: 10px 14px; min-height: 90px; }
+  .dialogue-text { font-size: 11px; line-height: 1.7; }
+  .continue-indicator { bottom: 10px; right: 14px; }
+
+  /* ── Input area ── */
+  .input-area { padding: 10px 14px 14px; }
+  .input-area textarea { min-height: 80px; font-size: 10px; padding: 8px 10px; line-height: 1.7; }
+  .input-area textarea::placeholder { font-size: 8px; }
+  .input-btn-row { gap: 6px; margin-top: 8px; flex-wrap: wrap; justify-content: center; }
+  .mic-btn { font-size: 9px; padding: 8px 12px; }
+  .submit-btn { font-size: 10px; padding: 8px 18px; }
+  .input-hint { font-size: 9px; }
+
+  /* ── Evidence card (Part 2 cue card) ── */
+  .evidence-card {
+    width: 94vw; min-height: auto;
+    padding: 20px 16px; font-size: 10px; line-height: 1.8;
+    top: 50%; left: 50%;
+  }
+  .evidence-header { font-size: 14px; letter-spacing: 4px; padding: 3px 12px; }
+  .evidence-topic { font-size: 11px; }
+  .evidence-prep { font-size: 9px; }
+  .evidence-close-btn { font-size: 9px; padding: 8px 16px; }
+
+  /* ── Objection ── */
   .objection-text { font-size: 28px; letter-spacing: 4px; }
+  .objection-reason { font-size: 10px; max-width: 90vw; }
+
+  /* ── Verdict screen ── */
+  #verdict-screen { padding: 20px 16px; gap: 16px; }
   .verdict-header { font-size: 14px; letter-spacing: 3px; }
-  .lobby-title { font-size: 16px; }
-  .game-mode-selector { flex-direction: column; align-items: center; }
-  .game-mode-selector .press-start { width: 80%; }
+  .score-cards { gap: 8px; }
+  .score-card { width: 70px; height: 90px; }
+  .score-label { font-size: 7px; }
+  .score-value { font-size: 18px; }
+  .overall-label { font-size: 10px; }
+  .overall-value { font-size: 36px; }
+  .verdict-text { font-size: 10px; max-width: 90vw; }
+  .verdict-comment { font-size: 8px; max-width: 90vw; }
+
+  /* ── Lobby ── */
+  .lobby-title { font-size: 16px; letter-spacing: 3px; }
+  .lobby-content { padding: 16px 10px; }
+  .lobby-panel { padding: 16px; }
+  .lobby-btn { font-size: 10px !important; padding: 10px 16px !important; }
+  .lobby-input { font-size: 14px; padding: 8px 10px; letter-spacing: 4px; }
+  .lobby-input::placeholder { font-size: 9px; }
+  .room-code-display { font-size: 16px; }
+
+  /* ── Leaderboard ── */
+  .leaderboard-title { font-size: 12px; }
   .lb-entry { padding: 8px 10px; }
+  .lb-rank { font-size: 14px; }
+  .lb-name { font-size: 9px; }
   .lb-score { font-size: 16px; }
+  .lb-verdict-label { font-size: 7px; }
+
+  /* ── Waiting overlay ── */
+  .waiting-text { font-size: 11px; }
+}
+
+/* Extra small phones (< 380px) */
+@media (max-width: 380px) {
+  .game-title { font-size: 18px; letter-spacing: 2px; }
+  .nick-sprite { width: 70px; height: 70px; }
+  .score-card { width: 60px; height: 80px; }
+  .score-value { font-size: 16px; }
+  .overall-value { font-size: 30px; }
+  .bottom-stack { bottom: 0; }
+  .input-area textarea { min-height: 60px; }
 }
