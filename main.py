@@ -1840,7 +1840,7 @@ async def teacher_get_student_games(student_id: int, user: User = Depends(requir
 
     sessions = db.query(GameSession).filter(
         GameSession.user_id == student_id
-    ).order_by(GameSession.timestamp.desc()).limit(50).all()
+    ).order_by(GameSession.timestamp.desc()).all()
 
     beijing_tz = timezone(timedelta(hours=8))
     return [{
@@ -1853,6 +1853,51 @@ async def teacher_get_student_games(student_id: int, user: User = Depends(requir
         "answers": json.loads(s.answers_json) if s.answers_json else [],
         "verdict": json.loads(s.verdict_json) if s.verdict_json else {},
     } for s in sessions]
+
+
+@app.get("/api/teacher/student/{student_id}/game/{game_id}/report")
+async def teacher_get_game_report(student_id: int, game_id: int, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    """Get detailed report data for a specific game session (teacher only)."""
+    if not _can_view_student(user, student_id, db):
+        raise HTTPException(status_code=403, detail="该学生不在你的列表中")
+    session = db.query(GameSession).filter(GameSession.id == game_id, GameSession.user_id == student_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="模考记录不存在")
+    verdict = json.loads(session.verdict_json) if session.verdict_json else {}
+    answers = json.loads(session.answers_json) if session.answers_json else []
+    beijing_tz = timezone(timedelta(hours=8))
+    return {
+        "id": session.id,
+        "created_at": session.timestamp.replace(tzinfo=timezone.utc).astimezone(beijing_tz).strftime("%Y-%m-%d %H:%M") if session.timestamp else "",
+        "mode": session.mode,
+        "overall_score": session.overall_score,
+        "answers": answers,
+        "verdict": verdict,
+    }
+
+
+@app.get("/api/teacher/student/{student_id}/game/{game_id}/report-pdf")
+async def teacher_get_game_report_pdf(student_id: int, game_id: int, user: User = Depends(require_teacher_or_admin), db: Session = Depends(get_db)):
+    """Generate PDF report for a specific game session (teacher only). Reuses mock report PDF builder."""
+    if not _can_view_student(user, student_id, db):
+        raise HTTPException(status_code=403, detail="该学生不在你的列表中")
+    session = db.query(GameSession).filter(GameSession.id == game_id, GameSession.user_id == student_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="模考记录不存在")
+    verdict = json.loads(session.verdict_json) if session.verdict_json else {}
+    answers = json.loads(session.answers_json) if session.answers_json else []
+    student = db.query(User).filter(User.id == student_id).first()
+    student_name = student.display_name or student.email if student else "Unknown"
+
+    # Build request body and call existing PDF generator
+    body = GenerateMockReportRequest(
+        answers=answers,
+        verdict=verdict,
+        theme="Mock Exam",
+        band=f"Band {session.overall_score or '?'}",
+        session_id=session.id,
+    )
+    return await generate_mock_report(body, user)
 
 
 @app.post("/api/teacher/student/{student_id}/generate-report")
