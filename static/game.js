@@ -1589,16 +1589,18 @@ JSON only (no markdown):
         S.qIndex = 0;
         S.questions = msg.questions_part1;
         S.part2Topic = msg.part2_topic;
+        S.selectedPart = msg.part_mode || 'all';
+        S._skipToVerdict = (msg.part_mode === '1' || msg.part_mode === '2');
         showScreen('game');
         updateHUD();
-        D.player_count_badge.textContent = S.players.length + ' PLAYERS';
+        D.player_count_badge.textContent = S.players.length + ' 人';
         D.player_count_badge.classList.remove('hidden');
 
-        // Multiplayer intro — shorter, auto-advance
+        const mpPartLabel = { 'all': '完整模考', '1': 'Part 1 练习', '2': 'Part 2 练习', '3': 'Part 3 练习' };
         dialogueSequenceAutoAdvance([
           { speaker: '尼克', text: '...', expression: 'neutral', action: () => gavelStrike(3) },
-          { speaker: '尼克', text: 'Court is now in session! Multiple defendants stand trial today.', expression: 'neutral' },
-          { speaker: '尼克', text: 'All accused will answer the same questions. The court will judge you all.', expression: 'frown' },
+          { speaker: '尼克', text: '现在开庭！今天有多名被告同时受审。', expression: 'neutral' },
+          { speaker: '尼克', text: '模式：' + (mpPartLabel[msg.part_mode] || '完整模考') + '。法庭将审判你们每一个人。', expression: 'frown' },
         ], () => {
           sendWS({ type: 'ready' });
         });
@@ -1937,7 +1939,7 @@ JSON only (no markdown):
       if (e.key === 'Enter') $('btn-join-room').click();
     });
     $('btn-start-game').addEventListener('click', () => {
-      sendWS({ type: 'start_game' });
+      sendWS({ type: 'start_game', part_mode: selectedPart || 'all' });
     });
     $('btn-lobby-back').addEventListener('click', () => {
       if (S.ws) { try { S.ws.close(); } catch (e) {} S.ws = null; }

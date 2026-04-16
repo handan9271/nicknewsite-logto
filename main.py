@@ -778,6 +778,8 @@ def _pick_server_questions(band: str = "band7"):
 
 async def run_game_loop(room: Room):
     try:
+        part_mode = getattr(room, 'part_mode', 'all')
+
         # Pick questions from bank (default band7 for multiplayer)
         picked = _pick_server_questions("band7")
         room.questions_part1 = picked['part1']
@@ -790,6 +792,7 @@ async def run_game_loop(room: Room):
             'type': 'game_start',
             'questions_part1': room.questions_part1,
             'part2_topic': room.part2_topic,
+            'part_mode': part_mode,
         })
 
         await broadcast(room, {
@@ -798,66 +801,69 @@ async def run_game_loop(room: Room):
         })
         await wait_all_ready(room, timeout=15)
 
-        # Part 1
-        room.current_part = 1
-        for qi in range(4):
-            room.q_index = qi
-            q = room.questions_part1[qi]
-            room.current_question = q
+        # Part 1 (run if mode is 'all' or '1')
+        if part_mode in ('all', '1'):
+            room.current_part = 1
+            for qi in range(4):
+                room.q_index = qi
+                q = room.questions_part1[qi]
+                room.current_question = q
+                room.answers_received = set()
+                await broadcast(room, {
+                    'type': 'phase_change', 'phase': 'part1',
+                    'part': 1, 'q_index': qi, 'question': q, 'time_limit': 45,
+                })
+                room.timer_end = time_now() + 45
+                await run_timer(room, 45)
+                await broadcast(room, {'type': 'timer_end'})
+                await asyncio.sleep(1)
+                await score_all_answers(room, q, 1)
+                await wait_all_ready(room, timeout=10)
+
+        # Part 2 (run if mode is 'all' or '2')
+        if part_mode in ('all', '2'):
+            room.current_part = 2
+            room.q_index = 0
             room.answers_received = set()
             await broadcast(room, {
-                'type': 'phase_change', 'phase': 'part1',
-                'part': 1, 'q_index': qi, 'question': q, 'time_limit': 45,
-            })
-            room.timer_end = time_now() + 45
-            await run_timer(room, 45)
-            await broadcast(room, {'type': 'timer_end'})
-            await asyncio.sleep(1)
-            await score_all_answers(room, q, 1)
-            await wait_all_ready(room, timeout=10)
-
-        # Part 2
-        room.current_part = 2
-        room.q_index = 0
-        room.answers_received = set()
-        await broadcast(room, {
-            'type': 'phase_change', 'phase': 'part2-prep',
-            'part': 2, 'q_index': 0, 'question': room.part2_topic['topic'],
-            'time_limit': 60, 'part2_topic': room.part2_topic,
-        })
-        room.timer_end = time_now() + 60
-        await run_timer(room, 60)
-        await broadcast(room, {'type': 'timer_end'})
-
-        room.current_question = room.part2_topic['topic']
-        await broadcast(room, {
-            'type': 'phase_change', 'phase': 'part2-speak',
-            'part': 2, 'q_index': 0, 'question': room.part2_topic['topic'], 'time_limit': 120,
-        })
-        room.timer_end = time_now() + 120
-        await run_timer(room, 120)
-        await broadcast(room, {'type': 'timer_end'})
-        await asyncio.sleep(1)
-        await score_all_answers(room, room.part2_topic['topic'], 2)
-        await wait_all_ready(room, timeout=10)
-
-        # Part 3
-        room.current_part = 3
-        for qi in range(3):
-            room.q_index = qi
-            q = room.part3_questions[qi]
-            room.current_question = q
-            room.answers_received = set()
-            await broadcast(room, {
-                'type': 'phase_change', 'phase': 'part3',
-                'part': 3, 'q_index': qi, 'question': q, 'time_limit': 60,
+                'type': 'phase_change', 'phase': 'part2-prep',
+                'part': 2, 'q_index': 0, 'question': room.part2_topic['topic'],
+                'time_limit': 60, 'part2_topic': room.part2_topic,
             })
             room.timer_end = time_now() + 60
             await run_timer(room, 60)
             await broadcast(room, {'type': 'timer_end'})
+
+            room.current_question = room.part2_topic['topic']
+            await broadcast(room, {
+                'type': 'phase_change', 'phase': 'part2-speak',
+                'part': 2, 'q_index': 0, 'question': room.part2_topic['topic'], 'time_limit': 120,
+            })
+            room.timer_end = time_now() + 120
+            await run_timer(room, 120)
+            await broadcast(room, {'type': 'timer_end'})
             await asyncio.sleep(1)
-            await score_all_answers(room, q, 3)
+            await score_all_answers(room, room.part2_topic['topic'], 2)
             await wait_all_ready(room, timeout=10)
+
+        # Part 3 (run if mode is 'all' or '3')
+        if part_mode in ('all', '3'):
+            room.current_part = 3
+            for qi in range(3):
+                room.q_index = qi
+                q = room.part3_questions[qi]
+                room.current_question = q
+                room.answers_received = set()
+                await broadcast(room, {
+                    'type': 'phase_change', 'phase': 'part3',
+                    'part': 3, 'q_index': qi, 'question': q, 'time_limit': 60,
+                })
+                room.timer_end = time_now() + 60
+                await run_timer(room, 60)
+                await broadcast(room, {'type': 'timer_end'})
+                await asyncio.sleep(1)
+                await score_all_answers(room, q, 3)
+                await wait_all_ready(room, timeout=10)
 
         # Final verdict
         room.status = 'scoring'
@@ -3083,6 +3089,7 @@ async def ws_game(websocket: WebSocket, room_code: str):
 
             if msg_type == 'start_game':
                 if username == room.host and room.status == 'lobby' and len(room.players) >= 1:
+                    room.part_mode = msg.get('part_mode', 'all')
                     room.game_task = asyncio.create_task(run_game_loop(room))
 
             elif msg_type == 'submit_answer':
