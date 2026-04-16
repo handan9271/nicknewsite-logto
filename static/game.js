@@ -400,28 +400,232 @@
     if (D.hud_timer_text && S.paused) {
       D.hud_timer_text.style.color = '#e74c3c';
     }
+    // #5 Nick reacts to pause (randomized)
+    if (S.paused) {
+      setNick(pick(['frown', 'annoyed', 'thinking']));
+    } else {
+      setNick(pick(['neutral', 'neutral', 'smile']));
+      NR.lastInputTime = Date.now();
+      NR.idleStage = 0;
+    }
   }
 
   function clearTimer() {
     if (S.timerInterval) { clearInterval(S.timerInterval); S.timerInterval = null; }
   }
 
-  // ─── NICK AMBIENT BEHAVIOR (no gavel — only subtle expression changes) ───
+  // ─── NICK REACTIVE EXPRESSION SYSTEM (20 behavior modes) ──────
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function nickFlash(expr, dur) {
+    setNick(expr);
+    if (dur) setTimeout(() => { if (!D.input_area.classList.contains('hidden')) setNick('neutral'); }, dur);
+  }
+
+  const NR = {
+    checkTimer: null,
+    lastWordCount: 0,
+    lastInputTime: 0,
+    idleStage: 0,            // 0=ok, 1=thinking, 2=bored, 3=frown, 4=annoyed
+    inputStarted: false,     // has student typed anything yet
+    prevSpeed: 0,            // words in previous check cycle
+    sustainedInputSecs: 0,   // how long continuously inputting
+    history: [],             // [{time, words}] ring buffer for speed tracking
+    longWordTriggered: false, // already reacted to a long word this question
+    deleteTriggered: false,   // already reacted to deletion this question
+    hesitateTriggered: false, // already reacted to hesitation
+  };
+
   function startRandomNick() {
     stopRandomNick();
-    (function sched() {
-      S.nickRandomTimer = setTimeout(() => {
-        if (S.phase === 'verdict' || S.phase === 'title') return;
-        // Only subtle expression changes — no gavel, no interruption
-        const exprs = ['neutral', 'frown', 'smile', 'neutral', 'neutral'];
-        setNick(exprs[Math.floor(Math.random() * exprs.length)]);
-        sched();
-      }, 10000 + Math.random() * 20000); // every 10-30 seconds
-    })();
+    Object.assign(NR, {
+      lastWordCount: 0, lastInputTime: Date.now(), idleStage: 0,
+      inputStarted: false, prevSpeed: 0, sustainedInputSecs: 0,
+      history: [], longWordTriggered: false, deleteTriggered: false, hesitateTriggered: false,
+    });
+
+    NR.checkTimer = setInterval(() => {
+      if (S.phase === 'verdict' || S.phase === 'title') return;
+
+      if (!D.input_area.classList.contains('hidden')) {
+        nickInputReaction();
+      } else {
+        // Dialogue phase — ambient
+        if (Math.random() < 0.12) {
+          setNick(pick(['neutral', 'thinking', 'neutral', 'frown', 'neutral', 'neutral']));
+        }
+      }
+    }, 3000); // check every 3 seconds for more responsive reactions
   }
 
   function stopRandomNick() {
+    if (NR.checkTimer) { clearInterval(NR.checkTimer); NR.checkTimer = null; }
     if (S.nickRandomTimer) { clearTimeout(S.nickRandomTimer); S.nickRandomTimer = null; }
+  }
+
+  function nickInputReaction() {
+    const now = Date.now();
+    const words = countWords(D.user_input.value);
+    const text = D.user_input.value;
+    const delta = words - NR.lastWordCount;
+    const timeSinceInput = now - NR.lastInputTime;
+    const limit = WORD_LIMITS[S.currentPart] || WORD_LIMITS[1];
+
+    // Record history for speed tracking
+    NR.history.push({ time: now, words });
+    if (NR.history.length > 10) NR.history.shift();
+
+    // === ACTIVE INPUT BEHAVIORS ===
+    if (delta > 0) {
+      NR.lastInputTime = now;
+      NR.idleStage = 0;
+
+      // #6 First word typed
+      if (!NR.inputStarted && words > 0) {
+        NR.inputStarted = true;
+        nickFlash('thinking', 2000);
+        NR.lastWordCount = words;
+        NR.prevSpeed = delta;
+        return;
+      }
+
+      // #17 Sustained input (30+ seconds non-stop)
+      NR.sustainedInputSecs += 3;
+      if (NR.sustainedInputSecs >= 30 && Math.random() < 0.3) {
+        nickFlash(pick(['smile', 'approving']), 2000);
+        NR.sustainedInputSecs = 0; // reset so it can trigger again later
+        NR.lastWordCount = words;
+        NR.prevSpeed = delta;
+        return;
+      }
+
+      // #14 Speed suddenly increased (was slow, now fast)
+      if (NR.prevSpeed <= 2 && delta >= 5) {
+        nickFlash(pick(['approving', 'smile', 'shocked']), 1500);
+        NR.lastWordCount = words;
+        NR.prevSpeed = delta;
+        return;
+      }
+
+      // #1 Fast input (≥6 words/cycle)
+      if (delta >= 6) {
+        nickFlash(pick(['approving', 'shocked', 'smile']), 1500);
+      }
+      // #2 Normal input (≥3 words/cycle)
+      else if (delta >= 3) {
+        nickFlash(pick(['neutral', 'thinking', 'smile']), 1200);
+      }
+
+      // #19 Long/advanced word detected
+      if (!NR.longWordTriggered) {
+        const longWords = (text.match(/\b[a-zA-Z]{8,}\b/g) || []);
+        if (longWords.length >= 2) {
+          NR.longWordTriggered = true;
+          setTimeout(() => nickFlash(pick(['approving', 'shocked']), 2000), 500);
+        }
+      }
+
+      // #18 Approaching word limit (≥80%)
+      if (words >= limit.max * 0.8) {
+        nickFlash(pick(['bored', 'thinking']), 1500);
+      }
+
+      // #10 Near word limit (≥90%)
+      if (words >= limit.max * 0.9 && Math.random() < 0.5) {
+        nickFlash(pick(['shocked', 'approving']), 1500);
+      }
+
+      // #9 Just reached minimum
+      if (NR.lastWordCount < limit.min && words >= limit.min) {
+        nickFlash(pick(['thinking', 'neutral']), 1200);
+      }
+
+      NR.lastWordCount = words;
+      NR.prevSpeed = delta;
+      return;
+    }
+
+    // === DELETION BEHAVIOR ===
+    if (delta < -4 && !NR.deleteTriggered) {
+      // #7 Large deletion
+      NR.deleteTriggered = true;
+      nickFlash(pick(['shocked', 'thinking']), 2000);
+      NR.lastWordCount = words;
+      return;
+    }
+
+    // === SPEED DECREASE ===
+    if (delta === 0 && NR.prevSpeed >= 5 && timeSinceInput > 5000 && timeSinceInput < 10000) {
+      // #15 Was typing fast, suddenly stopped
+      if (Math.random() < 0.4) {
+        nickFlash(pick(['thinking', 'frown']), 1800);
+      }
+    }
+
+    // === IDLE BEHAVIORS (progressive) ===
+    NR.sustainedInputSecs = 0;
+
+    // #13 Hesitation (typed 1-2 words then stopped ≥6s)
+    if (!NR.hesitateTriggered && words > 0 && words <= 3 && timeSinceInput > 6000) {
+      NR.hesitateTriggered = true;
+      nickFlash(pick(['thinking', 'frown']), 2000);
+      return;
+    }
+
+    // #11 Was flowing then stopped (≥8s after sustained input)
+    if (NR.prevSpeed >= 3 && timeSinceInput > 8000 && timeSinceInput < 12000 && NR.idleStage < 1) {
+      NR.idleStage = 1;
+      setNick(pick(['thinking', 'frown']));
+      return;
+    }
+
+    // #3 Progressive idle stages
+    if (timeSinceInput > 30000 && NR.idleStage < 4) {
+      NR.idleStage = 4;
+      setNick('annoyed');
+    } else if (timeSinceInput > 22000 && NR.idleStage < 3) {
+      NR.idleStage = 3;
+      setNick('frown');
+    } else if (timeSinceInput > 15000 && NR.idleStage < 2) {
+      NR.idleStage = 2;
+      setNick('bored');
+    } else if (timeSinceInput > 8000 && NR.idleStage < 1) {
+      NR.idleStage = 1;
+      setNick('thinking');
+    }
+
+    // #8 Timer running low (≤10s)
+    if (S.timerRemaining && S.timerRemaining <= 10 && S.timerRemaining > 3) {
+      if (Math.random() < 0.3) setNick(pick(['frown', 'annoyed']));
+    }
+    // #16 Timer critical (≤3s)
+    if (S.timerRemaining && S.timerRemaining <= 3) {
+      setNick('shocked');
+    }
+
+    NR.lastWordCount = words;
+  }
+
+  // Called on every input event — resets idle state
+  function onInputActivity() {
+    NR.lastInputTime = Date.now();
+    const words = countWords(D.user_input.value);
+
+    // #4 Resume after idle
+    if (NR.idleStage > 0) {
+      NR.idleStage = 0;
+      nickFlash(pick(['neutral', 'neutral', 'approving']), 1200);
+    }
+
+    // #20 Delete-then-retype pattern (fluctuating word count)
+    if (NR.history.length >= 3) {
+      const h = NR.history;
+      const a = h[h.length-3]?.words || 0, b = h[h.length-2]?.words || 0, c = words;
+      if (a < b && b > c && Math.abs(b - c) >= 3) {
+        if (Math.random() < 0.3) nickFlash(pick(['thinking', 'bored']), 1500);
+      }
+    }
+
+    NR.lastWordCount = words;
   }
 
   // ─── WORD LIMITS PER PART ─────────────────────────────────────────
@@ -458,6 +662,7 @@
   }
 
   function updateWordCount() {
+    onInputActivity();
     checkChineseEasterEgg(D.user_input.value);
     const limit = WORD_LIMITS[S.currentPart] || WORD_LIMITS[1];
     const words = countWords(D.user_input.value);
@@ -564,6 +769,10 @@
     if (!S.recognition) return;
     S.savedTranscript = D.user_input.value.trim() ? D.user_input.value.trim() + ' ' : '';
     S.isRecording = true;
+    // #12 Re-mic reaction
+    nickFlash(pick(['neutral', 'smile']), 1500);
+    NR.lastInputTime = Date.now();
+    NR.idleStage = 0;
     D.mic_btn.classList.add('recording');
     D.mic_btn.textContent = '⏹ 停止';
     // Show recording hint
@@ -795,7 +1004,8 @@ JSON only (no markdown):
 
   // ─── UNIFIED ANSWER HANDLER ─────────────────────────────────────
   async function handleAnswer(answer, question, part, advanceFn) {
-    setNick('neutral');
+    // Brief "thinking" before evaluating — the examiner is considering
+    setNick('thinking');
     D.dialogue_box.classList.remove('hidden');
     D.input_area.classList.add('hidden');
     hideQuestion();
