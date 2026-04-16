@@ -210,7 +210,11 @@ html, body {
 .nick-smile .nick-face-smile,
 .nick-frown .nick-face-frown,
 .nick-shocked .nick-face-shocked,
-.nick-gavel .nick-face-gavel { display: block; }
+.nick-gavel .nick-face-gavel,
+.nick-bored .nick-face-bored,
+.nick-thinking .nick-face-thinking,
+.nick-approving .nick-face-approving,
+.nick-annoyed .nick-face-annoyed { display: block; }
 
 .expression-label {
   font-family: var(--font-ark);
@@ -227,6 +231,10 @@ html, body {
 .nick-frown { background: #4a1e1e; }
 .nick-shocked { background: #4a3a1e; }
 .nick-gavel { background: #3a1e4a; }
+.nick-bored { background: #2a3240; }
+.nick-thinking { background: #2a3a50; }
+.nick-approving { background: #1e5a3a; }
+.nick-annoyed { background: #5a1e1e; }
 
 .name-plate {
   font-family: var(--font-ark);

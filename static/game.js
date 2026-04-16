@@ -253,7 +253,10 @@
   }
 
   // ─── NICK EXPRESSIONS ──────────────────────────────────────────
-  const EXPR_CN = { neutral: '平静', smile: '微笑', frown: '不悦', shocked: '震惊', gavel: '判决' };
+  const EXPR_CN = {
+    neutral: '平静', smile: '微笑', frown: '不悦', shocked: '震惊', gavel: '判决',
+    bored: '困倦', thinking: '沉思', approving: '赞许', annoyed: '恼火'
+  };
   function setNick(expr) {
     D.nick_sprite.className = 'nick-sprite nick-' + expr;
     D.nick_expression.textContent = EXPR_CN[expr] || expr.toUpperCase();

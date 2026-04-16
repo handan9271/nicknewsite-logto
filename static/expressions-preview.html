@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Nick Expressions Preview</title>
+<link rel="stylesheet" href="/static/game.css">
+<style>
+body { background: var(--bg-dark); padding: 40px; display: flex; flex-wrap: wrap; gap: 30px; justify-content: center; }
+.exp-item { display: flex; flex-direction: column; align-items: center; }
+.exp-item h3 { color: var(--gold); font-family: var(--font-ark); font-size: 14px; margin-bottom: 10px; }
+.nick-sprite { width: 160px !important; height: 160px !important; }
+</style>
+</head>
+<body>
+<script>
+const expressions = ['neutral', 'smile', 'frown', 'shocked', 'gavel', 'bored', 'thinking', 'approving', 'annoyed'];
+const EXPR_CN = {
+  neutral: '平静', smile: '微笑', frown: '不悦', shocked: '震惊', gavel: '判决',
+  bored: '困倦', thinking: '沉思', approving: '赞许', annoyed: '恼火'
+};
+
+async function init() {
+  const gameRes = await fetch('/static/game.html?v=' + Date.now());
+  const gameHtml = await gameRes.text();
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(gameHtml, 'text/html');
+  const spriteTemplate = doc.getElementById('nick-sprite');
+
+  expressions.forEach(expr => {
+    const item = document.createElement('div');
+    item.className = 'exp-item';
+    const h3 = document.createElement('h3');
+    h3.textContent = EXPR_CN[expr] + ' (' + expr + ')';
+    const sprite = spriteTemplate.cloneNode(true);
+    sprite.className = 'nick-sprite nick-' + expr;
+    sprite.id = '';
+    const label = sprite.querySelector('.expression-label');
+    if (label) label.textContent = EXPR_CN[expr];
+    item.appendChild(h3);
+    item.appendChild(sprite);
+    document.body.appendChild(item);
+  });
+}
+init();
+</script>
+</body>
+</html>
