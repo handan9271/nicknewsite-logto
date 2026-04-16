@@ -1080,7 +1080,7 @@ JSON only (no markdown):
     dialogueSequence([
       { speaker: '尼克', text: '...', expression: 'neutral', action: () => gavelStrike(3) },
       { speaker: '尼克', text: '现在开庭！', expression: 'neutral' },
-      { speaker: '尼克', text: '全体起立！考官尼克到庭！', expression: 'smile' },
+      { speaker: '尼克', text: '全体起立！雅思考官尼克到庭！', expression: 'smile' },
       { speaker: '尼克', text: '被告被指控犯有"英语口语不达标"之罪。', expression: 'frown' },
       { speaker: '尼克', text: '第一部分 — 常规提问。请清晰作答。法庭正在注视你。', expression: 'neutral' },
     ], () => {
