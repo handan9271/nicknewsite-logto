@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Nick NPC Sound Preview</title>
+<style>
+body { margin: 0; background: #1a1a2e; color: #f0e6d0; font-family: -apple-system, sans-serif; padding: 40px; }
+h1 { text-align: center; color: #d4a017; font-size: 24px; margin-bottom: 10px; }
+p.sub { text-align: center; color: #888; font-size: 13px; margin-bottom: 30px; }
+.grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; max-width: 800px; margin: 0 auto; }
+.sound-btn {
+  padding: 20px 28px; border: 3px solid #d4a017; background: #1a2a4a;
+  color: #f0e6d0; font-size: 14px; cursor: pointer; border-radius: 4px;
+  transition: all 0.15s; min-width: 140px; text-align: center;
+}
+.sound-btn:hover { background: #2a3a5a; transform: scale(1.05); }
+.sound-btn:active { transform: scale(0.95); background: #d4a017; color: #1a1a2e; }
+.sound-btn .label { font-size: 18px; margin-bottom: 4px; }
+.sound-btn .desc { font-size: 11px; color: #888; }
+.section { width: 100%; text-align: center; color: #d4a017; font-size: 16px; margin: 20px 0 10px; border-bottom: 1px solid #333; padding-bottom: 6px; }
+</style>
+</head>
+<body>
+<h1>Nick NPC Sound Pack Preview</h1>
+<p class="sub">Minecraft villager style - Web Audio synthesized</p>
+
+<div class="grid">
+  <div class="section">Positive</div>
+  <button class="sound-btn" onclick="npcSound('happy')"><div class="label">happy</div><div class="desc">开心 - 上扬音调</div></button>
+  <button class="sound-btn" onclick="npcSound('approving')"><div class="label">approving</div><div class="desc">赞许 - 满意嗯哼</div></button>
+  <button class="sound-btn" onclick="npcSound('impressed')"><div class="label">impressed</div><div class="desc">惊喜 - 明亮上升</div></button>
+
+  <div class="section">Neutral</div>
+  <button class="sound-btn" onclick="npcSound('thinking')"><div class="label">thinking</div><div class="desc">思考 - 嗯...摇摆</div></button>
+  <button class="sound-btn" onclick="npcSound('hmph')"><div class="label">hmph</div><div class="desc">哼 - 短促不屑</div></button>
+
+  <div class="section">Negative</div>
+  <button class="sound-btn" onclick="npcSound('frown')"><div class="label">frown</div><div class="desc">不悦 - 低沉哼声</div></button>
+  <button class="sound-btn" onclick="npcSound('annoyed')"><div class="label">annoyed</div><div class="desc">恼火 - 下降粗噪</div></button>
+  <button class="sound-btn" onclick="npcSound('bored')"><div class="label">bored</div><div class="desc">无聊 - 长叹气</div></button>
+  <button class="sound-btn" onclick="npcSound('yawn')"><div class="label">yawn</div><div class="desc">哈欠 - 缓慢下沉</div></button>
+  <button class="sound-btn" onclick="npcSound('shocked')"><div class="label">shocked</div><div class="desc">震惊 - 急促上升</div></button>
+
+  <div class="section">Special</div>
+  <button class="sound-btn" onclick="playGibberish()"><div class="label">gibberish</div><div class="desc">歪比巴卜 - 中文彩蛋</div></button>
+</div>
+
+<script>
+let audioCtx = null;
+function ctx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function npcSound(mood) {
+  try {
+    const c = ctx(), t = c.currentTime;
+    const presets = {
+      happy:    { freqs: [220, 280, 330], dur: 0.12, wave: 'triangle', vol: 0.15 },
+      approving:{ freqs: [200, 260, 300, 340], dur: 0.1, wave: 'triangle', vol: 0.12 },
+      thinking: { freqs: [180, 200, 180], dur: 0.15, wave: 'sawtooth', vol: 0.1 },
+      bored:    { freqs: [200, 160, 120], dur: 0.2, wave: 'triangle', vol: 0.1 },
+      frown:    { freqs: [150, 120], dur: 0.15, wave: 'square', vol: 0.12 },
+      annoyed:  { freqs: [250, 180, 100], dur: 0.1, wave: 'sawtooth', vol: 0.15 },
+      shocked:  { freqs: [180, 350, 500], dur: 0.08, wave: 'square', vol: 0.18 },
+      yawn:     { freqs: [250, 220, 180, 140, 100], dur: 0.18, wave: 'triangle', vol: 0.08 },
+      hmph:     { freqs: [200, 140], dur: 0.12, wave: 'sawtooth', vol: 0.13 },
+      impressed:{ freqs: [200, 300, 400, 450], dur: 0.09, wave: 'triangle', vol: 0.14 },
+    };
+    const p = presets[mood] || presets.thinking;
+    const gap = 0.02;
+    p.freqs.forEach((freq, i) => {
+      const t0 = t + i * (p.dur + gap);
+      const osc = c.createOscillator();
+      const gain = c.createGain();
+      osc.type = p.wave;
+      const f = freq * (0.85 + Math.random() * 0.3);
+      osc.frequency.setValueAtTime(f, t0);
+      osc.frequency.linearRampToValueAtTime(f * (0.9 + Math.random() * 0.2), t0 + p.dur);
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(p.vol, t0 + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + p.dur);
+      osc.connect(gain).connect(c.destination);
+      osc.start(t0);
+      osc.stop(t0 + p.dur + 0.01);
+    });
+  } catch (e) {}
+}
+
+function playGibberish() {
+  try {
+    const c = ctx();
+    const baseTime = c.currentTime;
+    const syllables = 4 + Math.floor(Math.random() * 2);
+    const syllableDur = 0.13;
+    for (let i = 0; i < syllables; i++) {
+      const t0 = baseTime + i * syllableDur;
+      const osc = c.createOscillator();
+      const gain = c.createGain();
+      const startFreq = 150 + Math.random() * 120;
+      const endFreq = startFreq * (0.6 + Math.random() * 0.8);
+      osc.type = i % 2 === 0 ? 'sawtooth' : 'square';
+      osc.frequency.setValueAtTime(startFreq, t0);
+      osc.frequency.linearRampToValueAtTime(endFreq, t0 + syllableDur * 0.9);
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(0.25, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + syllableDur);
+      osc.connect(gain).connect(c.destination);
+      osc.start(t0); osc.stop(t0 + syllableDur);
+    }
+  } catch (e) {}
+}
+</script>
+</body>
+</html>

@@ -234,6 +234,56 @@
     } catch (e) {}
   }
 
+  // ─── NPC SOUND PACK (Minecraft villager style) ──────────────────
+  function npcSound(mood) {
+    try {
+      const c = ctx(), t = c.currentTime;
+      const presets = {
+        // Happy: rising pitch, bright tone
+        happy:    { freqs: [220, 280, 330], dur: 0.12, wave: 'triangle', vol: 0.15 },
+        // Approving: short pleased "hmm" up
+        approving:{ freqs: [200, 260, 300, 340], dur: 0.1, wave: 'triangle', vol: 0.12 },
+        // Thinking: mid "hmm" wobble
+        thinking: { freqs: [180, 200, 180], dur: 0.15, wave: 'sawtooth', vol: 0.1 },
+        // Bored: low descending sigh
+        bored:    { freqs: [200, 160, 120], dur: 0.2, wave: 'triangle', vol: 0.1 },
+        // Frown: short low grunt
+        frown:    { freqs: [150, 120], dur: 0.15, wave: 'square', vol: 0.12 },
+        // Annoyed: harsh descending "tch"
+        annoyed:  { freqs: [250, 180, 100], dur: 0.1, wave: 'sawtooth', vol: 0.15 },
+        // Shocked: sharp rising "huh?!"
+        shocked:  { freqs: [180, 350, 500], dur: 0.08, wave: 'square', vol: 0.18 },
+        // Yawn: long slow descend
+        yawn:     { freqs: [250, 220, 180, 140, 100], dur: 0.18, wave: 'triangle', vol: 0.08 },
+        // Hmph: short dismissive
+        hmph:     { freqs: [200, 140], dur: 0.12, wave: 'sawtooth', vol: 0.13 },
+        // Impressed: ascending bright
+        impressed:{ freqs: [200, 300, 400, 450], dur: 0.09, wave: 'triangle', vol: 0.14 },
+      };
+      const p = presets[mood] || presets.thinking;
+      const gap = 0.02; // tiny gap between syllables
+
+      p.freqs.forEach((freq, i) => {
+        const t0 = t + i * (p.dur + gap);
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = p.wave;
+        // Add slight random variation to each syllable (+/- 15%)
+        const f = freq * (0.85 + Math.random() * 0.3);
+        osc.frequency.setValueAtTime(f, t0);
+        // Slight pitch slide within syllable
+        osc.frequency.linearRampToValueAtTime(f * (0.9 + Math.random() * 0.2), t0 + p.dur);
+        // Envelope: quick attack, decay
+        gain.gain.setValueAtTime(0, t0);
+        gain.gain.linearRampToValueAtTime(p.vol, t0 + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.001, t0 + p.dur);
+        osc.connect(gain).connect(c.destination);
+        osc.start(t0);
+        osc.stop(t0 + p.dur + 0.01);
+      });
+    } catch (e) {}
+  }
+
   // ─── SCREENS ────────────────────────────────────────────────────
   function showScreen(name) {
     ['title_screen', 'game_screen', 'verdict_screen', 'lobby_screen'].forEach((k) => {
@@ -403,6 +453,7 @@
     // #5 Nick reacts to pause (randomized)
     if (S.paused) {
       setNick(pick(['frown', 'annoyed', 'thinking']));
+      npcSound('hmph'); // SOUND: pause displeasure
     } else {
       setNick(pick(['neutral', 'neutral', 'smile']));
       NR.lastInputTime = Date.now();
@@ -545,8 +596,16 @@
     }
 
     // === DELETION BEHAVIOR ===
+    if (delta <= -10 && !NR.deleteTriggered) {
+      // #7 Large deletion (≥10 words)
+      NR.deleteTriggered = true;
+      nickFlash(pick(['shocked', 'thinking']), 2000);
+      npcSound('shocked'); // SOUND: massive deletion
+      NR.lastWordCount = words;
+      return;
+    }
     if (delta < -4 && !NR.deleteTriggered) {
-      // #7 Large deletion
+      // Moderate deletion (silent, expression only)
       NR.deleteTriggered = true;
       nickFlash(pick(['shocked', 'thinking']), 2000);
       NR.lastWordCount = words;
@@ -582,6 +641,7 @@
     if (timeSinceInput > 30000 && NR.idleStage < 4) {
       NR.idleStage = 4;
       setNick('annoyed');
+      npcSound(pick(['yawn', 'hmph'])); // SOUND: long idle
     } else if (timeSinceInput > 22000 && NR.idleStage < 3) {
       NR.idleStage = 3;
       setNick('frown');
@@ -598,8 +658,10 @@
       if (Math.random() < 0.3) setNick(pick(['frown', 'annoyed']));
     }
     // #16 Timer critical (≤3s)
-    if (S.timerRemaining && S.timerRemaining <= 3) {
+    if (S.timerRemaining && S.timerRemaining <= 3 && NR.idleStage < 5) {
+      NR.idleStage = 5; // prevent repeat
       setNick('shocked');
+      npcSound('shocked'); // SOUND: time's up!
     }
 
     NR.lastWordCount = words;
