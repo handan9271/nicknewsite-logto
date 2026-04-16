@@ -1122,7 +1122,7 @@ JSON only (no markdown):
 
   // ── Part 1 ──
   function askPart1() {
-    if (S.qIndex >= S.questions.length) { stopRandomNick(); hideQuestion(); transitionPart2(); return; }
+    if (S.qIndex >= S.questions.length) { stopRandomNick(); hideQuestion(); if (S._skipToVerdict) { goVerdict(); } else { transitionPart2(); } return; }
     updateHUD();
     const q = S.questions[S.qIndex];
     showQuestion(q);
@@ -1195,7 +1195,7 @@ JSON only (no markdown):
         stopRandomNick();
         hideQuestion();
         S.answers.push({ part: 2, question: q, answer });
-        transitionPart3();
+        if (S._skipToVerdict) { goVerdict(); } else { transitionPart3(); }
       });
     });
   }
@@ -1402,20 +1402,58 @@ JSON only (no markdown):
     S.part3Questions = picked.part3;
     S.themeName = picked.themeName;
 
+    const partMode = S.selectedPart || 'all';
+
     showScreen('game');
     updateHUD();
 
-    dialogueSequence([
+    // Intro dialogue varies by part mode
+    const introBase = [
       { speaker: '尼克', text: '...', expression: 'neutral', action: () => gavelStrike(3) },
       { speaker: '尼克', text: '现在开庭！', expression: 'neutral' },
       { speaker: '尼克', text: '全体起立！雅思考官尼克到庭！', expression: 'smile' },
-      { speaker: '尼克', text: '被告被指控犯有"英语口语不达标"之罪。', expression: 'frown' },
-      { speaker: '尼克', text: '第一部分 — 常规提问。请清晰作答。法庭正在注视你。', expression: 'neutral' },
-    ], () => {
-      S.phase = 'part1'; S.currentPart = 1; S.qIndex = 0;
-      startRandomNick();
-      askPart1();
-    });
+    ];
+
+    const partIntros = {
+      'all': [
+        { speaker: '尼克', text: '被告被指控犯有"英语口语不达标"之罪。', expression: 'frown' },
+        { speaker: '尼克', text: '第一部分 — 常规提问。请清晰作答。法庭正在注视你。', expression: 'neutral' },
+      ],
+      '1': [
+        { speaker: '尼克', text: '今天只审 Part 1 — 常规提问。', expression: 'neutral' },
+        { speaker: '尼克', text: '别以为简单就能敷衍！法庭正在注视你。', expression: 'frown' },
+      ],
+      '2': [
+        { speaker: '尼克', text: '今天直接进入 Part 2 — 独白陈述。', expression: 'frown' },
+        { speaker: '尼克', text: '法庭将出示考题，你有 60 秒准备，然后陈述 2 分钟。', expression: 'neutral' },
+      ],
+      '3': [
+        { speaker: '尼克', text: '今天直接进入 Part 3 — 交叉质询。', expression: 'frown' },
+        { speaker: '尼克', text: '我会质疑你的论点。三思而后答。', expression: 'neutral' },
+      ],
+    };
+
+    const afterIntro = {
+      'all': () => { S.phase = 'part1'; S.currentPart = 1; S.qIndex = 0; startRandomNick(); askPart1(); },
+      '1':   () => { S.phase = 'part1'; S.currentPart = 1; S.qIndex = 0; startRandomNick(); askPart1(); },
+      '2':   () => { S.currentPart = 2; S.qIndex = 0; updateHUD(); startRandomNick(); showEvidence(); },
+      '3':   () => { S.phase = 'part3'; S.currentPart = 3; S.qIndex = 0; updateHUD(); startRandomNick(); askPart3(); },
+    };
+
+    // Override part flow: when practicing single part, go to verdict after that part
+    if (partMode === '1') {
+      // After Part 1, skip to verdict instead of Part 2
+      S._skipToVerdict = true;
+    } else if (partMode === '2') {
+      // After Part 2, skip to verdict instead of Part 3
+      S._skipToVerdict = true;
+    } else if (partMode === '3') {
+      S._skipToVerdict = false; // Part 3 already ends with verdict
+    } else {
+      S._skipToVerdict = false;
+    }
+
+    dialogueSequence([...introBase, ...(partIntros[partMode] || partIntros['all'])], afterIntro[partMode] || afterIntro['all']);
   }
 
   // ─── MULTIPLAYER: WEBSOCKET ──────────────────────────────────────
@@ -1864,9 +1902,20 @@ JSON only (no markdown):
       });
     });
 
+    // Part selector
+    let selectedPart = 'all';
+    document.querySelectorAll('.part-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedPart = btn.dataset.part;
+      });
+    });
+
     // Solo mode
     $('btn-solo').addEventListener('click', () => {
       ctx(); S.multiplayer = false;
+      S.selectedPart = selectedPart;
       D.player_count_badge.classList.add('hidden');
       D.leaderboard.classList.add('hidden');
       startGame();
