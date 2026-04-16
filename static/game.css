@@ -328,14 +328,15 @@ html, body {
   width: 100%;
   background: rgba(10,15,26,0.94);
   border: 3px solid var(--gold);
-  min-height: 120px; padding: 14px 24px 20px;
+  min-height: 220px; padding: 20px 28px 24px;
   display: flex; flex-direction: column;
+  justify-content: center;
 }
 
 .speaker-name {
   font-family: var(--font-ark);
-  display: inline-block; padding: 4px 14px; margin-bottom: 8px;
-  font-size: 11px; letter-spacing: 3px; align-self: flex-start;
+  display: inline-block; padding: 6px 18px; margin-bottom: 14px;
+  font-size: 14px; letter-spacing: 3px; align-self: flex-start;
   box-shadow: 2px 2px 0 #000;
 }
 .speaker-judge { background: var(--gold); color: var(--bg-dark); border: 2px solid var(--wood-light); }
@@ -343,13 +344,13 @@ html, body {
 
 .dialogue-text {
   font-family: var(--font-ark);
-  font-size: 12px; line-height: 1.9; color: var(--warm-white);
+  font-size: 18px; line-height: 2; color: var(--warm-white);
   flex: 1; overflow: hidden;
 }
 
 .continue-indicator {
-  position: absolute; bottom: 14px; right: 24px;
-  font-size: 14px; color: var(--gold); cursor: pointer;
+  position: absolute; bottom: 18px; right: 28px;
+  font-size: 18px; color: var(--gold); cursor: pointer;
 }
 
 /* ==========================================================================
