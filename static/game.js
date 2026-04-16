@@ -208,6 +208,32 @@
   const playObjection = () => sfx('rise', 200, 0.6, 0.4, 'sawtooth');
   const playDrum = () => sfx('drop', 100, 0.5, 0.5, 'triangle');
 
+  // Gibberish "歪比巴卜" sound — 4 random syllables with pitch jumps
+  function playGibberish() {
+    try {
+      const c = ctx();
+      const baseTime = c.currentTime;
+      const syllables = 4 + Math.floor(Math.random() * 2); // 4-5 syllables
+      const syllableDur = 0.13;
+      for (let i = 0; i < syllables; i++) {
+        const t0 = baseTime + i * syllableDur;
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        // Random pitch in Nick's "voice" range (low gibberish)
+        const startFreq = 150 + Math.random() * 120;
+        const endFreq = startFreq * (0.6 + Math.random() * 0.8);
+        osc.type = i % 2 === 0 ? 'sawtooth' : 'square';
+        osc.frequency.setValueAtTime(startFreq, t0);
+        osc.frequency.linearRampToValueAtTime(endFreq, t0 + syllableDur * 0.9);
+        gain.gain.setValueAtTime(0, t0);
+        gain.gain.linearRampToValueAtTime(0.25, t0 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, t0 + syllableDur);
+        osc.connect(gain).connect(c.destination);
+        osc.start(t0); osc.stop(t0 + syllableDur);
+      }
+    } catch (e) {}
+  }
+
   // ─── SCREENS ────────────────────────────────────────────────────
   function showScreen(name) {
     ['title_screen', 'game_screen', 'verdict_screen', 'lobby_screen'].forEach((k) => {
@@ -402,7 +428,34 @@
     return text.trim().split(/\s+/).filter(w => w.length > 0).length;
   }
 
+  // Chinese detection easter egg (throttled to once every 5s)
+  let _lastChineseTrigger = 0;
+  function checkChineseEasterEgg(text) {
+    if (!/[\u4e00-\u9fa5]/.test(text)) return;
+    const now = Date.now();
+    if (now - _lastChineseTrigger < 5000) return;
+    _lastChineseTrigger = now;
+    playGibberish();
+    setNick('shocked');
+    // Show a small scolding message in dialogue box
+    if (D.dialogue_box && D.speaker_name && D.dialogue_text) {
+      const wasHidden = D.dialogue_box.classList.contains('hidden');
+      D.dialogue_box.classList.remove('hidden');
+      const oldName = D.speaker_name.textContent;
+      const oldText = D.dialogue_text.textContent;
+      D.speaker_name.textContent = '尼克';
+      D.dialogue_text.textContent = '歪比巴卜！这是英语考试，请说英文！';
+      setTimeout(() => {
+        D.speaker_name.textContent = oldName;
+        D.dialogue_text.textContent = oldText;
+        if (wasHidden) D.dialogue_box.classList.add('hidden');
+        setNick('neutral');
+      }, 2500);
+    }
+  }
+
   function updateWordCount() {
+    checkChineseEasterEgg(D.user_input.value);
     const limit = WORD_LIMITS[S.currentPart] || WORD_LIMITS[1];
     const words = countWords(D.user_input.value);
     const hint = D.input_hint;
