@@ -855,5 +855,31 @@
   <audio id="bgm" loop preload="auto"></audio>
 
   <script src="/static/game.js"></script>
+
+  <!-- Hidden Ctrl+S audio input selector panel -->
+  <div id="audio-select-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;">
+    <div style="
+      background: var(--bg-dark, #0a0f1a);
+      border: 3px solid var(--gold, #d4a017);
+      box-shadow: 6px 6px 0 #000;
+      padding: 28px 32px;
+      min-width: 340px;
+      max-width: 90vw;
+      font-family: var(--font-ark, monospace);
+    ">
+      <div style="font-size:13px; color:var(--gold,#d4a017); letter-spacing:4px; margin-bottom:20px; text-align:center;">
+        🎙 语音输入设备选择
+      </div>
+      <div id="audio-device-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:22px;"></div>
+      <div style="font-size:9px; color:#666; letter-spacing:2px; text-align:center; margin-bottom:16px;">
+        按 Ctrl+S 或 ESC 关闭
+      </div>
+      <button onclick="closeAudioSelect()" style="
+        width:100%; background:transparent; border:2px solid var(--gold,#d4a017);
+        color:var(--gold,#d4a017); font-family:var(--font-ark,monospace);
+        font-size:11px; letter-spacing:3px; padding:8px; cursor:pointer;
+      ">关闭</button>
+    </div>
+  </div>
 </body>
 </html>

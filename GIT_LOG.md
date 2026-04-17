@@ -4,6 +4,12 @@
 
 ## nicknewsite-logto 仓库
 
+### 📦 直播语音设备选择（2026-04-15）
+
+| Commit | Date | Message |
+|--------|------|---------|
+| (latest) | 2026-04-15 | feat: 隐藏快捷键 Ctrl+S 打开语音输入设备选择面板（直播连麦用） |
+
 ### 📦 尼克表情系统扩展（2026-04-17）
 
 | Commit | Date | Message |

@@ -1997,7 +1997,94 @@ JSON only (no markdown):
       }
       if (e.key === ' ' && document.activeElement !== D.user_input &&
           document.activeElement?.tagName !== 'INPUT') advanceDialogue();
+      if (e.key === 's' && e.ctrlKey) {
+        e.preventDefault(); openAudioSelect();
+      }
+      if (e.key === 'Escape') {
+        const ov = document.getElementById('audio-select-overlay');
+        if (ov && ov.style.display !== 'none') closeAudioSelect();
+      }
     });
+
+    // ── Hidden audio input selector (Ctrl+S) ─────────────────────────────
+    let S_selectedMicId = null;
+
+    async function openAudioSelect() {
+      const overlay = document.getElementById('audio-select-overlay');
+      const list = document.getElementById('audio-device-list');
+      if (!overlay || !list) return;
+
+      // Request mic permission first so labels are available
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(t => t.stop());
+      } catch(err) { /* ignore — labels may be empty */ }
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const mics = devices.filter(d => d.kind === 'audioinput');
+
+      list.innerHTML = '';
+      if (mics.length === 0) {
+        list.innerHTML = '<div style="color:#e74c3c;font-size:10px;letter-spacing:2px;">未检测到麦克风设备</div>';
+      } else {
+        mics.forEach((mic, i) => {
+          const label = mic.label || `麦克风 ${i + 1}`;
+          const isSelected = mic.deviceId === S_selectedMicId ||
+                             (!S_selectedMicId && mic.deviceId === 'default');
+          const btn = document.createElement('button');
+          btn.textContent = (isSelected ? '▶ ' : '　') + label;
+          btn.style.cssText = `
+            background: ${isSelected ? 'rgba(212,160,23,0.15)' : 'transparent'};
+            border: 2px solid ${isSelected ? 'var(--gold,#d4a017)' : '#333'};
+            color: ${isSelected ? 'var(--gold,#d4a017)' : 'var(--warm-white,#f0e8d0)'};
+            font-family: var(--font-ark, monospace);
+            font-size: 10px; letter-spacing: 2px;
+            padding: 10px 14px; cursor: pointer; text-align: left;
+            transition: border-color 0.1s;
+          `;
+          btn.onclick = () => selectMicDevice(mic.deviceId, label, mics, list);
+          list.appendChild(btn);
+        });
+      }
+
+      overlay.style.display = 'flex';
+    }
+
+    function closeAudioSelect() {
+      const overlay = document.getElementById('audio-select-overlay');
+      if (overlay) overlay.style.display = 'none';
+    }
+
+    async function selectMicDevice(deviceId, label, mics, list) {
+      S_selectedMicId = deviceId;
+      // Prime OS to use selected device, then restart recognition
+      const wasRecording = S.isRecording;
+      if (wasRecording) { try { S.recognition.stop(); } catch(e) {} }
+      try {
+        // Opening a getUserMedia stream with the deviceId causes the browser/OS
+        // to route subsequent audio to this device for SpeechRecognition too
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { deviceId: { exact: deviceId } }
+        });
+        stream.getTracks().forEach(t => t.stop());
+      } catch(e) { /* device may not support exact constraint — use best effort */ }
+      if (wasRecording) { try { S.recognition.start(); } catch(e) {} }
+      // Rebuild the button list to reflect new selection
+      Array.from(list.children).forEach((btn, i) => {
+        const mic = mics[i];
+        const sel = mic && mic.deviceId === deviceId;
+        btn.textContent = (sel ? '▶ ' : '　') + (mic ? (mic.label || `麦克风 ${i+1}`) : '');
+        btn.style.background = sel ? 'rgba(212,160,23,0.15)' : 'transparent';
+        btn.style.borderColor = sel ? 'var(--gold,#d4a017)' : '#333';
+        btn.style.color = sel ? 'var(--gold,#d4a017)' : 'var(--warm-white,#f0e8d0)';
+      });
+      // Show confirmation
+      const confirm = document.createElement('div');
+      confirm.style.cssText = 'color:#2ecc71;font-size:9px;letter-spacing:2px;text-align:center;margin-top:4px;';
+      confirm.textContent = `已选择: ${label}`;
+      list.appendChild(confirm);
+      setTimeout(() => { if (confirm.parentNode) confirm.parentNode.removeChild(confirm); }, 2000);
+    }
   });
 
 })();
