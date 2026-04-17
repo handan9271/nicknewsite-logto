@@ -493,11 +493,11 @@ html, body {
 }
 
 .verdict-text {
-  font-size: 11px; color: var(--red-objection); max-width: 600px;
+  font-size: 15px; color: var(--red-objection); max-width: 600px;
   text-align: center; line-height: 2; text-shadow: 1px 1px 0 #000;
 }
 .verdict-comment {
-  font-size: 9px; color: #a09888; max-width: 600px;
+  font-size: 12px; color: var(--gold); max-width: 600px;
   text-align: center; line-height: 2;
 }
 
@@ -810,7 +810,7 @@ html, body {
   .overall-label { font-size: 10px; }
   .overall-value { font-size: 36px; }
   .verdict-text { font-size: 10px; max-width: 90vw; }
-  .verdict-comment { font-size: 8px; max-width: 90vw; }
+  .verdict-comment { font-size: 10px; max-width: 90vw; }
 
   /* ── Lobby ── */
   .lobby-title { font-size: 16px; letter-spacing: 3px; }
