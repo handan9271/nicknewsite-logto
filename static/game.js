@@ -491,7 +491,7 @@
     Object.assign(NR, {
       lastWordCount: 0, lastInputTime: Date.now(), idleStage: 0,
       inputStarted: false, prevSpeed: 0, sustainedInputSecs: 0,
-      history: [], longWordTriggered: false, deleteTriggered: false, hesitateTriggered: false,
+      history: [], longWordTriggered: false, deleteTriggered: false, hesitateTriggered: false, _gibberishCooldown: false,
     });
 
     NR.checkTimer = setInterval(() => {
@@ -568,6 +568,17 @@
       // Ambient: gentle random expression shifts while typing (even with 1-2 words)
       else if (delta >= 1 && Math.random() < 0.5) {
         setNick(pick(['neutral', 'smile', 'thinking', 'approving']));
+      }
+
+      // Gibberish detection: if most words lack vowels → annoyed for 5s
+      if (words >= 5 && !NR._gibberishCooldown) {
+        const allWords = text.trim().split(/\s+/);
+        const noVowel = allWords.filter(w => !/[aeiouAEIOU]/.test(w)).length;
+        if (noVowel / allWords.length > 0.6) {
+          NR._gibberishCooldown = true;
+          setNick('annoyed');
+          setTimeout(() => { NR._gibberishCooldown = false; }, 5000);
+        }
       }
 
       // #19 Long/advanced word detected
