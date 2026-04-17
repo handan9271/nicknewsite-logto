@@ -1997,16 +1997,13 @@ JSON only (no markdown):
       }
       if (e.key === ' ' && document.activeElement !== D.user_input &&
           document.activeElement?.tagName !== 'INPUT') advanceDialogue();
-      if (e.key === 's' && e.ctrlKey) {
-        e.preventDefault(); openAudioSelect();
-      }
       if (e.key === 'Escape') {
         const ov = document.getElementById('audio-select-overlay');
         if (ov && ov.style.display !== 'none') closeAudioSelect();
       }
     });
 
-    // ── Hidden audio input selector (Ctrl+S) ─────────────────────────────
+    // ── Hidden audio input selector (F9) ─────────────────────────────
     let S_selectedMicId = null;
 
     async function openAudioSelect() {
@@ -2085,6 +2082,32 @@ JSON only (no markdown):
       list.appendChild(confirm);
       setTimeout(() => { if (confirm.parentNode) confirm.parentNode.removeChild(confirm); }, 2000);
     }
+
+    // Expose globally so F9 listener (outside IIFE) can reach them
+    window._audioSelectOpen = openAudioSelect;
+    window._audioSelectClose = closeAudioSelect;
   });
 
 })();
+
+// Hidden audio selector trigger — outside IIFE, works at any time
+// Trigger 1: backtick key (` — top-left of keyboard, no conflicts on any OS)
+// Trigger 2: double-click on Nick's name plate (see game.html)
+window.addEventListener('keydown', (e) => {
+  if (e.key === '`' || e.key === 'F9') {
+    e.preventDefault(); e.stopPropagation();
+    if (window._audioSelectOpen) window._audioSelectOpen();
+  }
+  if (e.key === 'Escape') {
+    const ov = document.getElementById('audio-select-overlay');
+    if (ov && ov.style.display !== 'none' && window._audioSelectClose) window._audioSelectClose();
+  }
+}, true);
+
+// Trigger 3: double-click on name plate
+document.addEventListener('DOMContentLoaded', () => {
+  const plate = document.querySelector('.name-plate');
+  if (plate) plate.addEventListener('dblclick', () => {
+    if (window._audioSelectOpen) window._audioSelectOpen();
+  });
+});
