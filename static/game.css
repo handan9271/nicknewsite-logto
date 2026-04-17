@@ -244,6 +244,30 @@ html, body {
   box-shadow: 2px 2px 0 #000;
 }
 
+/* Hint badge — right side of Nick */
+.hint-badge {
+  position: absolute;
+  left: calc(100% + 16px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(180deg, var(--gold) 0%, var(--wood-light) 100%);
+  color: var(--bg-dark);
+  font-family: var(--font-ark); font-size: 12px; font-weight: bold;
+  padding: 10px 18px; letter-spacing: 3px; line-height: 1.8;
+  border: 3px solid var(--gold);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  text-align: center; white-space: nowrap;
+  animation: hint-pulse 2.5s ease-in-out infinite;
+}
+@keyframes hint-pulse { 0%,100% { opacity: 0.8; } 50% { opacity: 1; } }
+@media (max-width: 600px) { .hint-badge { font-size: 10px; padding: 6px 12px; letter-spacing: 2px; left: calc(100% + 10px); } }
+
+.hint-badge { cursor: pointer; }
+.hint-badge:hover { opacity: 0.6; }
+
+/* Make nick-character relative for positioning */
+.nick-character { position: relative; z-index: 5; }
+
 .witness-stand {
   display: none; /* hidden to save space */
 }

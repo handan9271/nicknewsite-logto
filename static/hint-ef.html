@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Hint E & F Preview</title>
+<link rel="stylesheet" href="/static/game.css">
+<style>
+body { background: var(--bg-dark); margin: 0; padding: 30px; display: flex; gap: 40px; justify-content: center; }
+.preview-item { text-align: center; }
+.preview-item h3 { color: var(--gold); font-family: var(--font-ark); font-size: 14px; margin-bottom: 16px; }
+.preview-box {
+  width: 500px; height: 400px; position: relative;
+  background: linear-gradient(180deg, var(--deep-blue) 0%, #263a5c 30%, var(--wood-dark) 55%, #3d2410 100%);
+  border: 2px solid #333; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; padding-top: 40px;
+}
+.fake-nick {
+  width: 100px; height: 100px; background: var(--deep-blue); border: 3px solid var(--gold);
+  display: flex; align-items: center; justify-content: center; color: var(--gold);
+  font-family: var(--font-ark); font-size: 12px;
+}
+.fake-plate { font-family: var(--font-ark); font-size: 9px; color: var(--gold); background: var(--deep-blue); border: 2px solid var(--gold); padding: 3px 10px; margin-top: 6px; }
+
+/* E: 右侧竖排红标 */
+.hint-e {
+  position: absolute; top: 20px; right: 10px;
+  writing-mode: vertical-rl;
+  background: rgba(192,57,43,0.85); border: 2px solid #e74c3c;
+  padding: 14px 8px; border-radius: 4px;
+  font-family: var(--font-ark); font-size: 12px; color: #fff;
+  letter-spacing: 6px;
+  box-shadow: 2px 2px 0 #000;
+}
+
+/* F: 左上角像素标签 */
+.hint-f {
+  position: absolute; top: 10px; left: 10px;
+  background: var(--deep-blue); border: 3px solid var(--gold);
+  padding: 8px 16px;
+  font-family: var(--font-ark); font-size: 12px; color: var(--gold);
+  letter-spacing: 3px;
+  box-shadow: 3px 3px 0 #000;
+}
+.hint-f .live-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: #e74c3c; margin-right: 8px; vertical-align: middle;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div class="preview-item">
+  <h3>E: 右侧竖排红标</h3>
+  <div class="preview-box">
+    <div class="hint-e">雅思口语考试进行中</div>
+    <div class="fake-nick">Nick</div>
+    <div class="fake-plate">雅思考官尼克</div>
+  </div>
+</div>
+
+<div class="preview-item">
+  <h3>F: 左上角像素标签</h3>
+  <div class="preview-box">
+    <div class="hint-f"><span class="live-dot"></span>雅思口语考试进行中</div>
+    <div class="fake-nick">Nick</div>
+    <div class="fake-plate">雅思考官尼克</div>
+  </div>
+</div>
+
+</body>
+</html>

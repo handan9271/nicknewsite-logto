@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Hint Style Preview</title>
+<link rel="stylesheet" href="/static/game.css">
+<style>
+body { background: var(--bg-dark); margin: 0; }
+.preview-grid { display: flex; flex-wrap: wrap; gap: 40px; padding: 30px; justify-content: center; }
+.preview-item { text-align: center; }
+.preview-item h3 { color: var(--gold); font-family: var(--font-ark); font-size: 14px; margin-bottom: 16px; }
+.preview-box {
+  width: 500px; height: 350px; position: relative;
+  background: linear-gradient(180deg, var(--deep-blue) 0%, #263a5c 30%, var(--wood-dark) 55%, #3d2410 100%);
+  border: 2px solid #333; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; padding-top: 20px;
+}
+/* Fake Nick */
+.fake-nick {
+  width: 100px; height: 100px; background: var(--deep-blue); border: 3px solid var(--gold);
+  display: flex; align-items: center; justify-content: center; color: var(--gold);
+  font-family: var(--font-ark); font-size: 12px;
+}
+.fake-plate { font-family: var(--font-ark); font-size: 9px; color: var(--gold); background: var(--deep-blue); border: 2px solid var(--gold); padding: 3px 10px; margin-top: 6px; }
+
+/* ── Style A: 顶部横幅 ── */
+.hint-a {
+  position: absolute; top: 0; left: 0; right: 0;
+  background: rgba(212,160,23,0.15); border-bottom: 2px solid var(--gold);
+  padding: 6px 16px; text-align: center;
+  font-family: var(--font-ark); font-size: 12px; color: var(--gold);
+  letter-spacing: 3px;
+  animation: hint-pulse 2s ease-in-out infinite;
+}
+@keyframes hint-pulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
+
+/* ── Style B: Nick 旁边浮动气泡 ── */
+.hint-b {
+  position: absolute; top: 30px; right: 20px;
+  background: rgba(10,15,26,0.9); border: 2px solid var(--gold);
+  padding: 8px 14px; border-radius: 4px;
+  font-family: var(--font-ark); font-size: 11px; color: var(--warm-white);
+  letter-spacing: 2px;
+  box-shadow: 3px 3px 0 #000;
+}
+.hint-b::before {
+  content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
+  border: 6px solid transparent; border-right-color: var(--gold);
+}
+.hint-b .dot { display: inline-block; animation: blink 1s step-end infinite; color: var(--gold); }
+
+/* ── Style C: 底部滚动条 ── */
+.hint-c {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(10,15,26,0.85); border-top: 2px solid var(--gold);
+  padding: 6px 0; overflow: hidden; white-space: nowrap;
+}
+.hint-c-inner {
+  display: inline-block;
+  font-family: var(--font-ark); font-size: 11px; color: var(--gold);
+  letter-spacing: 3px;
+  animation: scroll-left 12s linear infinite;
+}
+@keyframes scroll-left { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+/* ── Style D: Nick 头像下方徽章 ── */
+.hint-d {
+  margin-top: 10px;
+  background: var(--gold); color: var(--bg-dark);
+  font-family: var(--font-ark); font-size: 10px;
+  padding: 4px 16px; letter-spacing: 3px;
+  border: 2px solid var(--wood-light);
+  box-shadow: 2px 2px 0 #000;
+  animation: hint-pulse 2s ease-in-out infinite;
+}
+
+/* ── Style E: 右上角竖排 ── */
+.hint-e {
+  position: absolute; top: 20px; right: 10px;
+  writing-mode: vertical-rl;
+  background: rgba(192,57,43,0.8); border: 2px solid #e74c3c;
+  padding: 12px 6px; border-radius: 4px;
+  font-family: var(--font-ark); font-size: 11px; color: #fff;
+  letter-spacing: 4px;
+  box-shadow: 2px 2px 0 #000;
+}
+
+/* ── Style F: 左上角像素标签 ── */
+.hint-f {
+  position: absolute; top: 10px; left: 10px;
+  background: var(--deep-blue); border: 3px solid var(--gold);
+  padding: 6px 14px;
+  font-family: var(--font-ark); font-size: 11px; color: var(--gold);
+  letter-spacing: 2px;
+  box-shadow: 3px 3px 0 #000;
+}
+.hint-f .live-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: #e74c3c; margin-right: 6px; vertical-align: middle;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div class="preview-grid">
+
+  <!-- A: Top banner -->
+  <div class="preview-item">
+    <h3>A: 顶部横幅</h3>
+    <div class="preview-box">
+      <div class="hint-a">雅思口语考试进行中 ...</div>
+      <div class="fake-nick">Nick</div>
+      <div class="fake-plate">雅思考官尼克</div>
+    </div>
+  </div>
+
+  <!-- B: Side bubble -->
+  <div class="preview-item">
+    <h3>B: 旁边气泡</h3>
+    <div class="preview-box">
+      <div class="hint-b">雅思口语考试进行中<span class="dot"> ...</span></div>
+      <div class="fake-nick">Nick</div>
+      <div class="fake-plate">雅思考官尼克</div>
+    </div>
+  </div>
+
+  <!-- C: Bottom scrolling ticker -->
+  <div class="preview-item">
+    <h3>C: 底部滚动字幕</h3>
+    <div class="preview-box">
+      <div class="fake-nick">Nick</div>
+      <div class="fake-plate">雅思考官尼克</div>
+      <div class="hint-c"><span class="hint-c-inner">雅思口语考试进行中 ... IELTS Speaking Test in Progress ... 雅思口语考试进行中 ...</span></div>
+    </div>
+  </div>
+
+  <!-- D: Badge under Nick -->
+  <div class="preview-item">
+    <h3>D: Nick 下方徽章</h3>
+    <div class="preview-box">
+      <div class="fake-nick">Nick</div>
+      <div class="fake-plate">雅思考官尼克</div>
+      <div class="hint-d">雅思口语考试进行中 ...</div>
+    </div>
+  </div>
+
+  <!-- E: Vertical right side -->
+  <div class="preview-item">
+    <h3>E: 右侧竖排红标</h3>
+    <div class="preview-box">
+      <div class="hint-e">雅思口语考试进行中</div>
+      <div class="fake-nick">Nick</div>
+      <div class="fake-plate">雅思考官尼克</div>
+    </div>
+  </div>
+
+  <!-- F: Top-left pixel tag -->
+  <div class="preview-item">
+    <h3>F: 左上角像素标签</h3>
+    <div class="preview-box">
+      <div class="hint-f"><span class="live-dot"></span>雅思口语考试进行中</div>
+      <div class="fake-nick">Nick</div>
+      <div class="fake-plate">雅思考官尼克</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
