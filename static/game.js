@@ -565,6 +565,10 @@
       else if (delta >= 3) {
         nickFlash(pick(['neutral', 'thinking', 'smile']), 1200);
       }
+      // Ambient: gentle random expression shifts while typing (even with 1-2 words)
+      else if (delta >= 1 && Math.random() < 0.5) {
+        setNick(pick(['neutral', 'smile', 'thinking', 'approving']));
+      }
 
       // #19 Long/advanced word detected
       if (!NR.longWordTriggered) {
