@@ -1154,7 +1154,20 @@ function buildMetaPrompt(part, isCN){
     return '你是前雅思考官 Nick 的 AI 助手。根据学生的中文思路和题目，仅输出以下 JSON，不要生成任何英文答案内容：\n\n'
       +'{\n  "part": "'+part+'",\n  "part_framework": "'+partTag+' · 双版本对比生成中",\n  "mode": "cn",\n  "overall_comment": "整体学习建议（2-3句，说明如何从Band 6提升到Band 9）",\n  "takeaway": {\n    "expression": "本次最值得记住的Lexical Chunk",\n    "explanation": "为什么好，怎么用，举1个例子"\n  }\n}\n\n只输出JSON，不加任何其他内容。';
   }
-  return '你是前雅思考官 Nick 的 AI 助手。根据学生答案和题目，仅输出以下 JSON（不生成升级答案内容）：\n\n'
+  return '你是前雅思考官 Nick 的 AI 助手。根据学生答案和题目，仅输出以下 JSON（不生成升级答案内容）。\n\n'
+    +'评分标准（基于真实考官校准）：\n'
+    +'FC: 5=犹豫/短答, 6=能展开, 7=连贯, 8=流利/充分展开, 9=毫不费力\n'
+    +'LR: 5=基础/重复, 6=够用, 7=有less common词汇, 8=丰富/灵活, 9=精准/地道\n'
+    +'GRA(严格): 5=频繁错误, 6=简单+部分复杂, 7=复杂句且控制好, 8=大部分无错, 9=持续准确\n\n'
+    +'校准锚点（真实考官打分，用于对齐你的评分）：\n'
+    +'Band 5.0(FC5 LR5 GRA5): "blue is a so colorful color... in in in my university" — 重复so+adj，结构错误\n'
+    +'Band 6.5(FC7 LR6 GRA6): "currently my job is one safety engineer" — 能展开但词汇有限，准确性不稳定\n'
+    +'Band 7.0(FC8 LR7 GRA6): "chase for my second master degree" — 流利但仍有语法错误\n'
+    +'Band 7.5(FC8 LR8 GRA6): "the friendly peoples... I have been come here" — FC/LR高但GRA独立评，语法错误多则GRA低\n'
+    +'Band 8.0(FC8 LR8 GRA8): "Silicon Valley companies... great place for young professionals" — 多数句子无错，词汇丰富\n'
+    +'Band 8.5(FC9 LR9 GRA8): "product design and branding... global campaign, strategy, execution" — 接近母语水平\n\n'
+    +'⚠ 警告：高FC/LR不代表高GRA，必须独立根据语法错误频率评GRA。不要聚集在7分段，8+分是可以给的。\n'
+    +'Overall = ceil((FC+LR+GRA)/3 × 2) / 2\n\n'
     +'{\n  "part": "'+part+'",\n  "part_framework": "'+partTag+'",\n  "scores": {"FC": 整数, "LR": 整数, "GRA": 整数},\n  "verdict": "一句话诊断，不超过50字",\n  "estimated_original_band": 数字,\n  "overall_comment": "整体评价（2-3句）",\n  "takeaway": {\n    "expression": "本次最值得记住的表达",\n    "explanation": "为什么好，怎么用，举1个例子"\n  }\n}\n\n只输出JSON，不加任何其他内容。';
 }
 

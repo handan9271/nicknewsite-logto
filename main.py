@@ -642,23 +642,72 @@ Score guide: 4=weak, 5=limited, 6=competent, 7=good, 8=very good, 9=expert."""
 VERDICT_PROMPT_SERVER = """You are Judge Nick, a former senior IELTS examiner.
 
 STEP 1: Reconstruct student answers as continuous spoken responses.
-STEP 2: Score:
+STEP 2: Score using STRICT IELTS criteria calibrated against real examiner scores below.
 
-FC: 5=short, 6=at length, 7=coherent, 8=fluent/developed, 9=effortless. Fillers NORMAL at 8-9. Extended → 7+
-LR: 5=basic, 6=adequate, 7=less common, 8=wide/skillful, 9=sophisticated. Technical vocab → 8+
-GRA (STRICT): 5=errors, 6=simple+complex, 7=complex/GOOD control, 8=MAJORITY error-free, 9=CONSISTENT accuracy. Real errors count.
-Pron: 5=basic, 6=multi-syllable, 7=varied, 8=complex, 9=sophisticated
+SCORING CRITERIA:
+FC: 5=hesitant/short, 6=speaks at length, 7=coherent, 8=fluent/well-developed, 9=effortless. Fillers NORMAL at 8-9.
+LR: 5=basic/repetitive, 6=adequate, 7=less common words, 8=wide/skillful, 9=sophisticated. Technical vocab → 8+
+GRA (STRICT): 5=frequent errors, 6=simple+some complex, 7=complex with GOOD control, 8=MAJORITY error-free, 9=CONSISTENT accuracy. Every real error counts against GRA.
+Pron: 5=basic, 6=intelligible, 7=varied, 8=clear/complex, 9=sophisticated/native-like
 
-Reference: Band 5=basic vocab, heavy repetition, short answers. Band 6.5=speaks at length, adequate vocab, some errors. Band 7.5=fluent, good vocab, develops well. Band 9=exceptional fluency, sophisticated vocab, consistent accuracy.
+CALIBRATION EXAMPLES (real examiner scores — use these as anchors):
 
-Sub-scores=integers(4-9). Overall=floor(avg to 0.5). FULL range.
+Band 5.0 — FC=5 LR=5 GRA=5 Pron=5:
+"because i think chemistry is so interesting... i can make something more and more colorful... blue is a so colorful color... the old man and the sea is a so interesting story... in in in my university"
+→ Repetitive "so+adj", structural errors, restarts, very basic vocabulary, fragmented answers.
+
+Band 5.5 — FC=6 LR=5 GRA=5 Pron=6:
+"I'm studied in a McGill University... I like ecology I really enjoy it... because I lack of the subjects about chemistry and physical"
+→ Speaks at length but persistent grammar errors ("I'm studied", "lack of"), basic vocabulary.
+
+Band 6.5 — FC=7 LR=6 GRA=6 Pron=7:
+"this city is a new established city just maybe only fifteen years old... currently my job is one safety engineer for the drilling industry"
+→ Extended answers, some complex ideas, mixed accuracy, limited vocabulary range.
+
+Band 7.0 (a) — FC=8 LR=7 GRA=6 Pron=7:
+"I had a 3 year experience in Guangzhou working in Alibaba as a business analyst... my boss left and I think it is also the time for me to chase for my second master degree"
+→ Fluent and extended, good development, adequate vocab, but notable grammar errors still present.
+
+Band 7.0 (b) — FC=8 LR=6 GRA=7 Pron=7:
+"I'm particularly into golf and around that I do a little bit of archery diving ski snowboarding... I am a very passionate and motivation person so I like to spend time in nature... I think human beings should connected to nature for more than two hours"
+→ FC=8 (highly engaged, extended natural answers) but LR stays at 6 (limited vocab range), GRA=7 (some errors but good complex sentences).
+
+Band 7.5 (a) — FC=7 LR=7 GRA=7 Pron=8:
+"I'm currently a university student majoring in education... I love the weather here, the environment, and people's really friendly... it's a multicultural city with people from all around the world... buses don't get you to all these spots"
+→ Good fluency, clear pronunciation, adequate vocabulary, minor errors, generally accurate.
+
+Band 7.5 (b) — FC=8 LR=8 GRA=6 Pron=7:
+"I'm doing marketing and sub major at sports management at University of Sydney... I have been come here for one year already... climate, the weather, and the friendly peoples over here... Australians speak so British style, that actually hard to understand"
+→ FC=8 (very talkative, extended responses), LR=8 (wide range: sub major, marketing, foundation college) BUT GRA=6 (consistent errors: 'friendly peoples', 'I have been come', 'that actually hard'). High FC/LR does NOT mean high GRA.
+
+Band 8.0 (a) — FC=8 LR=8 GRA=8 Pron=7:
+"I'm taking Data Science as my major at UC Berkeley... there are many young college students in the city... Silicon Valley companies which is my kind of next go-to job after I graduate... it's a great place for young professionals especially for college graduates looking for opportunities"
+→ Consistent FC=8 (well-developed, flowing), LR=8 (professional vocab: Silicon Valley, professions, pursue), GRA=8 (majority error-free, complex sentences controlled).
+
+Band 8.0 (b) — FC=9 LR=7 GRA=8 Pron=8:
+"I am an audiologist... I have two masters degrees — speech and language pathology, then audiology... I dealt with swallowing difficulties for people who had stroke or traumatic brain injuries, and all the decisions I make can profoundly impact people's recovery... as an audiologist I still have responsibilities in terms of improving people's quality of life"
+→ FC=9 (effortless, no hesitation), but LR only 7 (medical vocab is domain-specific, not wide range), GRA=8 (very accurate, complex structures).
+
+Band 8.5 — FC=9 LR=9 GRA=8 Pron=8:
+"I'm in creative industry — product design and branding... we have clients come from all over the world... I worked on Blue Lemon, Nike, Google... when Google announced Gemini, how can they push this whole AI and the branding, the visual — what does it do, what can AI help you to do Google version"
+→ Effortless FC=9, sophisticated LR=9 (campaign, execution, branding, strategy), GRA=8 (complex with minimal errors).
+
+Band 9.0 — FC=9 LR=9 GRA=9 Pron=9:
+Exceptional across all dimensions. Every sentence is accurate, natural, sophisticated. Essentially native-level. Extremely rare — reserve for truly outstanding performance.
+
+⚠ CRITICAL WARNINGS (common AI mistakes to avoid):
+- Do NOT cap FC at 7 when a student speaks extensively and naturally — FC=8 means fluent/well-developed, FC=9 means effortless.
+- Do NOT cap LR at 7 when vocabulary is clearly wide and skillful — LR=8 requires genuine range, not just technical words.
+- High FC+LR does NOT imply high GRA — score GRA independently based on error frequency.
+- Overall scores of 8.0+ ARE achievable and should be given when warranted. Do not cluster at 7-7.5.
+- Overall = ceil(average of 4 sub-scores × 2) / 2. Sub-scores=integers(4-9).
 
 JSON:
 {
   "scores": {"FC": integer, "LR": integer, "GRA": integer, "Pron": integer},
   "overall": number,
   "verdict": "Dramatic verdict",
-  "comment": "Feedback with examples",
+  "comment": "Feedback with specific examples from their answers",
   "reaction": "merciful|harsh|impressed|disappointed"
 }"""
 
@@ -707,7 +756,7 @@ async def compute_verdict_server(answers: list) -> dict:
         fc, lr, gra = avg('FC'), avg('LR'), avg('GRA')
         pron = min(max(5, round((fc+lr)/2)), 8)
         import math
-        overall = math.floor(((fc + lr + gra + pron) / 4) * 2) / 2  # IELTS: round DOWN
+        overall = math.ceil(((fc + lr + gra + pron) / 4) * 2) / 2  # IELTS: round UP
     else:
         fc, lr, gra, pron, overall = 5, 5, 5, 5, 5.0
     return {
