@@ -631,6 +631,11 @@ function showApp(data) {
     document.getElementById('nb-admin').style.display = '';
   }
   loadAnnouncements();
+  // Handle ?view=xxx parameter (e.g. from game page "历史记录" button)
+  const urlView = new URLSearchParams(window.location.search).get('view');
+  if (urlView && ['history','timeline','practice'].includes(urlView)) {
+    nav(urlView);
+  }
   toast('欢迎回来 👋', 'ok');
 }
 

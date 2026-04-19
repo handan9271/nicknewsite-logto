@@ -47,6 +47,11 @@
         <button id="btn-solo" class="press-start">单人模考</button>
         <button id="btn-multi" class="press-start">多人对战</button>
       </div>
+
+      <div class="game-mode-selector" style="margin-top:24px;">
+        <button class="press-start" onclick="location.href='/'" style="color:var(--gold);border-color:var(--gold);">回到主页</button>
+        <button class="press-start" onclick="location.href='/?view=history'" style="color:var(--gold);border-color:var(--gold);">历史记录</button>
+      </div>
     </div>
   </div>
 
@@ -844,7 +849,10 @@
 
     <div style="margin-top:30px;text-align:center;">
       <p id="verdict-history-hint" style="font-family:'Ark Pixel','Zpix',monospace;font-size:24px;color:var(--gold);letter-spacing:4px;margin-bottom:16px;text-shadow:3px 3px 0 #000;max-width:600px;line-height:1.8;">详细报告已保存至历史记录</p>
-      <button id="btn-new-trial" class="press-start blink" style="font-size:10px;padding:10px 24px;">再来一局</button>
+      <div style="display:flex;gap:16px;justify-content:center;">
+        <button id="btn-new-trial" class="press-start blink" style="font-size:10px;padding:10px 24px;">再来一局</button>
+        <button class="press-start blink" onclick="location.href='/?view=history'" style="font-size:10px;padding:10px 24px;color:var(--gold);border-color:var(--gold);">历史记录</button>
+      </div>
     </div>
   </div>
 
