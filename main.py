@@ -973,6 +973,9 @@ async def run_game_loop(room: Room):
                     player_count=len(room.players),
                 )
                 db.add(game_session)
+                # Deduct 1 credit per game
+                if db_user and db_user.credits > 0:
+                    db_user.credits -= 1
             db.commit()
             logger.info(f"[Room {room.code}] Saved {len(leaderboard)} game sessions to database")
             db.close()
