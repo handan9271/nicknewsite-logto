@@ -3237,6 +3237,115 @@ async def teacher_page():
     return FileResponse(str(html))
 
 
+# ─── ONE-TIME MIGRATION FROM HONG KONG DB ──────────────────────────────────
+
+@app.get("/api/migrate-from-hk")
+async def migrate_from_hk(request: Request, db: Session = Depends(get_db)):
+    """One-time migration from Hong Kong MySQL to Beijing MySQL. Remove after use."""
+    HK_URL = "mysql+pymysql://root:zWk7D63bln8rjJhA45xcmyH9201fUGat@hkg1.clusters.zeabur.com:31307/nicknewsitelogto?charset=utf8mb4"
+    from sqlalchemy import create_engine as ce, text
+    from sqlalchemy.orm import Session as Sess
+
+    hk_engine = ce(HK_URL)
+    stats = {}
+
+    try:
+        with hk_engine.connect() as hk:
+            # 1. Migrate users
+            rows = hk.execute(text("SELECT * FROM users")).mappings().all()
+            count = 0
+            for r in rows:
+                existing = db.query(User).filter(User.logto_user_id == r['logto_user_id']).first()
+                if existing:
+                    # Update existing user with HK data
+                    existing.role = r.get('role', 'student')
+                    existing.credits = max(existing.credits, r.get('credits', 0))
+                    existing.is_vip = r.get('is_vip', False)
+                    existing.starting_band = r.get('starting_band', 0)
+                    existing.current_band = r.get('current_band', 0)
+                    existing.target_band = r.get('target_band', 0)
+                    existing.display_name = r.get('display_name', '') or existing.display_name
+                else:
+                    u = User(
+                        logto_user_id=r['logto_user_id'],
+                        email=r.get('email', ''),
+                        display_name=r.get('display_name', ''),
+                        role=r.get('role', 'student'),
+                        credits=r.get('credits', 20),
+                        is_vip=r.get('is_vip', False),
+                        starting_band=r.get('starting_band', 0),
+                        current_band=r.get('current_band', 0),
+                        target_band=r.get('target_band', 0),
+                    )
+                    db.add(u)
+                count += 1
+            db.commit()
+            stats['users'] = count
+
+            # Build user ID mapping (HK id → Beijing id)
+            id_map = {}
+            for r in rows:
+                hk_id = r['id']
+                bj_user = db.query(User).filter(User.logto_user_id == r['logto_user_id']).first()
+                if bj_user:
+                    id_map[hk_id] = bj_user.id
+
+            # 2. Migrate conversations
+            convs = hk.execute(text("SELECT * FROM conversations")).mappings().all()
+            count = 0
+            for r in convs:
+                new_uid = id_map.get(r['user_id'])
+                if not new_uid:
+                    continue
+                c = Conversation(
+                    user_id=new_uid,
+                    question=r.get('question', ''),
+                    user_input=r.get('user_input', ''),
+                    ai_reply=r.get('ai_reply', ''),
+                    topic_type=r.get('topic_type', ''),
+                    score=r.get('score', ''),
+                    timestamp=r.get('timestamp'),
+                )
+                db.add(c)
+                count += 1
+            db.commit()
+            stats['conversations'] = count
+
+            # 3. Migrate game sessions
+            games = hk.execute(text("SELECT * FROM game_sessions")).mappings().all()
+            count = 0
+            for r in games:
+                new_uid = id_map.get(r['user_id'], 0)
+                gs = GameSession(
+                    user_id=new_uid,
+                    logto_user_id=r.get('logto_user_id', ''),
+                    room_code=r.get('room_code', ''),
+                    mode=r.get('mode', 'solo'),
+                    answers_json=r.get('answers_json', '[]'),
+                    verdict_json=r.get('verdict_json', '{}'),
+                    overall_score=r.get('overall_score', ''),
+                    rank=r.get('rank', 0),
+                    player_count=r.get('player_count', 1),
+                    timestamp=r.get('timestamp'),
+                )
+                db.add(gs)
+                count += 1
+            db.commit()
+            stats['game_sessions'] = count
+
+            # 4. Set Dan as admin
+            dan = db.query(User).filter(User.display_name.like('%Dan%')).first()
+            if dan:
+                dan.role = 'admin'
+                db.commit()
+                stats['admin_set'] = dan.display_name
+
+    except Exception as e:
+        return {"error": str(e)}
+
+    return {"ok": True, "migrated": stats}
+
+
 # ─── ENTRYPOINT ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
