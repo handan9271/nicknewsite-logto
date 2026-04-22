@@ -2590,6 +2590,88 @@ async def save_conversation(body: SaveConversationRequest, user: User = Depends(
     return {"ok": True, "credits": fresh_user.credits if fresh_user else 0}
 
 
+# ─── FREE PRACTICE MODE ────────────────────────────────────────────────────
+
+
+FREE_PRACTICE_FULL_PROMPT = """You are Judge Nick, a former senior IELTS examiner.
+
+You are given a continuous transcript from a free-practice IELTS speaking session. The student asked their own questions and answered them.
+
+STEP 1: Identify question-answer pairs. Look for:
+- "the question is..." / "next question..." / "ok so..."
+- Sentences ending with "?" followed by an answer
+- Topic shifts indicating a new question
+Extract at least the main Q&A pairs.
+
+STEP 2: Score using STRICT IELTS criteria:
+FC: 5=hesitant/short, 6=speaks at length, 7=coherent, 8=fluent/well-developed, 9=effortless
+LR: 5=basic/repetitive, 6=adequate, 7=less common words, 8=wide/skillful, 9=sophisticated
+GRA (STRICT): 5=frequent errors, 6=simple+some complex, 7=complex with GOOD control, 8=MAJORITY error-free, 9=CONSISTENT accuracy
+Pron: estimate from vocabulary sophistication and sentence complexity
+
+Overall = ceil(average of 4 sub-scores × 2) / 2. Sub-scores=integers(4-9).
+
+Output JSON:
+{
+  "questions_found": [{"q": "question text", "a": "answer summary"}],
+  "scores": {"FC": integer, "LR": integer, "GRA": integer, "Pron": integer},
+  "overall": number,
+  "verdict": "Dramatic courtroom verdict in Chinese",
+  "comment": "Detailed feedback with specific examples from their answers, in Chinese",
+  "reaction": "merciful|harsh|impressed|disappointed"
+}"""
+
+
+class FreePracticeRequest(BaseModel):
+    transcript: str
+    duration_seconds: int = 0
+
+
+@app.post("/api/free-practice-verdict")
+async def free_practice_verdict(body: FreePracticeRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Analyze free practice transcript and return verdict."""
+    if not body.transcript.strip():
+        raise HTTPException(status_code=400, detail="No transcript provided")
+
+    try:
+        raw = await call_deepseek([
+            {'role': 'system', 'content': FREE_PRACTICE_FULL_PROMPT},
+            {'role': 'user', 'content': f'Free practice transcript ({body.duration_seconds}s):\n\n{body.transcript}\n\nAnalyze and deliver the verdict.'},
+        ])
+        result = parse_json_response(raw)
+        if result and 'scores' in result:
+            # Save as game session
+            game_session = GameSession(
+                user_id=user.id,
+                logto_user_id=user.logto_user_id,
+                room_code='FREE',
+                mode='free',
+                answers_json=json.dumps({'transcript': body.transcript, 'questions_found': result.get('questions_found', [])}, ensure_ascii=False),
+                verdict_json=json.dumps(result, ensure_ascii=False),
+                overall_score=str(result.get('overall', '')),
+                rank=0,
+                player_count=1,
+            )
+            db.add(game_session)
+            # Deduct 1 credit
+            fresh_user = db.query(User).filter(User.id == user.id).first()
+            if fresh_user and fresh_user.credits > 0:
+                fresh_user.credits -= 1
+            db.commit()
+            return result
+    except Exception as e:
+        logger.error(f"Free practice verdict error: {e}")
+
+    # Fallback
+    return {
+        'scores': {'FC': 5, 'LR': 5, 'GRA': 5, 'Pron': 5},
+        'overall': 5.0,
+        'verdict': '法庭暂时无法做出判决。',
+        'comment': '评分系统遇到问题，请重试。',
+        'reaction': 'merciful',
+    }
+
+
 @app.get("/api/history")
 async def get_history(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get user's conversation history."""

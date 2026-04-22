@@ -46,6 +46,7 @@
       <div class="game-mode-selector" style="margin-top:10px;">
         <button id="btn-solo" class="press-start" style="font-size:16px;padding:16px 40px;background:rgba(212,160,23,0.15);border-color:var(--gold);color:var(--gold);">▶ 单人模考</button>
         <button id="btn-multi" class="press-start" style="font-size:16px;padding:16px 40px;background:rgba(212,160,23,0.15);border-color:var(--gold);color:var(--gold);">▶ 多人对战</button>
+        <button id="btn-free" class="press-start" style="font-size:16px;padding:16px 40px;background:rgba(212,160,23,0.15);border-color:var(--gold);color:var(--gold);">🎙 自由练习</button>
       </div>
 
       <div style="margin-top:30px;display:flex;gap:24px;justify-content:center;">
@@ -809,6 +810,82 @@
   </div>
 
   <!-- Player count badge (HUD addition for multiplayer) -->
+
+  <!-- ======================== FREE PRACTICE SCREEN ======================== -->
+  <div id="free-practice-screen" class="screen hidden">
+
+    <!-- Top bar: timer + recording indicator -->
+    <div class="hud" id="free-hud">
+      <span class="part-badge" style="background:#2ecc71;border-color:#1e8a50;">自由练习</span>
+      <div class="timer-bar-container">
+        <div class="timer-bar" id="free-timer-bar"></div>
+      </div>
+      <span id="free-timer-text" class="question-counter">15:00</span>
+      <span id="free-rec-indicator" style="font-size:10px;color:#e74c3c;letter-spacing:2px;animation:blink 1s infinite;">🔴 录音中</span>
+    </div>
+
+    <!-- Nick listening area -->
+    <div class="courtroom" id="free-courtroom" style="justify-content:center;align-items:center;padding-top:40px;">
+      <div class="nick-character" style="margin-bottom:24px;">
+        <div class="nick-sprite" id="free-nick-sprite" style="width:220px;height:220px;">
+          <!-- Reuses the same SVG faces via JS -->
+        </div>
+        <div class="name-plate" style="font-size:13px;padding:6px 18px;">雅思考官尼克</div>
+      </div>
+
+      <!-- Audio wave visualizer -->
+      <div id="free-wave-container" style="
+        display:flex;align-items:center;justify-content:center;
+        gap:4px;height:60px;margin:14px auto 8px;max-width:320px;
+      ">
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+        <div class="free-wave-bar" style="width:4px;background:var(--gold);border-radius:2px;transition:height 0.1s;"></div>
+      </div>
+
+      <!-- Subtle status text -->
+      <div id="free-status-text" style="
+        font-family:var(--font-ark);font-size:9px;color:#666;
+        letter-spacing:3px;text-align:center;margin:4px auto 10px;
+      ">聆听中...</div>
+    </div>
+
+    <!-- Bottom controls -->
+    <div style="position:fixed;bottom:30px;left:0;right:0;display:flex;justify-content:center;gap:16px;z-index:100;">
+      <button id="free-stop-btn" class="press-start" style="font-size:12px;padding:12px 30px;color:#e74c3c;border-color:#e74c3c;">🛑 结束练习</button>
+    </div>
+  </div>
+
+  <!-- ======================== FREE PRACTICE TIME SELECT ======================== -->
+  <div id="free-time-screen" class="screen hidden">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:24px;">
+      <h2 style="font-family:var(--font-ark);font-size:16px;color:var(--gold);letter-spacing:6px;text-shadow:3px 3px 0 #000;">选择练习时长</h2>
+      <p style="font-family:var(--font-ark);font-size:10px;color:var(--warm-white);letter-spacing:3px;max-width:400px;text-align:center;line-height:2;">
+        自由练习模式：你自己出题、自己回答。<br>
+        尼克会全程聆听，最后给出评分。<br>
+        请使用语音模式。
+      </p>
+      <div style="display:flex;gap:16px;margin-top:16px;">
+        <button class="press-start free-time-btn" data-minutes="5" style="font-size:14px;padding:16px 28px;color:var(--gold);border-color:var(--gold);">5 分钟</button>
+        <button class="press-start free-time-btn" data-minutes="10" style="font-size:14px;padding:16px 28px;color:var(--gold);border-color:var(--gold);">10 分钟</button>
+        <button class="press-start free-time-btn" data-minutes="15" style="font-size:14px;padding:16px 28px;color:var(--gold);border-color:var(--gold);">15 分钟</button>
+      </div>
+      <button id="free-time-back" class="mode-btn" style="margin-top:20px;font-size:10px;letter-spacing:2px;">返回</button>
+    </div>
+  </div>
 
   <!-- ======================== VERDICT SCREEN ======================== -->
   <div id="verdict-screen" class="screen hidden">

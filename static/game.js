@@ -286,8 +286,9 @@
 
   // ─── SCREENS ────────────────────────────────────────────────────
   function showScreen(name) {
-    ['title_screen', 'game_screen', 'verdict_screen', 'lobby_screen'].forEach((k) => {
-      D[k].classList.toggle('hidden', k !== name + '_screen');
+    ['title_screen', 'game_screen', 'verdict_screen', 'lobby_screen', 'free_practice_screen', 'free_time_screen'].forEach((k) => {
+      const el = D[k] || $(k.replace(/_/g, '-'));
+      if (el) el.classList.toggle('hidden', k !== name + '_screen');
     });
     if (D.waiting_overlay) D.waiting_overlay.classList.add('hidden');
   }
@@ -2086,6 +2087,230 @@ JSON only (no markdown):
     // Expose globally so F9 listener (outside IIFE) can reach them
     window._audioSelectOpen = openAudioSelect;
     window._audioSelectClose = closeAudioSelect;
+
+    // ── FREE PRACTICE MODE ────────────────────────────────────────────
+    const FREE = {
+      active: false,
+      totalSeconds: 0,
+      remaining: 0,
+      timer: null,
+      transcript: '',
+      recognition: null,
+      lastSpeechTime: 0,
+      audioCtx: null,
+      analyser: null,
+      micStream: null,
+      waveRAF: null,
+      nickInterval: null,
+    };
+
+    // Button: free practice
+    $('btn-free').addEventListener('click', () => {
+      showScreen('free_time');
+    });
+
+    $('free-time-back').addEventListener('click', () => {
+      showScreen('title');
+    });
+
+    // Time selection buttons
+    document.querySelectorAll('.free-time-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const minutes = parseInt(btn.dataset.minutes);
+        startFreePractice(minutes);
+      });
+    });
+
+    // Stop button
+    $('free-stop-btn').addEventListener('click', () => {
+      endFreePractice();
+    });
+
+    function startFreePractice(minutes) {
+      FREE.active = true;
+      FREE.totalSeconds = minutes * 60;
+      FREE.remaining = FREE.totalSeconds;
+      FREE.transcript = '';
+      FREE.lastSpeechTime = Date.now();
+
+      showScreen('free_practice');
+
+      // Clone Nick's SVG faces into free-practice Nick
+      const srcSprite = $('nick-sprite');
+      const destSprite = $('free-nick-sprite');
+      destSprite.innerHTML = srcSprite.innerHTML;
+      destSprite.className = 'nick-sprite nick-neutral';
+
+      // Update timer display
+      updateFreeTimer();
+      FREE.timer = setInterval(() => {
+        FREE.remaining--;
+        updateFreeTimer();
+        if (FREE.remaining <= 0) endFreePractice();
+      }, 1000);
+
+      // Start speech recognition + audio analyser
+      startFreeRecognition();
+      startWaveVisualizer();
+
+      // Nick expression changes based on speech activity
+      FREE.nickInterval = setInterval(() => {
+        const silenceMs = Date.now() - FREE.lastSpeechTime;
+        if (silenceMs > 8000) {
+          setFreeNick('thinking', '等待中...');
+        } else if (silenceMs > 4000) {
+          setFreeNick('neutral', '聆听中...');
+        } else {
+          // Student is speaking — gentle random expressions
+          setFreeNick(pick(['neutral', 'smile', 'thinking', 'approving']), '聆听中...');
+        }
+      }, 4000);
+
+      setFreeNick('neutral', '开始吧');
+    }
+
+    function updateFreeTimer() {
+      const min = Math.floor(FREE.remaining / 60);
+      const sec = FREE.remaining % 60;
+      const text = min + ':' + String(sec).padStart(2, '0');
+      $('free-timer-text').textContent = text;
+      const pct = (FREE.remaining / FREE.totalSeconds) * 100;
+      $('free-timer-bar').style.width = pct + '%';
+      $('free-timer-bar').style.background = pct < 15 ? '#e74c3c' : pct < 30 ? '#f39c12' : '#2ecc71';
+    }
+
+    function startFreeRecognition() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        setFreeNick('frown', '不支持语音');
+        return;
+      }
+      FREE.recognition = new SR();
+      FREE.recognition.lang = 'en-US';
+      FREE.recognition.interimResults = true;
+      FREE.recognition.continuous = true;
+
+      let finalTranscript = '';
+
+      FREE.recognition.onresult = (e) => {
+        FREE.lastSpeechTime = Date.now();
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) {
+            finalTranscript += e.results[i][0].transcript + ' ';
+            FREE.transcript = finalTranscript;
+          }
+        }
+      };
+
+      FREE.recognition.onerror = () => {};
+      FREE.recognition.onend = () => {
+        if (FREE.active) { try { FREE.recognition.start(); } catch (e) {} }
+      };
+      try { FREE.recognition.start(); } catch (e) {}
+    }
+
+    async function startWaveVisualizer() {
+      try {
+        FREE.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        FREE.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = FREE.audioCtx.createMediaStreamSource(FREE.micStream);
+        FREE.analyser = FREE.audioCtx.createAnalyser();
+        FREE.analyser.fftSize = 64;
+        source.connect(FREE.analyser);
+
+        const bars = document.querySelectorAll('.free-wave-bar');
+        const dataArray = new Uint8Array(FREE.analyser.frequencyBinCount);
+
+        function drawWave() {
+          if (!FREE.active) return;
+          FREE.analyser.getByteFrequencyData(dataArray);
+
+          // Map frequency data to bar heights
+          const barCount = bars.length;
+          for (let i = 0; i < barCount; i++) {
+            // Sample from different parts of the frequency spectrum
+            const idx = Math.floor(i * dataArray.length / barCount);
+            const value = dataArray[idx] || 0;
+            // Map 0-255 to 2-36px, with some smoothing
+            const height = Math.max(3, (value / 255) * 55);
+            bars[i].style.height = height + 'px';
+            // Subtle opacity change
+            bars[i].style.opacity = 0.3 + (value / 255) * 0.7;
+          }
+
+          // Update speech detection
+          const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+          if (avg > 15) FREE.lastSpeechTime = Date.now();
+
+          // Status text
+          const statusEl = $('free-status-text');
+          if (statusEl) {
+            const silence = Date.now() - FREE.lastSpeechTime;
+            if (silence > 5000) statusEl.textContent = '等待发言...';
+            else statusEl.textContent = '聆听中...';
+          }
+
+          FREE.waveRAF = requestAnimationFrame(drawWave);
+        }
+        drawWave();
+      } catch (e) {
+        console.log('Wave visualizer failed:', e);
+      }
+    }
+
+    function setFreeNick(expression, statusText) {
+      const sprite = $('free-nick-sprite');
+      const label = $('free-nick-expression');
+      if (sprite) sprite.className = 'nick-sprite nick-' + expression;
+      if (label) label.textContent = EXPR_CN[expression] || expression;
+    }
+
+    async function endFreePractice() {
+      FREE.active = false;
+      if (FREE.timer) { clearInterval(FREE.timer); FREE.timer = null; }
+      if (FREE.nickInterval) { clearInterval(FREE.nickInterval); FREE.nickInterval = null; }
+      if (FREE.recognition) { try { FREE.recognition.stop(); } catch (e) {} }
+      if (FREE.waveRAF) { cancelAnimationFrame(FREE.waveRAF); FREE.waveRAF = null; }
+      if (FREE.micStream) { FREE.micStream.getTracks().forEach(t => t.stop()); FREE.micStream = null; }
+      if (FREE.audioCtx) { FREE.audioCtx.close(); FREE.audioCtx = null; }
+
+      // Flatten wave bars
+      document.querySelectorAll('.free-wave-bar').forEach(b => { b.style.height = '2px'; b.style.opacity = '0.3'; });
+
+      setFreeNick('gavel', '审议中...');
+      $('free-stop-btn').style.display = 'none';
+      $('free-rec-indicator').style.display = 'none';
+      const statusEl = $('free-status-text');
+      if (statusEl) statusEl.textContent = '法庭正在审议...';
+
+      if (!FREE.transcript.trim()) {
+        setFreeNick('frown', '无证词');
+        if ($('free-status-text')) $('free-status-text').textContent = '法庭未收到任何证词。';
+        setTimeout(() => resetToTitle(), 3000);
+        return;
+      }
+
+      // Send transcript to backend for analysis + scoring
+      try {
+        const res = await fetch('/api/free-practice-verdict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            transcript: FREE.transcript,
+            duration_seconds: FREE.totalSeconds - FREE.remaining,
+          }),
+        });
+        if (!res.ok) throw new Error('API error');
+        const verdict = await res.json();
+        showVerdictScreen(verdict);
+      } catch (e) {
+        setFreeNick('frown', '评分失败');
+        if ($('free-status-text')) $('free-status-text').textContent = '评分失败，请重试。';
+        setTimeout(() => resetToTitle(), 3000);
+      }
+    }
+
   });
 
 })();
