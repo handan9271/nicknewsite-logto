@@ -481,6 +481,12 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)) -> U
     if db_user.is_disabled:
         raise HTTPException(status_code=403, detail="您的账号已被禁用，请联系管理员")
 
+    # Permanent admins — always ensure these users are admin
+    PERMANENT_ADMINS = ['542925098@qq.com']
+    PERMANENT_ADMIN_NAMES = ['韩Dan', 'Dan']
+    if (db_user.email in PERMANENT_ADMINS or db_user.display_name in PERMANENT_ADMIN_NAMES) and db_user.role != 'admin':
+        db_user.role = 'admin'
+
     # Update display_name if changed
     if name and db_user.display_name != name:
         db_user.display_name = name
@@ -1136,21 +1142,6 @@ async def sign_out(request: Request):
     response.delete_cookie(SESSION_COOKIE_NAME)
     return response
 
-
-# ─── TEMP: SET ADMINS (remove after use) ────────────────────────────────────
-@app.get("/api/set-admins-temp")
-async def set_admins_temp(db: Session = Depends(get_db)):
-    results = []
-    for email_or_name in ['542925098@qq.com', '%Dan%', '%dan%']:
-        if '%' in email_or_name:
-            users = db.query(User).filter(User.display_name.like(email_or_name)).all()
-        else:
-            users = db.query(User).filter(User.email == email_or_name).all()
-        for u in users:
-            u.role = 'admin'
-            results.append(f"{u.email or u.display_name} → admin")
-    db.commit()
-    return {"ok": True, "updated": results}
 
 # ─── API ROUTES ─────────────────────────────────────────────────────────────
 
