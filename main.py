@@ -650,50 +650,55 @@ LR: 5=basic/repetitive, 6=adequate, 7=less common words, 8=wide/skillful, 9=soph
 GRA (STRICT): 5=frequent errors, 6=simple+some complex, 7=complex with GOOD control, 8=MAJORITY error-free, 9=CONSISTENT accuracy. Every real error counts against GRA.
 Pron: 5=basic, 6=intelligible, 7=varied, 8=clear/complex, 9=sophisticated/native-like
 
-CALIBRATION EXAMPLES (real examiner scores — use these as anchors):
+CALIBRATION EXAMPLES (real examiner scores from 109 samples — use as anchors):
 
 Band 5.0 — FC=5 LR=5 GRA=5 Pron=5:
-"because i think chemistry is so interesting... i can make something more and more colorful... blue is a so colorful color... the old man and the sea is a so interesting story... in in in my university"
+"because i think chemistry is so interesting... i can make something more and more colorful... blue is a so colorful color... in in in my university"
 → Repetitive "so+adj", structural errors, restarts, very basic vocabulary, fragmented answers.
 
 Band 5.5 — FC=6 LR=5 GRA=5 Pron=6:
-"I'm studied in a McGill University... I like ecology I really enjoy it... because I lack of the subjects about chemistry and physical"
+"I'm studied in a McGill University... because I lack of the subjects about chemistry and physical"
 → Speaks at length but persistent grammar errors ("I'm studied", "lack of"), basic vocabulary.
+
+Band 6.0 — FC=6 LR=6 GRA=5 Pron=6:
+"i live in kunming yunan province... i am a teacher in primary school, i teach English... i think it's a good job because i can help children learn English"
+→ Can answer most questions but limited range. Simple sentences mostly correct, complex ones have errors. Adequate but not flexible vocabulary.
 
 Band 6.5 — FC=7 LR=6 GRA=6 Pron=7:
 "this city is a new established city just maybe only fifteen years old... currently my job is one safety engineer for the drilling industry"
 → Extended answers, some complex ideas, mixed accuracy, limited vocabulary range.
 
-Band 7.0 (a) — FC=8 LR=7 GRA=6 Pron=7:
+Band 7.0 (a) — FC=7 LR=6 GRA=7 Pron=7:
+"i live in an apartment... what is your favorite room — i think the living room because it's spacious and i can do many things there... i especially enjoy the local food here, i'm a fan of spicy food, the hot pot here is amazing"
+→ Coherent, develops answers well, good grammar control, but vocabulary stays at adequate level.
+
+Band 7.0 (b) — FC=8 LR=7 GRA=6 Pron=7:
 "I had a 3 year experience in Guangzhou working in Alibaba as a business analyst... my boss left and I think it is also the time for me to chase for my second master degree"
 → Fluent and extended, good development, adequate vocab, but notable grammar errors still present.
 
-Band 7.0 (b) — FC=8 LR=6 GRA=7 Pron=7:
-"I'm particularly into golf and around that I do a little bit of archery diving ski snowboarding... I am a very passionate and motivation person so I like to spend time in nature... I think human beings should connected to nature for more than two hours"
-→ FC=8 (highly engaged, extended natural answers) but LR stays at 6 (limited vocab range), GRA=7 (some errors but good complex sentences).
+Band 7.5 (a) — FC=8 LR=7 GRA=7 Pron=8:
+"I'm a post grad at University of Cambridge... well I'm quite interested in the area of machine learning and natural language processing... I think it's quite fascinating how computers can understand human language"
+→ Fluent, well-developed answers, good vocabulary, generally accurate with minor errors.
 
-Band 7.5 (a) — FC=7 LR=7 GRA=7 Pron=8:
-"I'm currently a university student majoring in education... I love the weather here, the environment, and people's really friendly... it's a multicultural city with people from all around the world... buses don't get you to all these spots"
-→ Good fluency, clear pronunciation, adequate vocabulary, minor errors, generally accurate.
+Band 7.5 (b) — FC=8 LR=8 GRA=7 Pron=7:
+"I'm currently living in Chongqing... I especially enjoy the local food, I'm a fan of spicy food... the hot pot here is quite different from what you might find in other cities because we use a special kind of chili pepper"
+→ FC=8 (extended, natural), LR=8 (specific vocab: jurisdiction, local cuisine, chili pepper), GRA=7 (mostly accurate, occasional errors).
 
-Band 7.5 (b) — FC=8 LR=8 GRA=6 Pron=7:
-"I'm doing marketing and sub major at sports management at University of Sydney... I have been come here for one year already... climate, the weather, and the friendly peoples over here... Australians speak so British style, that actually hard to understand"
-→ FC=8 (very talkative, extended responses), LR=8 (wide range: sub major, marketing, foundation college) BUT GRA=6 (consistent errors: 'friendly peoples', 'I have been come', 'that actually hard'). High FC/LR does NOT mean high GRA.
+Band 8.0 (a) — FC=8 LR=8 GRA=8 Pron=8:
+"I'm majoring in animal science... I'm pretty interested in biology but I also have to consider the points that are practical for employment... I think the intersection of biology and agriculture is really promising"
+→ Wide lexical range, complex ideas expressed clearly, majority error-free sentences.
 
-Band 8.0 (a) — FC=8 LR=8 GRA=8 Pron=7:
-"I'm taking Data Science as my major at UC Berkeley... there are many young college students in the city... Silicon Valley companies which is my kind of next go-to job after I graduate... it's a great place for young professionals especially for college graduates looking for opportunities"
-→ Consistent FC=8 (well-developed, flowing), LR=8 (professional vocab: Silicon Valley, professions, pursue), GRA=8 (majority error-free, complex sentences controlled).
+Band 8.0 (b) — FC=8 LR=8 GRA=7 Pron=8:
+"I went to Berkeley for my undergraduate and I'm currently a master at Harvard... I study computational biology but I'm actually transferring to data science... I feel like I have to be really practical"
+→ Wide vocab, fluent and natural, complex topics handled confidently, occasional minor errors.
 
-Band 8.0 (b) — FC=9 LR=7 GRA=8 Pron=8:
-"I am an audiologist... I have two masters degrees — speech and language pathology, then audiology... I dealt with swallowing difficulties for people who had stroke or traumatic brain injuries, and all the decisions I make can profoundly impact people's recovery... as an audiologist I still have responsibilities in terms of improving people's quality of life"
-→ FC=9 (effortless, no hesitation), but LR only 7 (medical vocab is domain-specific, not wide range), GRA=8 (very accurate, complex structures).
-
-Band 8.5 — FC=9 LR=9 GRA=8 Pron=8:
-"I'm in creative industry — product design and branding... we have clients come from all over the world... I worked on Blue Lemon, Nike, Google... when Google announced Gemini, how can they push this whole AI and the branding, the visual — what does it do, what can AI help you to do Google version"
-→ Effortless FC=9, sophisticated LR=9 (campaign, execution, branding, strategy), GRA=8 (complex with minimal errors).
+Band 8.5 — FC=9 LR=8 GRA=8 Pron=9:
+"I currently live in New York city, one stop away from Manhattan... it's called Queens or more specifically Long Island city — it's where probably where Spiderman grew up... the diversity is what I love most about living here"
+→ Effortless fluency, natural discourse, sophisticated vocabulary, minimal errors, native-like delivery.
 
 Band 9.0 — FC=9 LR=9 GRA=9 Pron=9:
-Exceptional across all dimensions. Every sentence is accurate, natural, sophisticated. Essentially native-level. Extremely rare — reserve for truly outstanding performance.
+"I was born and raised in Melbourne... I'm studying economics at uni... I find that spending time alone is useful for reflecting or even just organizing my thoughts... the way I see it, introversion isn't about being antisocial, it's more about where you draw your energy from"
+→ Exceptional across all dimensions. Every sentence accurate, natural, sophisticated. Native-level fluency and precision.
 
 ⚠ CRITICAL WARNINGS (common AI mistakes to avoid):
 - Do NOT cap FC at 7 when a student speaks extensively and naturally — FC=8 means fluent/well-developed, FC=9 means effortless.

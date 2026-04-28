@@ -949,7 +949,13 @@ function setPart(p, auto=false){
 const PRACTICE_WORD_LIMITS = { P1: { min: 10, max: 150 }, P2: { min: 10, max: 300 }, P3: { min: 10, max: 250 } };
 
 function countWordsP(text) {
-  return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+  const t = text.trim();
+  if (!t) return 0;
+  // Count Chinese characters as individual words
+  const chineseChars = (t.match(/[\u4e00-\u9fff]/g) || []).length;
+  // Count English words (space-separated)
+  const englishWords = t.replace(/[\u4e00-\u9fff]/g, ' ').trim().split(/\s+/).filter(w => w.length > 0).length;
+  return chineseChars + englishWords;
 }
 
 function updatePracticeWordCount() {
@@ -1164,13 +1170,15 @@ function buildMetaPrompt(part, isCN){
     +'FC: 5=犹豫/短答, 6=能展开, 7=连贯, 8=流利/充分展开, 9=毫不费力\n'
     +'LR: 5=基础/重复, 6=够用, 7=有less common词汇, 8=丰富/灵活, 9=精准/地道\n'
     +'GRA(严格): 5=频繁错误, 6=简单+部分复杂, 7=复杂句且控制好, 8=大部分无错, 9=持续准确\n\n'
-    +'校准锚点（真实考官打分，用于对齐你的评分）：\n'
+    +'校准锚点（109个真实考官打分，用于对齐你的评分）：\n'
     +'Band 5.0(FC5 LR5 GRA5): "blue is a so colorful color... in in in my university" — 重复so+adj，结构错误\n'
+    +'Band 6.0(FC6 LR6 GRA5): "i am a teacher... i think it\'s a good job because i can help children" — 能回答但简单句为主\n'
     +'Band 6.5(FC7 LR6 GRA6): "currently my job is one safety engineer" — 能展开但词汇有限，准确性不稳定\n'
-    +'Band 7.0(FC8 LR7 GRA6): "chase for my second master degree" — 流利但仍有语法错误\n'
-    +'Band 7.5(FC8 LR8 GRA6): "the friendly peoples... I have been come here" — FC/LR高但GRA独立评，语法错误多则GRA低\n'
-    +'Band 8.0(FC8 LR8 GRA8): "Silicon Valley companies... great place for young professionals" — 多数句子无错，词汇丰富\n'
-    +'Band 8.5(FC9 LR9 GRA8): "product design and branding... global campaign, strategy, execution" — 接近母语水平\n\n'
+    +'Band 7.0(FC7 LR6 GRA7): "i especially enjoy the local food, i\'m a fan of spicy food" — 连贯展开，语法控制好\n'
+    +'Band 7.5(FC8 LR7 GRA7): "I\'m a post grad at Cambridge... machine learning and NLP" — 流利充分，词汇好，基本准确\n'
+    +'Band 8.0(FC8 LR8 GRA8): "majoring in animal science... the intersection of biology and agriculture" — 词汇丰富，多数无错\n'
+    +'Band 8.5(FC9 LR8 GRA8): "Queens, Long Island city — where Spiderman grew up" — 接近母语水平\n'
+    +'Band 9.0(FC9 LR9 GRA9): "introversion isn\'t about being antisocial, it\'s about where you draw energy" — 母语级\n\n'
     +'⚠ 警告：高FC/LR不代表高GRA，必须独立根据语法错误频率评GRA。不要聚集在7分段，8+分是可以给的。\n'
     +'Overall = ceil((FC+LR+GRA)/3 × 2) / 2\n\n'
     +'{\n  "part": "'+part+'",\n  "part_framework": "'+partTag+'",\n  "scores": {"FC": 整数, "LR": 整数, "GRA": 整数},\n  "verdict": "一句话诊断，不超过50字",\n  "estimated_original_band": 数字,\n  "overall_comment": "整体评价（2-3句）",\n  "takeaway": {\n    "expression": "本次最值得记住的表达",\n    "explanation": "为什么好，怎么用，举1个例子"\n  }\n}\n\n只输出JSON，不加任何其他内容。';
